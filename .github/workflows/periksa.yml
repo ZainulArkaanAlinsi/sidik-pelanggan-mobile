@@ -1,0 +1,40 @@
+# Pemeriksaan tiap push & pull request: analyze + test.
+#
+# Versi Flutter DIPATOK sama dengan `sidik-calibration-mobile` (periksa-pr.yml):
+# dua aplikasi satu tim, satu set versi. Analyzer sering berganti perilaku antar
+# rilis, dan CI yang beda versi dari laptop bikin "hijau di CI, merah di laptop".
+name: Periksa
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: periksa-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.44.6
+
+jobs:
+  periksa:
+    name: Analyze & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: flutter analyze
+        run: flutter analyze
+
+      - name: flutter test
+        run: flutter test

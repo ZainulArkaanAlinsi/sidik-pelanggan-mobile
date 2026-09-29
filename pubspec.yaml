@@ -1,0 +1,45 @@
+name: sidik_pelanggan
+description: "SIDIK Pelanggan — aplikasi pemilik alat: status kalibrasi, sertifikat, dan pelacakan paket dari laboratorium PT Sidik."
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.5
+
+# Versi disamakan PERSIS dengan `sidik-calibration-mobile` (per 29 Sep 2026)
+# supaya dua aplikasi satu tim tidak memelihara dua set versi yang berbeda.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^3.3.2
+  flutter_secure_storage: ^10.3.1
+  http: ^1.6.0
+  intl: any
+  path_provider: ^2.1.6
+  open_filex: ^4.7.0
+  url_launcher: ^6.3.1
+  package_info_plus: ^8.1.1
+  firebase_core: ^4.13.0
+  firebase_messaging: ^16.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
