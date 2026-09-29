@@ -5,24 +5,20 @@ alat, sertifikat (unduh PDF + tautan verifikasi), pelacakan paket, notifikasi
 jatuh tempo, dan anggota tim perusahaan. Pasangan API-nya
 `routes/api_pelanggan.php` di `sidik-calibration-api` (prefix `/api/pelanggan/v1`).
 
-> **Status: kerangka lengkap, BELUM pernah dikompilasi.** Ditulis di lingkungan
-> tanpa Flutter SDK (pub.dev diblokir). Sudah diperiksa: sintaks Dart
-> (tree-sitter, 0 masalah), semua import relatif ada, semua anggota
-> `SidikMaterial` yang dipakai ada. Belum: `flutter analyze`, `flutter test`,
-> build di HP. Langkah pertama di mesin berSDK ada di bawah.
+> **Status (30 Sep 2026): terkompilasi & teruji, belum dicoba di HP.**
+> `flutter analyze` bersih dan `flutter test` hijau (Flutter 3.44), dijaga CI
+> `.github/workflows/periksa.yml` di tiap push & PR. Folder `android/` & `ios/`
+> sudah ada (`flutter create --org id.ptsidik`). Belum: build & uji di HP
+> sungguhan, dan konfigurasi Firebase untuk push.
 
-## Menjalankan pertama kali
+## Menjalankan
 
 ```bash
-# 1. Folder platform belum ada di repo ini — buat sekali:
-flutter create --org id.ptsidik --project-name sidik_pelanggan --platforms android,ios .
-
-# 2. Paket & pemeriksaan
 flutter pub get
 flutter analyze
 flutter test
 
-# 3. Jalankan ke server lokal (emulator Android → 10.0.2.2)
+# Jalankan ke server lokal (emulator Android → 10.0.2.2)
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
 ```
 
@@ -62,6 +58,9 @@ kebenaran. Untuk menyalakan push:
 
 ## Aturan yang dipegang kode ini
 
+- **Data sama di HP mana pun akun ini masuk.** Server satu-satunya sumber
+  data; `lib/providers/sinkron_provider.dart` menarik ulang semua layar
+  waktu aplikasi kembali ke layar depan dan waktu push masuk.
 - **Tidak ada logika bisnis di HP.** Status jatuh tempo, tahap paket, dan
   kepemilikan dihitung server. Aplikasi hanya menampilkan.
 - **`customer_id` tidak pernah dikirim.** Perusahaan aktif dipilih lewat
