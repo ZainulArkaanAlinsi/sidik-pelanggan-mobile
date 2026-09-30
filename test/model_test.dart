@@ -19,7 +19,11 @@ void main() {
       'status': 'aktif',
       'butuh_verifikasi': false,
       'keanggotaan': [
-        {'customer_id': 3, 'nama_perusahaan': 'PT Contoh Pelanggan', 'peran': 'pic_utama'},
+        {
+          'customer_id': 3,
+          'nama_perusahaan': 'PT Contoh Pelanggan',
+          'peran': 'pic_utama',
+        },
       ],
       'pengajuan': null,
     });
@@ -74,7 +78,13 @@ void main() {
       'diterbitkan_pada': '2026-09-20',
       'berlaku_sampai': '2027-09-20',
       'keputusan': 'PASS',
-      'alat': {'id': 11, 'nama': 'Jangka Sorong', 'merk': 'Mitutoyo', 'model': null, 'serial': 'SN-1'},
+      'alat': {
+        'id': 11,
+        'nama': 'Jangka Sorong',
+        'merk': 'Mitutoyo',
+        'model': null,
+        'serial': 'SN-1',
+      },
       'revisi_dari': {'id': 8, 'nomor': 'CAL/2026/09/0001'},
       'bisa_diunduh': true,
       'tautan_verifikasi': 'https://contoh.test/verify/abc',
@@ -101,17 +111,36 @@ void main() {
         'jumlah_alat': 4,
         'jumlah_selesai': 1,
         'alat': [
-          {'id': 1, 'nama': 'Termometer', 'tahap': 'sertifikat_terbit', 'tahap_label': 'Sertifikat sudah terbit', 'sertifikat_id': 3},
+          {
+            'id': 1,
+            'nama': 'Termometer',
+            'tahap': 'sertifikat_terbit',
+            'tahap_label': 'Sertifikat sudah terbit',
+            'sertifikat_id': 3,
+          },
         ],
       },
       [
-        {'kode': 'diterima', 'label': 'Alat diterima lab', 'lewat': true, 'sekarang': false},
-        {'kode': 'menunggu_pemeriksaan', 'label': 'Hasil sedang diperiksa', 'lewat': false, 'sekarang': true},
+        {
+          'kode': 'diterima',
+          'label': 'Alat diterima lab',
+          'lewat': true,
+          'sekarang': false,
+        },
+        {
+          'kode': 'menunggu_pemeriksaan',
+          'label': 'Hasil sedang diperiksa',
+          'lewat': false,
+          'sekarang': true,
+        },
       ],
     );
     expect(p.kemajuan, 0.25);
     expect(p.alat.single.sertifikatId, 3);
-    expect(p.garisWaktu.where((l) => l.sekarang).single.label, 'Hasil sedang diperiksa');
+    expect(
+      p.garisWaktu.where((l) => l.sekarang).single.label,
+      'Hasil sedang diperiksa',
+    );
   });
 
   test('anggota dari /anggota', () {
@@ -124,12 +153,23 @@ void main() {
             'status': 'aktif',
             'bergabung_pada': '2026-09-01T00:00:00Z',
             'dinonaktifkan_pada': null,
-            'orang': {'id': 7, 'nama': 'Budi PIC', 'email': 'budi@contoh.test', 'telepon': null, 'jabatan': null},
+            'orang': {
+              'id': 7,
+              'nama': 'Budi PIC',
+              'email': 'budi@contoh.test',
+              'telepon': null,
+              'jabatan': null,
+            },
             'saya': true,
           },
         ],
         'undangan_menunggu': [
-          {'id': 4, 'email': 'sari@contoh.test', 'peran': 'staf', 'kedaluwarsa_pada': '2026-10-01T00:00:00Z'},
+          {
+            'id': 4,
+            'email': 'sari@contoh.test',
+            'peran': 'staf',
+            'kedaluwarsa_pada': '2026-10-01T00:00:00Z',
+          },
         ],
         'maks_anggota': 50,
         'saya': {'customer_id': 3, 'member_id': 1, 'peran': 'pic_utama'},

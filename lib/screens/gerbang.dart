@@ -2,17 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/sidik_material.dart';
+import '../providers/perangkat_provider.dart';
 import '../providers/sesi_provider.dart';
 import '../widgets/sidik/sidik_permukaan.dart';
 import '../widgets/sidik/sidik_tombol.dart';
 import '../widgets/umum.dart';
 import 'auth/masuk_screen.dart';
+import 'auth/sambutan_screen.dart';
 import 'rangka.dart';
 
 /// Akar aplikasi: memutuskan layar pertama dari tiga pertanyaan, berurutan.
 ///
 /// 1. Server sedang pemeliharaan / versi aplikasi terlalu lama? → layar info.
-/// 2. Belum masuk? → Masuk.
+/// 2. Belum masuk? → Sambutan (hanya peluncuran pertama di HP ini), lalu Masuk.
 /// 3. Akun belum diverifikasi / belum punya perusahaan / anggota dua PT belum
 ///    memilih? → layar keadaan yang sesuai.
 ///
@@ -58,7 +60,12 @@ class Gerbang extends ConsumerWidget {
         ),
       ),
       data: (sesi) {
-        if (sesi == null) return const MasukScreen();
+        if (sesi == null) {
+          // Sambutan hanya di peluncuran pertama. Selama flag belum terbaca,
+          // Masuk lebih baik daripada layar kosong.
+          final lihat = ref.watch(sambutanProvider).value;
+          return lihat == false ? const SambutanScreen() : const MasukScreen();
+        }
 
         if (sesi.akun.butuhVerifikasi || !sesi.akun.punyaPerusahaan) {
           final ditolak = sesi.akun.pengajuan?.status == 'ditolak';
