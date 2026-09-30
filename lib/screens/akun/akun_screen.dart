@@ -8,6 +8,7 @@ import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
 import '../gerbang.dart';
+import '../koreksi/koreksi_screen.dart';
 import 'anggota_screen.dart';
 import 'preferensi_screen.dart';
 import 'profil_hapus_screen.dart';
@@ -75,6 +76,20 @@ class AkunScreen extends ConsumerWidget {
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => const AnggotaScreen(),
+                    ),
+                  ),
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: const Icon(Icons.rule_folder_outlined),
+                  title: const Text('Koreksi'),
+                  subtitle: const Text(
+                    'Permintaan koreksi data alat dan sertifikat',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const KoreksiScreen(),
                     ),
                   ),
                 ),

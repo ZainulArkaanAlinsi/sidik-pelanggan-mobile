@@ -41,7 +41,7 @@ class PreferensiScreen extends ConsumerWidget {
     (
       PreferensiNotifikasi.kunciEmail,
       'Ringkasan email mingguan',
-      'Pilihan ini tersimpan, tetapi pengiriman emailnya belum berjalan.',
+      'Dikirim tiap Senin pukul 07.15 WIB ke email akun kamu.',
     ),
   ];
 

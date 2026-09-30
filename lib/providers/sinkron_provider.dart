@@ -52,4 +52,6 @@ void segarkanSemua(Ref ref) {
   ref.invalidate(detailPermintaanProvider);
   ref.invalidate(pesanPermintaanProvider);
   ref.invalidate(preferensiProvider);
+  ref.invalidate(daftarKoreksiProvider);
+  ref.invalidate(detailKoreksiProvider);
 }

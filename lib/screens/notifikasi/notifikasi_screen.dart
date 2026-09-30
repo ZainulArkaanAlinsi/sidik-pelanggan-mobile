@@ -7,7 +7,9 @@ import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/sesi_provider.dart';
 import '../../widgets/umum.dart';
+import '../koreksi/koreksi_detail_screen.dart';
 import '../permintaan/permintaan_detail_screen.dart';
+import '../sertifikat/sertifikat_detail_screen.dart';
 
 /// Kotak masuk. Yang belum dibaca diberi titik biru di kiri, bukan latar
 /// berwarna — latar berwarna di sepuluh baris sekaligus cuma jadi bising.
@@ -25,6 +27,21 @@ class NotifikasiScreen extends ConsumerWidget {
     ref.invalidate(notifikasiProvider);
     ref.invalidate(jumlahBelumDibacaProvider);
   }
+
+  /// `tautan.tipe` dari server → layar tujuan. Tipe yang belum dikenal
+  /// (server lebih baru dari aplikasi) tidak membuka apa-apa.
+  @visibleForTesting
+  static Widget? tujuanTautan(String? tipe, int? id) {
+    if (id == null) return null;
+    return switch (tipe) {
+      'pelanggan_permintaan' => PermintaanDetailScreen(id: id),
+      'pelanggan_sertifikat' => SertifikatDetailScreen(id: id),
+      'pelanggan_koreksi' => KoreksiDetailScreen(id: id),
+      _ => null,
+    };
+  }
+
+  Widget? _tujuan(Notifikasi n) => tujuanTautan(n.tautanTipe, n.tautanId);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,15 +89,12 @@ class NotifikasiScreen extends ConsumerWidget {
                     return ListTile(
                       onTap: () {
                         _dibaca(ref, n);
-                        // Kabar permintaan membuka permintaannya; yang lain
-                        // cukup ditandai dibaca.
-                        if (n.tautanTipe == 'pelanggan_permintaan' &&
-                            n.tautanId != null) {
+                        // Tautan → layar tujuannya; yang tanpa tautan cukup
+                        // ditandai dibaca.
+                        final tujuan = _tujuan(n);
+                        if (tujuan != null) {
                           Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  PermintaanDetailScreen(id: n.tautanId!),
-                            ),
+                            MaterialPageRoute<void>(builder: (_) => tujuan),
                           );
                         }
                       },

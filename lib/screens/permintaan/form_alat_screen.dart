@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../../models/permintaan.dart';
+import '../../widgets/foto_pelat.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
 
@@ -38,6 +41,8 @@ class _FormAlatScreenState extends State<FormAlatScreen> {
   );
   late final _lokasi = TextEditingController(text: widget.awal?.lokasi);
   late final _catatan = TextEditingController(text: widget.awal?.catatan);
+
+  late List<Uint8List> _foto = List.of(widget.awal?.foto ?? const []);
 
   Map<String, String> _galat = const {};
 
@@ -99,6 +104,7 @@ class _FormAlatScreenState extends State<FormAlatScreen> {
       resolusi: angka('resolusi', _resolusi),
       lokasi: isi(_lokasi),
       catatan: isi(_catatan),
+      foto: List.of(_foto),
     );
     final galat = {...alat.galat(), ...galatAngka};
     setState(() => _galat = galat);
@@ -197,7 +203,12 @@ class _FormAlatScreenState extends State<FormAlatScreen> {
             bantu: 'Membantu teknisi menemukan alatnya.',
           ),
           _isian(_catatan, 'Catatan (opsional)', 'catatan', baris: 3),
-          const SizedBox(height: 8),
+          const JudulSeksi('Foto pelat nama'),
+          GridFotoLokal(
+            foto: _foto,
+            onBerubah: (f) => setState(() => _foto = f),
+          ),
+          const SizedBox(height: 16),
           SidikTombol(
             label: 'Simpan alat',
             ragam: RagamTombol.utama,

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 
 import 'konfigurasi.dart';
 
@@ -118,11 +119,17 @@ class ApiPelanggan {
 
   /// Unduh berkas (PDF sertifikat) sebagai byte — lewat header Bearer yang
   /// sama. Tidak bisa diserahkan ke peramban: peramban tidak membawa token.
-  Future<Uint8List> unduh(String jalur) async {
+  ///
+  /// [terima] = tipe berkas yang diharapkan (`application/pdf` bawaan,
+  /// `image/*` untuk foto pelat nama).
+  Future<Uint8List> unduh(
+    String jalur, {
+    String terima = 'application/pdf',
+  }) async {
     final http.Response r;
     try {
       r = await _klien
-          .get(_uri(jalur), headers: {..._header, 'Accept': 'application/pdf'})
+          .get(_uri(jalur), headers: {..._header, 'Accept': terima})
           .timeout(const Duration(seconds: 60));
     } on SocketException {
       throw GalatApi.jaringan();
@@ -135,12 +142,39 @@ class ApiPelanggan {
     throw _galatDari(r);
   }
 
+  /// Unggah satu berkas sebagai multipart (bidang [bidang], mis. `foto`).
+  /// `Content-Type` sengaja TIDAK dipasang: `MultipartRequest` menulis sendiri
+  /// dengan batas (boundary) yang benar.
+  Future<Map<String, dynamic>> unggah(
+    String jalur,
+    Uint8List byte, {
+    String bidang = 'foto',
+    String namaBerkas = 'foto.jpg',
+    String tipe = 'image/jpeg',
+  }) => _kirim(() async {
+    final req = http.MultipartRequest('POST', _uri(jalur))
+      ..headers.addAll({
+        for (final e in _header.entries)
+          if (e.key != 'Content-Type') e.key: e.value,
+      })
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          bidang,
+          byte,
+          filename: namaBerkas,
+          contentType: MediaType.parse(tipe),
+        ),
+      );
+    return http.Response.fromStream(await _klien.send(req));
+  }, batas: const Duration(seconds: 60));
+
   Future<Map<String, dynamic>> _kirim(
-    Future<http.Response> Function() aksi,
-  ) async {
+    Future<http.Response> Function() aksi, {
+    Duration batas = Konfigurasi.batasWaktu,
+  }) async {
     final http.Response r;
     try {
-      r = await aksi().timeout(Konfigurasi.batasWaktu);
+      r = await aksi().timeout(batas);
     } on SocketException {
       throw GalatApi.jaringan();
     } on TimeoutException {
