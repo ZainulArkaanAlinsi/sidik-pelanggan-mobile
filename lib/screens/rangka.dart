@@ -5,7 +5,7 @@ import '../providers/sinkron_provider.dart';
 import 'akun/akun_screen.dart';
 import 'alat/alat_screen.dart';
 import 'beranda/beranda_screen.dart';
-import 'paket/paket_screen.dart';
+import 'permintaan/permintaan_screen.dart';
 import 'sertifikat/sertifikat_screen.dart';
 
 /// Tab yang sedang aktif — dipegang provider supaya beranda bisa melompat ke
@@ -35,17 +35,23 @@ class SaringanAwal extends Notifier<({String? saring, int urutan})> {
   void atur(String? s) => state = (saring: s, urutan: state.urutan + 1);
 }
 
-/// Rangka lima tab. Lima tujuan ini SEMUA yang dilakukan pelanggan: tahu
-/// kondisi (Beranda), cek alat, ambil sertifikat, lacak paket, urus akun.
-/// Notifikasi bukan tab — dia lonceng di kanan atas beranda.
+/// Rangka lima tab: tahu kondisi (Beranda), cek alat, AJUKAN & pantau
+/// permintaan, ambil sertifikat, urus akun. Notifikasi bukan tab — dia lonceng
+/// di kanan atas beranda.
+///
+/// Permintaan menggantikan tab Paket, bukan menambah tab keenam: bilah bawah
+/// Material maksimal lima tujuan, dan paket memang kelanjutan permintaan yang
+/// diterima. Pelacakan paket tetap utuh — dari ikon truk di layar Permintaan,
+/// kartu "Paket di lab" di Beranda, dan tombol "Lacak paket" di detail
+/// permintaan yang sudah diterima.
 class Rangka extends ConsumerWidget {
   const Rangka({super.key});
 
   static const _tab = <Widget>[
     BerandaScreen(),
     AlatScreen(),
+    PermintaanScreen(),
     SertifikatScreen(),
-    PaketScreen(),
     AkunScreen(),
   ];
 
@@ -72,14 +78,14 @@ class Rangka extends ConsumerWidget {
             label: 'Alat',
           ),
           NavigationDestination(
+            icon: Icon(Icons.assignment_outlined),
+            selectedIcon: Icon(Icons.assignment),
+            label: 'Permintaan',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.description_outlined),
             selectedIcon: Icon(Icons.description),
             label: 'Sertifikat',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.local_shipping_outlined),
-            selectedIcon: Icon(Icons.local_shipping),
-            label: 'Paket',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

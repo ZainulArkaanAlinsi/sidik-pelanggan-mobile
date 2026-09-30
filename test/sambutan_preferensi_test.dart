@@ -189,24 +189,7 @@ void main() {
       );
       expect(grup.groupValue, ThemeMode.dark);
     });
-
-    testWidgets('sakelar notifikasi dimatikan dan diberi penjelasan', (
-      tester,
-    ) async {
-      final perangkat = _PerangkatMemori()..isi['sambutan'] = '1';
-      await tester.pumpWidget(_aplikasi(perangkat));
-      await tester.pumpAndSettle();
-      await bukaPreferensi(tester);
-
-      final sakelar = tester.widgetList<SwitchListTile>(
-        find.byType(SwitchListTile),
-      );
-      expect(sakelar, isNotEmpty);
-      expect(sakelar.every((s) => s.onChanged == null), isTrue);
-      expect(
-        find.textContaining('belum bisa diubah dari aplikasi'),
-        findsOneWidget,
-      );
-    });
+    // Sakelar notifikasi kini disimpan di server — ujinya di permintaan_test.dart
+    // (grup 'preferensi notifikasi') dengan layanan palsu.
   });
 }

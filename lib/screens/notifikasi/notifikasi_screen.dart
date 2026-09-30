@@ -7,6 +7,7 @@ import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/sesi_provider.dart';
 import '../../widgets/umum.dart';
+import '../permintaan/permintaan_detail_screen.dart';
 
 /// Kotak masuk. Yang belum dibaca diberi titik biru di kiri, bukan latar
 /// berwarna — latar berwarna di sepuluh baris sekaligus cuma jadi bising.
@@ -69,7 +70,20 @@ class NotifikasiScreen extends ConsumerWidget {
                   itemBuilder: (context, i) {
                     final n = h.isi[i];
                     return ListTile(
-                      onTap: () => _dibaca(ref, n),
+                      onTap: () {
+                        _dibaca(ref, n);
+                        // Kabar permintaan membuka permintaannya; yang lain
+                        // cukup ditandai dibaca.
+                        if (n.tautanTipe == 'pelanggan_permintaan' &&
+                            n.tautanId != null) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  PermintaanDetailScreen(id: n.tautanId!),
+                            ),
+                          );
+                        }
+                      },
                       leading: Container(
                         width: 10,
                         height: 10,

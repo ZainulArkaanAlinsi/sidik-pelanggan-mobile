@@ -9,6 +9,7 @@ import '../../widgets/umum.dart';
 import '../alat/alat_detail_screen.dart';
 import '../notifikasi/notifikasi_screen.dart';
 import '../paket/paket_detail_screen.dart';
+import '../paket/paket_screen.dart';
 import '../rangka.dart';
 import '../sertifikat/sertifikat_detail_screen.dart';
 
@@ -115,7 +116,11 @@ class _Isi extends ConsumerWidget {
               child: _Angka(
                 angka: b.paketBerjalan,
                 label: 'Paket di lab',
-                onTap: () => ref.read(tabProvider.notifier).pilih(3),
+                // Paket bukan tab lagi (tabnya dipakai Permintaan), jadi dibuka
+                // sebagai layar biasa.
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const PaketScreen()),
+                ),
               ),
             ),
           ],

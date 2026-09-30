@@ -50,7 +50,11 @@ kebenaran. Untuk menyalakan push:
 | Beranda | `GET /beranda` |
 | Alat, Detail alat | `GET /alat`, `GET /alat/{id}` |
 | Sertifikat, Detail, Unduh PDF | `GET /sertifikat`, `GET /sertifikat/{id}`, `GET /sertifikat/{id}/unduh` |
-| Paket, Detail paket | `GET /paket`, `GET /paket/{id}` |
+| Paket, Detail paket (dari ikon truk di Permintaan / kartu Beranda) | `GET /paket`, `GET /paket/{id}` |
+| Permintaan (tab Aktif/Selesai/Semua) | `GET /permintaan?saring=` |
+| Ajukan kalibrasi + Tambah alat | `POST /permintaan` (alat terdaftar dari `GET /alat`) |
+| Detail permintaan, batal, pesan ke lab | `GET /permintaan/{id}`, `POST /permintaan/{id}/batal`, `GET/POST /permintaan/{id}/pesan` |
+| Preferensi notifikasi (per perusahaan, di server) | `GET/PUT /preferensi-notifikasi` |
 | Notifikasi | `GET /notifikasi`, `POST /notifikasi/{id}/dibaca`, `POST /notifikasi/dibaca-semua` |
 | Anggota tim (undang/batal/nonaktifkan: PIC utama) | `GET /anggota`, `POST /anggota/undangan`, `DELETE /anggota/undangan/{id}`, `POST /anggota/{id}/nonaktifkan` |
 | Profil saya / Ganti sandi / Hapus akun | `PATCH /saya`, `POST /saya/ganti-sandi`, `DELETE /saya` |

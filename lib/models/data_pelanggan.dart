@@ -371,6 +371,8 @@ class Notifikasi {
     required this.kategori,
     required this.dibaca,
     this.dibuat,
+    this.tautanTipe,
+    this.tautanId,
   });
 
   final String id;
@@ -380,6 +382,11 @@ class Notifikasi {
   final bool dibaca;
   final DateTime? dibuat;
 
+  /// Tujuan ketukan (`{"tipe":"pelanggan_permintaan","id":12}`). Kosong untuk
+  /// notifikasi yang tidak punya layar tujuan.
+  final String? tautanTipe;
+  final int? tautanId;
+
   Notifikasi tandaiDibaca() => Notifikasi(
     id: id,
     judul: judul,
@@ -387,6 +394,8 @@ class Notifikasi {
     kategori: kategori,
     dibaca: true,
     dibuat: dibuat,
+    tautanTipe: tautanTipe,
+    tautanId: tautanId,
   );
 
   factory Notifikasi.dariJson(Map<String, dynamic> j) => Notifikasi(
@@ -396,6 +405,10 @@ class Notifikasi {
     kategori: '${j['kategori'] ?? 'umum'}',
     dibaca: j['dibaca'] == true,
     dibuat: Format.baca(j['dibuat_pada'] as String?),
+    tautanTipe: j['tautan'] is Map
+        ? (j['tautan'] as Map)['tipe'] as String?
+        : null,
+    tautanId: j['tautan'] is Map ? _int((j['tautan'] as Map)['id']) : null,
   );
 }
 

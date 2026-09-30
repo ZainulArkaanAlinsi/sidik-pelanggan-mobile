@@ -48,4 +48,8 @@ void segarkanSemua(Ref ref) {
   ref.invalidate(notifikasiProvider);
   ref.invalidate(jumlahBelumDibacaProvider);
   ref.invalidate(anggotaProvider);
+  ref.invalidate(daftarPermintaanProvider);
+  ref.invalidate(detailPermintaanProvider);
+  ref.invalidate(pesanPermintaanProvider);
+  ref.invalidate(preferensiProvider);
 }
