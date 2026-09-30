@@ -9,6 +9,7 @@ import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
 import '../gerbang.dart';
 import 'anggota_screen.dart';
+import 'preferensi_screen.dart';
 import 'profil_hapus_screen.dart';
 
 /// Akun: siapa saya, perusahaan aktif, anggota tim, sandi, keluar.
@@ -91,6 +92,18 @@ class AkunScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: const Icon(Icons.tune),
+                  title: const Text('Preferensi'),
+                  subtitle: const Text('Tema tampilan dan notifikasi'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const PreferensiScreen(),
+                    ),
+                  ),
+                ),
                 const Divider(height: 1, indent: 56),
                 ListTile(
                   leading: const Icon(Icons.lock_outline),
