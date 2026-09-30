@@ -100,6 +100,10 @@ class ApiPelanggan {
     ),
   );
 
+  Future<Map<String, dynamic>> put(String jalur, Object badan) => _kirim(
+    () => _klien.put(_uri(jalur), headers: _header, body: jsonEncode(badan)),
+  );
+
   Future<Map<String, dynamic>> patch(String jalur, Object badan) => _kirim(
     () => _klien.patch(_uri(jalur), headers: _header, body: jsonEncode(badan)),
   );

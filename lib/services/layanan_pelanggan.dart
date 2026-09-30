@@ -7,6 +7,7 @@ import '../core/api_pelanggan.dart';
 import '../models/akun.dart';
 import '../models/anggota.dart';
 import '../models/data_pelanggan.dart';
+import '../models/permintaan.dart';
 
 /// Hasil masuk / terima undangan: token + akunnya.
 class SesiBaru {
@@ -233,4 +234,53 @@ class LayananPelanggan {
 
   Future<void> nonaktifkanAnggota(int id) =>
       api.post('/anggota/$id/nonaktifkan');
+
+  // ── Permintaan kalibrasi ──────────────────────────────────────────────
+
+  /// [saring]: `aktif` | `selesai` | `semua`. Angka tab datang di
+  /// `meta.jumlah` dan tidak bergantung pada saringan.
+  Future<DaftarPermintaan> daftarPermintaan({String saring = 'aktif'}) async =>
+      DaftarPermintaan.dariJson(
+        await api.get('/permintaan', query: {'saring': saring}),
+      );
+
+  Future<Permintaan> permintaan(int id) async => Permintaan.dariJson(
+    (await api.get('/permintaan/$id'))['data'] as Map<String, dynamic>,
+  );
+
+  /// Badannya `draft.toJson()` — tidak pernah memuat `customer_id`.
+  Future<Permintaan> ajukanPermintaan(DraftPermintaan draft) async =>
+      Permintaan.dariJson(
+        (await api.post('/permintaan', draft.toJson()))['data']
+            as Map<String, dynamic>,
+      );
+
+  Future<Permintaan> batalkanPermintaan(int id) async => Permintaan.dariJson(
+    (await api.post('/permintaan/$id/batal'))['data'] as Map<String, dynamic>,
+  );
+
+  Future<UtasPesan> pesanPermintaan(int id) async =>
+      UtasPesan.dariJson(await api.get('/permintaan/$id/pesan'));
+
+  Future<PesanPermintaan> kirimPesan(int id, String isi) async =>
+      PesanPermintaan.dariJson(
+        (await api.post('/permintaan/$id/pesan', {'isi': isi.trim()}))['data']
+            as Map<String, dynamic>,
+      );
+
+  // ── Preferensi notifikasi (per anggota per perusahaan, di server) ─────
+
+  Future<PreferensiNotifikasi> preferensiNotifikasi() async =>
+      PreferensiNotifikasi.dariJson(
+        (await api.get('/preferensi-notifikasi'))['data']
+            as Map<String, dynamic>,
+      );
+
+  /// Kirim SEBAGIAN (satu ketukan = satu kunci); jawabannya seluruh set.
+  Future<PreferensiNotifikasi> simpanPreferensi(
+    Map<String, bool> perubahan,
+  ) async => PreferensiNotifikasi.dariJson(
+    (await api.put('/preferensi-notifikasi', perubahan))['data']
+        as Map<String, dynamic>,
+  );
 }
