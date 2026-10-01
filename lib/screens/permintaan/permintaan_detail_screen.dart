@@ -7,7 +7,9 @@ import '../../core/theme/sidik_material.dart';
 import '../../models/permintaan.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/sesi_provider.dart';
+import '../../widgets/foto_pelat.dart';
 import '../../widgets/permintaan.dart';
+import '../../widgets/resi.dart';
 import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_status.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
@@ -109,11 +111,30 @@ class _IsiState extends ConsumerState<_Isi> {
     }
   }
 
+  Future<void> _isiResi() async {
+    final p = widget.permintaan;
+    final hasil = await tampilkanIsiResi(
+      context,
+      awal: p.resi,
+      kirim: (kurir, nomor) =>
+          ref.read(layananProvider).isiResi(p.id, kurir, nomor),
+    );
+    if (hasil == null || !mounted) return;
+    ref.invalidate(detailPermintaanProvider(p.id));
+    ref.invalidate(daftarPermintaanProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Nomor resi tersimpan. Lab sudah diberi tahu.'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = widget.permintaan;
     final t = Theme.of(context).textTheme;
     final m = SidikMaterial.of(context);
+    final jadwal = barisJadwal(p.jadwal);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
@@ -123,7 +144,7 @@ class _IsiState extends ConsumerState<_Isi> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SidikLencana(statusPermintaan(p.status)),
+              SidikLencana(lencanaPermintaan(p)),
               const SizedBox(height: 10),
               BarisInfo('Cara pengantaran', p.metode?.label),
               BarisInfo(
@@ -137,6 +158,122 @@ class _IsiState extends ConsumerState<_Isi> {
             ],
           ),
         ),
+        if (p.perluTindakan && p.pesanTindakan != null) ...[
+          const SizedBox(height: 12),
+          Kertas(
+            warna: m.awasTipis,
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.priority_high, color: m.awas),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    p.pesanTindakan!,
+                    style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (p.progres != null && p.progres!.total > 0) ...[
+          const SizedBox(height: 12),
+          Kertas(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: p.progres!.selesai / p.progres!.total,
+                    minHeight: 8,
+                    backgroundColor: m.kertas2,
+                    color: m.lulus,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${p.progres!.selesai}/${p.progres!.total} alat selesai',
+                  style: t.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (jadwal != null) ...[
+          const JudulSeksi('Jadwal teknisi'),
+          Kertas(
+            padding: const EdgeInsets.all(jarak),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.event_outlined, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        jadwal,
+                        style: t.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (p.jadwal?.catatan != null) ...[
+                  const SizedBox(height: 6),
+                  Text(p.jadwal!.catatan!, style: t.bodySmall),
+                ],
+              ],
+            ),
+          ),
+        ],
+        if (p.bisaIsiResi || p.resi != null) ...[
+          const JudulSeksi('Pengiriman alat'),
+          Kertas(
+            padding: const EdgeInsets.all(jarak),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (p.resi != null) ...[
+                  BarisInfo('Kurir', p.resi!.kurir),
+                  BarisInfo('Nomor resi', p.resi!.nomor),
+                  if (p.resi!.diisiPada != null)
+                    BarisInfo('Diisi', Format.tanggalJam(p.resi!.diisiPada)),
+                ] else
+                  Text(
+                    'Belum ada nomor resi. Isi kalau alat sudah dikirim ke lab.',
+                    style: t.bodyMedium,
+                  ),
+                if (p.alatTiba != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Alat tiba di lab ${Format.tanggal(p.alatTiba)}.',
+                    style: t.bodySmall,
+                  ),
+                ],
+                if (p.bisaIsiResi) ...[
+                  const SizedBox(height: 10),
+                  SidikTombol(
+                    label: p.resi == null
+                        ? 'Isi nomor resi'
+                        : 'Ubah nomor resi',
+                    ikon: Icons.local_shipping_outlined,
+                    ragam: p.resi == null
+                        ? RagamTombol.utama
+                        : RagamTombol.biasa,
+                    penuh: true,
+                    onPressed: _isiResi,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
         if (p.status == StatusPermintaan.ditolak) ...[
           const JudulSeksi('Alasan dari lab'),
           Kertas(
@@ -171,25 +308,47 @@ class _IsiState extends ConsumerState<_Isi> {
             padding: const EdgeInsets.only(bottom: 10),
             child: Kertas(
               padding: const EdgeInsets.all(14),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(a.nama, style: t.titleSmall),
-                        Text(
-                          [
-                            a.merkModel,
-                            if (a.serial != null) 'SN ${a.serial}',
-                          ].where((s) => s.isNotEmpty).join(' · '),
-                          style: t.bodySmall,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(a.nama, style: t.titleSmall),
+                            Text(
+                              [
+                                a.merkModel,
+                                if (a.serial != null) 'SN ${a.serial}',
+                              ].where((s) => s.isNotEmpty).join(' · '),
+                              style: t.bodySmall,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      if (a.baru && a.alatId == null)
+                        Text('Alat baru', style: t.bodySmall),
+                    ],
                   ),
-                  if (a.baru && a.alatId == null)
-                    Text('Alat baru', style: t.bodySmall),
+                  // Selagi permintaan `baru`, foto alat baru masih bisa
+                  // ditambah/diganti (menyusul yang gagal saat mengajukan).
+                  if (a.baru &&
+                      a.alatId == null &&
+                      p.status == StatusPermintaan.baru) ...[
+                    const SizedBox(height: 10),
+                    GridFotoPelat(
+                      key: ValueKey('foto-alat-${a.id}'),
+                      awal: a.foto,
+                      unggah: (b) => ref
+                          .read(layananProvider)
+                          .unggahFotoItem(p.id, a.id, b),
+                    ),
+                  ] else if (a.foto.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    DeretanFoto(foto: a.foto),
+                  ],
                 ],
               ),
             ),

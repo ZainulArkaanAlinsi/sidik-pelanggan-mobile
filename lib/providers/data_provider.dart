@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/anggota.dart';
 import '../models/data_pelanggan.dart';
+import '../models/koreksi.dart';
 import '../models/permintaan.dart';
 import 'sesi_provider.dart';
 
@@ -52,6 +55,29 @@ final detailSertifikatProvider = FutureProvider.autoDispose
       _perusahaan(ref);
       return ref.watch(layananProvider).sertifikat(id);
     });
+
+/// Kunci: `menunggu` | `diterima` | `ditolak` | `semua`.
+final daftarKoreksiProvider = FutureProvider.autoDispose
+    .family<Halaman<Koreksi>, String>((ref, status) {
+      _perusahaan(ref);
+      return ref.watch(layananProvider).daftarKoreksi(status: status);
+    });
+
+final detailKoreksiProvider = FutureProvider.autoDispose.family<Koreksi, int>((
+  ref,
+  id,
+) {
+  _perusahaan(ref);
+  return ref.watch(layananProvider).koreksi(id);
+});
+
+/// Byte satu foto pelat nama. Isi foto tidak berubah untuk id yang sama, jadi
+/// tidak di-`autoDispose` dan tidak ikut disegarkan [segarkanSemua] — tapi
+/// tetap diikat ke perusahaan aktif supaya tidak ada foto PT lama tertinggal.
+final fotoByteProvider = FutureProvider.family<Uint8List, int>((ref, id) {
+  _perusahaan(ref);
+  return ref.watch(layananProvider).byteFoto(id);
+});
 
 /// `true` = paket yang sudah selesai; `false` = yang masih berjalan.
 final daftarPaketProvider = FutureProvider.autoDispose

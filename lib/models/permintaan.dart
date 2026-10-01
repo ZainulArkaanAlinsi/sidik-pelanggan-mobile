@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import '../core/format.dart';
+import 'data_pelanggan.dart' show FotoPelanggan;
 
 /// Bentuk data permintaan kalibrasi (`/permintaan`, `/permintaan/{id}/pesan`,
 /// `/preferensi-notifikasi`) — cermin `docs/perintah-frontend-permintaan.md`
@@ -66,6 +69,7 @@ class AlatPermintaan {
     this.merk,
     this.model,
     this.serial,
+    this.foto = const [],
   });
 
   /// Id BARIS permintaan — bukan id alat.
@@ -79,6 +83,9 @@ class AlatPermintaan {
   final String? model;
   final String? serial;
 
+  /// Foto pelat nama alat BARU (maks 3).
+  final List<FotoPelanggan> foto;
+
   String get merkModel =>
       [merk, model].where((s) => s != null && s.isNotEmpty).join(' · ');
 
@@ -90,7 +97,59 @@ class AlatPermintaan {
     merk: _teks(j['merk']),
     model: _teks(j['model']),
     serial: _teks(j['serial']),
+    foto: FotoPelanggan.daftar(j['foto']),
   );
+}
+
+/// Nomor resi yang diisi pelanggan untuk alat yang dikirim sendiri.
+class ResiPengiriman {
+  const ResiPengiriman({this.kurir, this.nomor, this.diisiPada});
+
+  final String? kurir;
+  final String? nomor;
+  final DateTime? diisiPada;
+
+  static ResiPengiriman? dariJson(Object? j) {
+    if (j is! Map) return null;
+    return ResiPengiriman(
+      kurir: _teks(j['kurir']),
+      nomor: _teks(j['nomor']),
+      diisiPada: Format.baca(j['diisi_pada'] as String?),
+    );
+  }
+}
+
+/// Jadwal kunjungan teknisi — diisi admin lab.
+class JadwalTeknisi {
+  const JadwalTeknisi({this.pada, this.lokasi, this.catatan});
+
+  final DateTime? pada;
+  final String? lokasi;
+  final String? catatan;
+
+  static JadwalTeknisi? dariJson(Object? j) {
+    if (j is! Map) return null;
+    return JadwalTeknisi(
+      pada: Format.baca(j['pada'] as String?),
+      lokasi: _teks(j['lokasi']),
+      catatan: _teks(j['catatan']),
+    );
+  }
+}
+
+class ProgresPermintaan {
+  const ProgresPermintaan({required this.selesai, required this.total});
+
+  final int selesai;
+  final int total;
+
+  static ProgresPermintaan? dariJson(Object? j) {
+    if (j is! Map) return null;
+    return ProgresPermintaan(
+      selesai: _int(j['selesai']) ?? 0,
+      total: _int(j['total']) ?? 0,
+    );
+  }
 }
 
 class Permintaan {
@@ -113,6 +172,14 @@ class Permintaan {
     this.alat = const [],
     this.paketId,
     this.paketNomor,
+    this.tahap,
+    this.tahapLabel,
+    this.resi,
+    this.jadwal,
+    this.alatTiba,
+    this.progres,
+    this.perluTindakan = false,
+    this.pesanTindakan,
   });
 
   final int id;
@@ -141,6 +208,25 @@ class Permintaan {
   final int? paketId;
   final String? paketNomor;
 
+  /// Tahap rinci dari server (`menunggu_alat`, `dalam_pengiriman`,
+  /// `teknisi_dijadwalkan`, …) dan labelnya yang siap tampil. Server lama
+  /// tidak mengirimnya → `null`, layar jatuh ke [status].
+  final String? tahap;
+  final String? tahapLabel;
+  final ResiPengiriman? resi;
+  final JadwalTeknisi? jadwal;
+  final DateTime? alatTiba;
+  final ProgresPermintaan? progres;
+
+  /// Keputusan server: pelanggan diminta berbuat sesuatu (mis. isi resi).
+  final bool perluTindakan;
+  final String? pesanTindakan;
+
+  /// Sheet "Isi nomor resi" hanya di dua tahap ini; syarat lainnya
+  /// (`diantar_sendiri`, alat belum tiba) dijaga server dengan 422.
+  bool get bisaIsiResi =>
+      tahap == 'menunggu_alat' || tahap == 'dalam_pengiriman';
+
   factory Permintaan.dariJson(Map<String, dynamic> j) {
     final paket = j['paket'];
     return Permintaan(
@@ -165,6 +251,14 @@ class Permintaan {
       ],
       paketId: paket is Map ? _int(paket['id']) : null,
       paketNomor: paket is Map ? _teks(paket['nomor']) : null,
+      tahap: _teks(j['tahap']),
+      tahapLabel: _teks(j['tahap_label']),
+      resi: ResiPengiriman.dariJson(j['resi']),
+      jadwal: JadwalTeknisi.dariJson(j['jadwal']),
+      alatTiba: Format.baca(j['alat_tiba_pada'] as String?),
+      progres: ProgresPermintaan.dariJson(j['progres']),
+      perluTindakan: j['perlu_tindakan'] == true,
+      pesanTindakan: _teks(j['pesan_tindakan']),
     );
   }
 }
@@ -303,8 +397,8 @@ class PreferensiNotifikasi {
 
 // ── Formulir ajukan ──────────────────────────────────────────────────────
 
-/// Alat yang belum terdaftar — isian mengikuti PL_Form_Alat. Foto pelat nama
-/// belum ada karena server belum punya endpoint unggahnya.
+/// Alat yang belum terdaftar — isian mengikuti PL_Form_Alat, termasuk foto
+/// pelat nama (maks 3, diunggah sesudah permintaan terkirim).
 class AlatBaru {
   const AlatBaru({
     required this.namaAlat,
@@ -318,6 +412,7 @@ class AlatBaru {
     this.resolusi,
     this.lokasi,
     this.catatan,
+    this.foto = const [],
   });
 
   final String namaAlat;
@@ -331,6 +426,13 @@ class AlatBaru {
   final double? resolusi;
   final String? lokasi;
   final String? catatan;
+
+  /// Foto pelat nama (sudah dikompres, maks 3). TIDAK ikut [toJson]: alat baru
+  /// baru punya id setelah `POST /permintaan`, jadi fotonya diunggah sesudahnya
+  /// ke `/permintaan/{id}/item/{item}/foto`.
+  final List<Uint8List> foto;
+
+  static const maksFoto = 3;
 
   /// Galat per kolom menurut kontrak §2.3. Kunci = nama kolom API.
   Map<String, String> galat() {

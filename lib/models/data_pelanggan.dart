@@ -5,6 +5,47 @@ import '../core/format.dart';
 
 int? _int(Object? v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}');
 
+/// Angka dari server bisa datang sebagai string desimal (`"0.01000000"` dari
+/// MySQL). Untuk ditampilkan/diedit: buang nol di belakang koma, pakai koma.
+String? angkaRapi(Object? v) {
+  if (v == null) return null;
+  final n = v is num ? v.toDouble() : double.tryParse('$v'.trim());
+  if (n == null) {
+    final t = '$v'.trim();
+    return t.isEmpty ? null : t;
+  }
+  var t = n == n.roundToDouble() ? n.toInt().toString() : n.toString();
+  if (t.contains('.') && t.contains('e') == false) {
+    t = t.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+  }
+  return t.replaceAll('.', ',');
+}
+
+String? _teksBersih(Object? v) {
+  final s = v == null ? null : '$v'.trim();
+  return s == null || s.isEmpty ? null : s;
+}
+
+/// Foto pelat nama. [url] absolut ke `GET /foto/{id}` — BUKAN URL publik;
+/// gambarnya diunduh dengan header Bearer + `X-Perusahaan-Id`.
+class FotoPelanggan {
+  const FotoPelanggan({required this.id, this.url});
+
+  final int id;
+  final String? url;
+
+  static FotoPelanggan? dariJson(Object? j) {
+    if (j is! Map) return null;
+    final id = _int(j['id']);
+    if (id == null) return null;
+    return FotoPelanggan(id: id, url: j['url'] as String?);
+  }
+
+  static List<FotoPelanggan> daftar(Object? j) => [
+    for (final x in (j as List? ?? const [])) ?FotoPelanggan.dariJson(x),
+  ];
+}
+
 // ── Alat ─────────────────────────────────────────────────────────────────
 
 enum StatusKalibrasi {
@@ -71,6 +112,15 @@ class Alat {
     required this.status,
     this.sertifikatTerakhir,
     this.riwayat = const [],
+    this.rentangMin,
+    this.rentangMaks,
+    this.satuan,
+    this.resolusi,
+    this.catatan,
+    this.terkunci = false,
+    this.fieldTerkunci = const [],
+    this.foto = const [],
+    this.koreksiMenungguId,
   });
 
   final int id;
@@ -88,6 +138,21 @@ class Alat {
   final RingkasSertifikat? sertifikatTerakhir;
   final List<Sertifikat> riwayat;
 
+  /// Nilai mentah untuk formulir ubah (teks rapi, koma desimal).
+  final String? rentangMin;
+  final String? rentangMaks;
+  final String? satuan;
+  final String? resolusi;
+  final String? catatan;
+
+  /// Sudah punya sertifikat terbit → identitas cuma bisa dikoreksi lewat lab.
+  final bool terkunci;
+  final List<String> fieldTerkunci;
+  final List<FotoPelanggan> foto;
+
+  /// Id koreksi alat ini yang sedang ditinjau lab, kalau ada.
+  final int? koreksiMenungguId;
+
   String get merkModel =>
       [merk, model].where((s) => s != null && s.isNotEmpty).join(' · ');
 
@@ -95,9 +160,11 @@ class Alat {
     final r = j['rentang'];
     String? rentang;
     if (r is Map && (r['min'] != null || r['max'] != null)) {
-      rentang = '${r['min'] ?? '?'} – ${r['max'] ?? '?'} ${r['satuan'] ?? ''}'
-          .trim();
+      rentang =
+          '${angkaRapi(r['min']) ?? '?'} – ${angkaRapi(r['max']) ?? '?'} ${r['satuan'] ?? ''}'
+              .trim();
     }
+    final kunci = j['koreksi_menunggu'];
     return Alat(
       id: _int(j['id']) ?? 0,
       nama: '${j['nama'] ?? '-'}',
@@ -118,11 +185,43 @@ class Alat {
         for (final s in (j['riwayat_sertifikat'] as List? ?? const []))
           Sertifikat.dariJson(s as Map<String, dynamic>),
       ],
+      rentangMin: r is Map ? angkaRapi(r['min']) : null,
+      rentangMaks: r is Map ? angkaRapi(r['max']) : null,
+      satuan: r is Map ? _teksBersih(r['satuan']) : null,
+      resolusi: angkaRapi(j['resolusi']),
+      catatan: _teksBersih(j['catatan']),
+      terkunci: j['terkunci'] == true,
+      fieldTerkunci: [
+        for (final f in (j['field_terkunci'] as List? ?? const [])) '$f',
+      ],
+      foto: FotoPelanggan.daftar(j['foto']),
+      koreksiMenungguId: kunci is Map ? _int(kunci['id']) : null,
     );
   }
 }
 
 // ── Sertifikat ───────────────────────────────────────────────────────────
+
+/// Status dokumen sertifikat. Dihitung server; kode yang belum dikenal jatuh
+/// ke [berlaku] supaya layar tidak pecah kalau server menambah status.
+enum StatusDokumen {
+  berlaku,
+  digantikan,
+  dibatalkan;
+
+  static StatusDokumen? dariApi(String? kode) => switch (kode) {
+    'berlaku' => berlaku,
+    'digantikan' => digantikan,
+    'dibatalkan' => dibatalkan,
+    _ => null,
+  };
+
+  String get label => switch (this) {
+    berlaku => 'Berlaku',
+    digantikan => 'Digantikan',
+    dibatalkan => 'Dibatalkan',
+  };
+}
 
 class Sertifikat {
   const Sertifikat({
@@ -142,6 +241,12 @@ class Sertifikat {
     this.tautanVerifikasi,
     this.rincian = const {},
     this.penandaTangan,
+    this.status = StatusDokumen.berlaku,
+    this.dibatalkanPada,
+    this.catatanPelanggan,
+    this.bisaMintaKoreksi = false,
+    this.koreksiMenungguId,
+    this.dataCetak,
   });
 
   final int id;
@@ -162,8 +267,20 @@ class Sertifikat {
   final String? tautanVerifikasi;
   final Map<String, String> rincian;
   final String? penandaTangan;
+  final StatusDokumen status;
+  final DateTime? dibatalkanPada;
 
-  bool get digantikan => digantikanOleh != null;
+  /// Catatan lab untuk pelanggan (pada `digantikan`: catatan revisinya; pada
+  /// `dibatalkan`: catatan pembatalan).
+  final String? catatanPelanggan;
+  final bool bisaMintaKoreksi;
+  final int? koreksiMenungguId;
+
+  /// Nilai yang TERCETAK — isian awal formulir minta koreksi. Hanya di detail.
+  final Map<String, String>? dataCetak;
+
+  bool get digantikan => status == StatusDokumen.digantikan;
+  bool get dibatalkan => status == StatusDokumen.dibatalkan;
 
   factory Sertifikat.dariJson(Map<String, dynamic> j) {
     final alat = (j['alat'] as Map?) ?? const {};
@@ -184,6 +301,9 @@ class Sertifikat {
       }
     }
     final ttd = j['penanda_tangan'];
+    final cetak = j['data_cetak'];
+    final kunci = j['koreksi_menunggu'];
+    final pengganti = RingkasSertifikat.dariJson(j['digantikan_oleh']);
     return Sertifikat(
       id: _int(j['id']) ?? 0,
       nomor: '${j['nomor'] ?? ''}',
@@ -196,7 +316,23 @@ class Sertifikat {
       model: alat['model'] as String?,
       serial: alat['serial'] as String?,
       revisiDari: (j['revisi_dari'] as Map?)?['nomor'] as String?,
-      digantikanOleh: RingkasSertifikat.dariJson(j['digantikan_oleh']),
+      digantikanOleh: pengganti,
+      // Server lama tidak mengirim `status`: yang punya pengganti = digantikan.
+      status:
+          StatusDokumen.dariApi(j['status'] as String?) ??
+          (pengganti != null
+              ? StatusDokumen.digantikan
+              : StatusDokumen.berlaku),
+      dibatalkanPada: Format.baca(j['dibatalkan_pada'] as String?),
+      catatanPelanggan: _teksBersih(j['catatan_pelanggan']),
+      bisaMintaKoreksi: j['bisa_minta_koreksi'] == true,
+      koreksiMenungguId: kunci is Map ? _int(kunci['id']) : null,
+      dataCetak: cetak is Map
+          ? {
+              for (final e in cetak.entries)
+                if (e.value != null) '${e.key}': '${e.value}',
+            }
+          : null,
       bisaDiunduh: j['bisa_diunduh'] == true,
       tautanVerifikasi: j['tautan_verifikasi'] as String?,
       rincian: rincian,

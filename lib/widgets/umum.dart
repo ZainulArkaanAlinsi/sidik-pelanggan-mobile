@@ -4,6 +4,7 @@ import '../core/api_pelanggan.dart';
 import '../core/format.dart';
 import '../core/theme/sidik_material.dart';
 import '../models/data_pelanggan.dart';
+import 'koreksi.dart' show statusDokumen;
 import 'sidik/sidik_permukaan.dart';
 import 'sidik/sidik_status.dart';
 import 'sidik/sidik_tombol.dart';
@@ -294,7 +295,21 @@ class KartuSertifikat extends StatelessWidget {
               ],
             ),
           ),
-          if (vonis != null) ...[const SizedBox(width: 8), SidikLencana(vonis)],
+          if (vonis != null || sertifikat.status != StatusDokumen.berlaku) ...[
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (sertifikat.status != StatusDokumen.berlaku)
+                  SidikLencana(statusDokumen(sertifikat.status)),
+                if (vonis != null && !sertifikat.dibatalkan) ...[
+                  if (sertifikat.status != StatusDokumen.berlaku)
+                    const SizedBox(height: 4),
+                  SidikLencana(vonis),
+                ],
+              ],
+            ),
+          ],
         ],
       ),
     );

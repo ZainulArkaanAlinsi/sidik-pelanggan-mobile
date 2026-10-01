@@ -11,6 +11,7 @@ import '../../providers/sesi_provider.dart';
 import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
+import 'foto_susulan_screen.dart';
 import 'form_alat_screen.dart';
 import 'permintaan_detail_screen.dart';
 import 'pilih_alat_screen.dart';
@@ -130,11 +131,15 @@ class _AjukanScreenState extends ConsumerState<AjukanScreen> {
           content: Text('Permintaan terkirim. Tim lab akan meninjaunya.'),
         ),
       );
-      // Ganti layar ini dengan detail, supaya "kembali" dari detail mendarat
-      // di daftar dan bukan di formulir yang sudah terkirim.
+      // Foto pelat nama menyusul: alat baru baru punya id sesudah POST.
+      final susulan = petakanFotoAlatBaru(p, draft.alatBaru);
+      // Ganti layar ini dengan detail (atau layar unggah foto), supaya
+      // "kembali" mendarat di daftar dan bukan di formulir yang sudah terkirim.
       navigator.pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => PermintaanDetailScreen(id: p.id),
+          builder: (_) => susulan.isEmpty
+              ? PermintaanDetailScreen(id: p.id)
+              : FotoSusulanScreen(permintaan: p, kelompok: susulan),
         ),
       );
     } on GalatApi catch (e) {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
@@ -7,6 +8,7 @@ import '../core/api_pelanggan.dart';
 import '../models/akun.dart';
 import '../models/anggota.dart';
 import '../models/data_pelanggan.dart';
+import '../models/koreksi.dart';
 import '../models/permintaan.dart';
 
 /// Hasil masuk / terima undangan: token + akunnya.
@@ -156,6 +158,84 @@ class LayananPelanggan {
     (await api.get('/alat/$id'))['data'] as Map<String, dynamic>,
   );
 
+  /// Ubah alat. Kirim HANYA kolom yang berubah: `lokasi`, `catatan`, dan —
+  /// selama alat belum terkunci — kolom identitas. Kolom terkunci dijawab
+  /// 422 `kode: field_terkunci`.
+  Future<Alat> ubahAlat(int id, Map<String, Object?> badan) async =>
+      Alat.dariJson(
+        (await api.patch('/alat/$id', badan))['data'] as Map<String, dynamic>,
+      );
+
+  /// Minta lab mengoreksi identitas alat yang sudah terkunci.
+  Future<Koreksi> mintaKoreksiAlat(
+    int id,
+    Map<String, Object?> perubahan, {
+    String? catatan,
+  }) async => Koreksi.dariJson(
+    (await api.post('/alat/$id/minta-koreksi', {
+          'perubahan': perubahan,
+          if (catatan != null && catatan.trim().isNotEmpty)
+            'catatan': catatan.trim(),
+        }))['data']
+        as Map<String, dynamic>,
+  );
+
+  Future<Koreksi> mintaKoreksiSertifikat(
+    int id,
+    Map<String, Object?> perubahan, {
+    String? catatan,
+  }) async => Koreksi.dariJson(
+    (await api.post('/sertifikat/$id/minta-koreksi', {
+          'perubahan': perubahan,
+          if (catatan != null && catatan.trim().isNotEmpty)
+            'catatan': catatan.trim(),
+        }))['data']
+        as Map<String, dynamic>,
+  );
+
+  // ── Foto pelat nama ───────────────────────────────────────────────────
+
+  FotoPelanggan _foto(Map<String, dynamic> b) =>
+      FotoPelanggan.dariJson(b['data'])!;
+
+  Future<FotoPelanggan> unggahFotoAlat(int alatId, Uint8List byte) async =>
+      _foto(await api.unggah('/alat/$alatId/foto', byte));
+
+  Future<FotoPelanggan> unggahFotoItem(
+    int permintaanId,
+    int itemId,
+    Uint8List byte,
+  ) async => _foto(
+    await api.unggah('/permintaan/$permintaanId/item/$itemId/foto', byte),
+  );
+
+  Future<FotoPelanggan> unggahFotoKoreksi(
+    int koreksiId,
+    Uint8List byte,
+  ) async => _foto(await api.unggah('/koreksi/$koreksiId/foto', byte));
+
+  Future<void> hapusFoto(int id) => api.delete('/foto/$id');
+
+  /// Byte gambar. Lewat header Bearer + `X-Perusahaan-Id` yang sama dengan
+  /// panggilan API lain — `url` di respons BUKAN alamat publik.
+  Future<Uint8List> byteFoto(int id) =>
+      api.unduh('/foto/$id', terima: 'image/*');
+
+  // ── Koreksi ───────────────────────────────────────────────────────────
+
+  /// [status]: `menunggu` | `diterima` | `ditolak` | `semua` (bawaan server).
+  Future<Halaman<Koreksi>> daftarKoreksi({
+    String status = 'semua',
+    int halaman = 1,
+  }) async => Halaman.dariJson(
+    await api.get('/koreksi', query: {'status': status, 'page': '$halaman'}),
+    Koreksi.dariJson,
+  );
+
+  Future<Koreksi> koreksi(int id) async => Koreksi.dariJson(
+    (await api.get('/koreksi/$id'))['data'] as Map<String, dynamic>,
+  );
+
   Future<Halaman<Sertifikat>> daftarSertifikat({
     String? cari,
     bool termasukDigantikan = false,
@@ -252,6 +332,16 @@ class LayananPelanggan {
   Future<Permintaan> ajukanPermintaan(DraftPermintaan draft) async =>
       Permintaan.dariJson(
         (await api.post('/permintaan', draft.toJson()))['data']
+            as Map<String, dynamic>,
+      );
+
+  /// Isi / ganti nomor resi (boleh diulang selama alat belum ditandai tiba).
+  Future<Permintaan> isiResi(int id, String kurir, String nomorResi) async =>
+      Permintaan.dariJson(
+        (await api.post('/permintaan/$id/resi', {
+              'kurir': kurir.trim(),
+              'nomor_resi': nomorResi.trim(),
+            }))['data']
             as Map<String, dynamic>,
       );
 

@@ -50,6 +50,11 @@ kebenaran. Untuk menyalakan push:
 | Beranda | `GET /beranda` |
 | Alat, Detail alat | `GET /alat`, `GET /alat/{id}` |
 | Sertifikat, Detail, Unduh PDF | `GET /sertifikat`, `GET /sertifikat/{id}`, `GET /sertifikat/{id}/unduh` |
+| Status sertifikat (berlaku / digantikan / dibatalkan), minta koreksi | `POST /sertifikat/{id}/minta-koreksi` (unduh yang dibatalkan dijawab 410) |
+| Ubah alat (identitas terkunci sesudah sertifikat terbit), minta koreksi alat | `PATCH /alat/{id}`, `POST /alat/{id}/minta-koreksi` |
+| Foto pelat nama (maks 3, dikompres di HP, EXIF/GPS dibuang) | `POST /alat/{id}/foto`, `POST /permintaan/{id}/item/{item}/foto`, `POST /koreksi/{id}/foto`, `GET/DELETE /foto/{id}` |
+| Koreksi (Akun → Koreksi) | `GET /koreksi`, `GET /koreksi/{id}` |
+| Isi nomor resi | `POST /permintaan/{id}/resi` |
 | Paket, Detail paket (dari ikon truk di Permintaan / kartu Beranda) | `GET /paket`, `GET /paket/{id}` |
 | Permintaan (tab Aktif/Selesai/Semua) | `GET /permintaan?saring=` |
 | Ajukan kalibrasi + Tambah alat | `POST /permintaan` (alat terdaftar dari `GET /alat`) |

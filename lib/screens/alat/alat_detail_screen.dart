@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/theme/sidik_material.dart';
 import '../../providers/data_provider.dart';
+import '../../widgets/foto_pelat.dart';
 import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_status.dart';
 import '../../widgets/umum.dart';
+import '../koreksi/koreksi_detail_screen.dart';
 import '../sertifikat/sertifikat_detail_screen.dart';
+import 'ubah_alat_screen.dart';
 
 /// Detail satu alat: identitas, jadwal, lalu riwayat sertifikatnya.
 class AlatDetailScreen extends ConsumerWidget {
@@ -20,7 +24,19 @@ class AlatDetailScreen extends ConsumerWidget {
     final t = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: Text(async.value?.nama ?? 'Alat')),
+      appBar: AppBar(
+        title: Text(async.value?.nama ?? 'Alat'),
+        actions: [
+          if (async.value != null)
+            IconButton(
+              tooltip: 'Ubah alat',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => UbahAlatScreen(id: id)),
+              ),
+            ),
+        ],
+      ),
       body: async.when(
         loading: () => const Memuat(),
         error: (e, _) => KeadaanGalat(
@@ -58,6 +74,7 @@ class AlatDetailScreen extends ConsumerWidget {
                   BarisInfo('No. identifikasi', a.noIdentifikasi),
                   BarisInfo('Rentang ukur', a.rentang),
                   BarisInfo('Lokasi', a.lokasi),
+                  BarisInfo('Catatan', a.catatan),
                   BarisInfo(
                     'Kalibrasi terakhir',
                     Format.tanggal(a.kalibrasiTerakhir),
@@ -65,6 +82,47 @@ class AlatDetailScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            if (a.terkunci) ...[
+              const SizedBox(height: 10),
+              Kertas(
+                warna: SidikMaterial.of(context).awasTipis,
+                padding: const EdgeInsets.all(12),
+                onTap: a.koreksiMenungguId == null
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              KoreksiDetailScreen(id: a.koreksiMenungguId!),
+                        ),
+                      ),
+                child: Row(
+                  children: [
+                    Icon(
+                      a.koreksiMenungguId == null
+                          ? Icons.lock_outline
+                          : Icons.hourglass_empty,
+                      color: SidikMaterial.of(context).awas,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        a.koreksiMenungguId == null
+                            ? 'Identitas terkunci karena sudah tercetak di '
+                                  'sertifikat. Koreksi lewat tombol ubah.'
+                            : 'Koreksi sedang ditinjau lab',
+                        style: t.bodyMedium,
+                      ),
+                    ),
+                    if (a.koreksiMenungguId != null)
+                      const Icon(Icons.chevron_right),
+                  ],
+                ),
+              ),
+            ],
+            if (a.foto.isNotEmpty) ...[
+              const JudulSeksi('Foto pelat nama'),
+              DeretanFoto(foto: a.foto),
+            ],
             const JudulSeksi('Riwayat sertifikat'),
             if (a.riwayat.isEmpty)
               Text(

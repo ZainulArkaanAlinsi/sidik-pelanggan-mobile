@@ -1,0 +1,1415 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:image/image.dart' as img;
+import 'package:intl/date_symbol_data_local.dart';
+
+import 'package:sidik_pelanggan/core/api_pelanggan.dart';
+import 'package:sidik_pelanggan/core/penyimpan_sesi.dart';
+import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/models/data_pelanggan.dart';
+import 'package:sidik_pelanggan/models/koreksi.dart';
+import 'package:sidik_pelanggan/models/permintaan.dart';
+import 'package:sidik_pelanggan/providers/sesi_provider.dart';
+import 'package:sidik_pelanggan/screens/akun/preferensi_screen.dart';
+import 'package:sidik_pelanggan/screens/alat/ubah_alat_screen.dart';
+import 'package:sidik_pelanggan/screens/koreksi/koreksi_detail_screen.dart';
+import 'package:sidik_pelanggan/screens/koreksi/koreksi_screen.dart';
+import 'package:sidik_pelanggan/screens/notifikasi/notifikasi_screen.dart';
+import 'package:sidik_pelanggan/screens/permintaan/foto_susulan_screen.dart';
+import 'package:sidik_pelanggan/screens/permintaan/form_alat_screen.dart';
+import 'package:sidik_pelanggan/screens/permintaan/permintaan_detail_screen.dart';
+import 'package:sidik_pelanggan/screens/permintaan/permintaan_screen.dart';
+import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_detail_screen.dart';
+import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
+import 'package:sidik_pelanggan/services/pemilih_foto.dart';
+import 'package:sidik_pelanggan/widgets/minta_koreksi.dart';
+import 'package:sidik_pelanggan/widgets/sidik/sidik_tombol.dart';
+
+// ── Bentuk JSON kontrak (docs/perintah-frontend-revisi-koreksi.md §B) ──────
+
+Map<String, dynamic> _sert({
+  int id = 1,
+  String nomor = 'CAL/2026/09/0011',
+  String status = 'berlaku',
+  bool bisaDiunduh = true,
+  bool bisaMintaKoreksi = true,
+  Map<String, dynamic>? digantikanOleh,
+  String? dibatalkanPada,
+  String? catatan,
+  Map<String, dynamic>? koreksiMenunggu,
+}) => {
+  'id': id,
+  'nomor': nomor,
+  'status': status,
+  'diterbitkan_pada': '2026-09-16T02:00:00Z',
+  'berlaku_sampai': '2027-09-14',
+  'keputusan': 'PASS',
+  'alat': {
+    'id': 5,
+    'nama': 'pH Meter',
+    'merk': 'Hanna',
+    'model': 'HI2211',
+    'serial': 'HI2211-0491',
+  },
+  'digantikan_oleh': digantikanOleh,
+  'dibatalkan_pada': dibatalkanPada,
+  'catatan_pelanggan': catatan,
+  'bisa_diunduh': bisaDiunduh,
+  'bisa_minta_koreksi': bisaMintaKoreksi,
+  'koreksi_menunggu': koreksiMenunggu,
+  'data_cetak': {
+    'pemilik': 'PT Contoh Jaya',
+    'alamat': 'Jl. Contoh 1, Bandung',
+    'merk': 'Hanna',
+    'tipe': 'HI2211',
+    'nomor_seri': 'HI2211-0491',
+    'lokasi_kalibrasi': 'Lab PT Sidik',
+    'tanggal_kalibrasi': '2026-09-14',
+  },
+};
+
+Map<String, dynamic> _alat({
+  int id = 5,
+  bool terkunci = false,
+  List<Map<String, dynamic>> foto = const [],
+  Map<String, dynamic>? koreksiMenunggu,
+}) => {
+  'id': id,
+  'nama': 'pH Meter',
+  'merk': 'Hanna',
+  'model': 'HI2211',
+  'serial': 'HI2211-0491',
+  'no_identifikasi': 'QC-07',
+  'rentang': {'min': '0.00000000', 'max': '14.00000000', 'satuan': 'pH'},
+  'resolusi': '0.01000000',
+  'lokasi': 'Lantai 2',
+  'catatan': 'Elektroda baru.',
+  'status_kalibrasi': 'aman',
+  'terkunci': terkunci,
+  'field_terkunci': terkunci
+      ? [
+          'nama_alat',
+          'merk',
+          'model',
+          'serial_number',
+          'no_identifikasi',
+          'range_min',
+          'range_max',
+          'satuan',
+          'resolusi',
+        ]
+      : [],
+  'foto': foto,
+  'koreksi_menunggu': koreksiMenunggu,
+  'sertifikat_terakhir': {
+    'id': 1,
+    'nomor': 'CAL/2025/09/0088',
+    'diterbitkan_pada': '2025-09-16T02:00:00Z',
+    'berlaku_sampai': '2026-09-14',
+  },
+  'riwayat_sertifikat': <dynamic>[],
+};
+
+Map<String, dynamic> _koreksi({
+  int id = 7,
+  String jenis = 'alat',
+  String status = 'menunggu',
+  String? tanggapan,
+  Map<String, dynamic>? revisi,
+  List<Map<String, dynamic>> foto = const [],
+}) => {
+  'id': id,
+  'jenis': jenis,
+  'status': status,
+  'diajukan_oleh': {'nama': 'Budi'},
+  'diajukan_pada': '2026-10-01T02:15:00Z',
+  'alat': {'id': 5, 'nama': 'pH Meter', 'serial': 'HI2211-0491'},
+  'sertifikat': jenis == 'sertifikat'
+      ? {'id': 1, 'nomor': 'CAL/2026/09/0011'}
+      : null,
+  'perubahan': [
+    {
+      'field': 'serial_number',
+      'label': 'Nomor seri',
+      'lama': 'HI2211-0491',
+      'baru': 'HI2211-0419',
+    },
+  ],
+  'catatan': 'Tertukar dua digit.',
+  'foto': foto,
+  'tanggapan': tanggapan,
+  'ditinjau_pada': status == 'menunggu' ? null : '2026-10-02T03:00:00Z',
+  'revisi': revisi,
+};
+
+Map<String, dynamic> _permintaan({
+  int id = 12,
+  String tahap = 'menunggu_alat',
+  String tahapLabel = 'Menunggu alat tiba',
+  bool perluTindakan = true,
+  Map<String, dynamic>? resi,
+  Map<String, dynamic>? jadwal,
+  Map<String, dynamic>? progres,
+  List<Map<String, dynamic>> fotoBaru = const [],
+}) => {
+  'id': id,
+  'nomor': 'PMT/2026/09/00$id',
+  'status': 'diterima',
+  'metode_pengantaran': 'diantar_sendiri',
+  'diajukan_pada': '2026-09-22T02:00:00Z',
+  'dapat_dibatalkan': false,
+  'percakapan_terbuka': true,
+  'jumlah_alat': 2,
+  'alat': [
+    {
+      'id': 31,
+      'alat_id': 88,
+      'baru': false,
+      'nama': 'Timbangan Ohaus',
+      'foto': <dynamic>[],
+    },
+    {
+      'id': 32,
+      'alat_id': null,
+      'baru': true,
+      'nama': 'pH Meter',
+      'foto': fotoBaru,
+    },
+  ],
+  'tahap': tahap,
+  'tahap_label': tahapLabel,
+  'perlu_tindakan': perluTindakan,
+  'pesan_tindakan': perluTindakan
+      ? 'Kirim alatnya ke lab, lalu isi nomor resi.'
+      : null,
+  'resi': resi,
+  'jadwal': jadwal,
+  'progres': progres,
+};
+
+/// Ada penanda `Exif\0\0` (segmen APP1) di dalam byte JPEG.
+bool _adaExif(Uint8List b) {
+  const penanda = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00];
+  for (var i = 0; i <= b.length - penanda.length; i++) {
+    var cocok = true;
+    for (var j = 0; j < penanda.length; j++) {
+      if (b[i + j] != penanda[j]) {
+        cocok = false;
+        break;
+      }
+    }
+    if (cocok) return true;
+  }
+  return false;
+}
+
+final _png = Uint8List.fromList(img.encodePng(img.Image(width: 4, height: 4)));
+
+// ── Fakes ──────────────────────────────────────────────────────────────────
+
+class _PemilihPalsu extends PemilihFoto {
+  _PemilihPalsu();
+
+  int diambil = 0;
+
+  @override
+  Future<Uint8List?> ambil(SumberFoto sumber) async {
+    diambil++;
+    return _png;
+  }
+}
+
+class _Palsu extends LayananPelanggan {
+  _Palsu() : super(ApiPelanggan());
+
+  Sertifikat? Function(int id) sertifikatPer = (id) => null;
+  Map<String, dynamic> alatJson = _alat();
+  Permintaan detailPermintaan = Permintaan.dariJson(_permintaan());
+  DaftarPermintaan daftarP = DaftarPermintaan.dariJson({'data': []});
+  Halaman<Koreksi> daftarK = Halaman.dariJson(const {
+    'data': [],
+  }, Koreksi.dariJson);
+  Koreksi detailKoreksi = Koreksi.dariJson(_koreksi());
+
+  final ubahAlatBody = <Map<String, Object?>>[];
+  final koreksiAlat = <Map<String, Object?>>[];
+  final koreksiSertifikat = <Map<String, Object?>>[];
+  final resi = <(String, String)>[];
+  final fotoAlatUnggah = <int>[];
+  final fotoItemUnggah = <(int, int)>[];
+  final fotoDihapus = <int>[];
+  final statusKoreksiDiminta = <String>[];
+
+  /// Galat yang dilempar SEKALI oleh pemanggilan berikutnya.
+  Object? galatUbah;
+  Object? galatKoreksi;
+  Object? galatResi;
+  Object? galatFoto;
+  Object? galatUnduh;
+
+  @override
+  Future<Sertifikat> sertifikat(int id) async {
+    final s = sertifikatPer(id);
+    if (s == null) throw const GalatApi(status: 404, pesan: 'Tidak ada.');
+    return s;
+  }
+
+  @override
+  Future<String> unduhDanBukaPdf(Sertifikat s) async {
+    if (galatUnduh != null) throw galatUnduh!;
+    return '/tmp/x.pdf';
+  }
+
+  @override
+  Future<Alat> alat(int id) async => Alat.dariJson(alatJson);
+
+  @override
+  Future<Alat> ubahAlat(int id, Map<String, Object?> badan) async {
+    ubahAlatBody.add(badan);
+    if (galatUbah != null) {
+      final g = galatUbah!;
+      galatUbah = null;
+      throw g;
+    }
+    return Alat.dariJson(alatJson);
+  }
+
+  @override
+  Future<Koreksi> mintaKoreksiAlat(
+    int id,
+    Map<String, Object?> perubahan, {
+    String? catatan,
+  }) async {
+    koreksiAlat.add(perubahan);
+    if (galatKoreksi != null) {
+      final g = galatKoreksi!;
+      galatKoreksi = null;
+      throw g;
+    }
+    return Koreksi.dariJson(_koreksi());
+  }
+
+  @override
+  Future<Koreksi> mintaKoreksiSertifikat(
+    int id,
+    Map<String, Object?> perubahan, {
+    String? catatan,
+  }) async {
+    koreksiSertifikat.add(perubahan);
+    if (galatKoreksi != null) {
+      final g = galatKoreksi!;
+      galatKoreksi = null;
+      throw g;
+    }
+    return Koreksi.dariJson(_koreksi(jenis: 'sertifikat'));
+  }
+
+  @override
+  Future<FotoPelanggan> unggahFotoAlat(int alatId, Uint8List byte) async {
+    fotoAlatUnggah.add(alatId);
+    if (galatFoto != null) {
+      final g = galatFoto!;
+      galatFoto = null;
+      throw g;
+    }
+    return FotoPelanggan(id: 100 + fotoAlatUnggah.length);
+  }
+
+  @override
+  Future<FotoPelanggan> unggahFotoItem(
+    int permintaanId,
+    int itemId,
+    Uint8List byte,
+  ) async {
+    fotoItemUnggah.add((permintaanId, itemId));
+    if (galatFoto != null) {
+      final g = galatFoto!;
+      galatFoto = null;
+      throw g;
+    }
+    return FotoPelanggan(id: 200 + fotoItemUnggah.length);
+  }
+
+  @override
+  Future<void> hapusFoto(int id) async => fotoDihapus.add(id);
+
+  @override
+  Future<Uint8List> byteFoto(int id) async => _png;
+
+  @override
+  Future<Halaman<Koreksi>> daftarKoreksi({
+    String status = 'semua',
+    int halaman = 1,
+  }) async {
+    statusKoreksiDiminta.add(status);
+    return daftarK;
+  }
+
+  @override
+  Future<Koreksi> koreksi(int id) async => detailKoreksi;
+
+  @override
+  Future<DaftarPermintaan> daftarPermintaan({String saring = 'aktif'}) async =>
+      daftarP;
+
+  @override
+  Future<Permintaan> permintaan(int id) async => detailPermintaan;
+
+  @override
+  Future<UtasPesan> pesanPermintaan(int id) async =>
+      const UtasPesan(isi: [], terbuka: true);
+
+  @override
+  Future<Permintaan> isiResi(int id, String kurir, String nomorResi) async {
+    resi.add((kurir, nomorResi));
+    if (galatResi != null) {
+      final g = galatResi!;
+      galatResi = null;
+      throw g;
+    }
+    return detailPermintaan;
+  }
+
+  @override
+  Future<PreferensiNotifikasi> preferensiNotifikasi() async =>
+      PreferensiNotifikasi.dariJson(const {'ringkasan_email_mingguan': true});
+}
+
+class _SesiKosong extends PenyimpanSesi {
+  @override
+  Future<String?> token() async => null;
+}
+
+Future<void> _pasang(
+  WidgetTester tester,
+  _Palsu palsu,
+  Widget layar, {
+  PemilihFoto? pemilih,
+}) async {
+  tester.view.physicalSize = const Size(800, 3600);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        layananProvider.overrideWithValue(palsu),
+        penyimpanSesiProvider.overrideWithValue(_SesiKosong()),
+        pemilihFotoProvider.overrideWithValue(pemilih ?? _PemilihPalsu()),
+      ],
+      child: MaterialApp(
+        theme: SidikTheme.terang,
+        locale: const Locale('id', 'ID'),
+        supportedLocales: const [Locale('id', 'ID')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        home: layar,
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+/// Teks di dalam sheet koreksi (judul yang sama juga ada di layar di bawahnya).
+Finder _diSheet(String teks) => find.descendant(
+  of: find.byType(LembarMintaKoreksi),
+  matching: find.text(teks),
+);
+
+Finder _tombol(String label) => find.widgetWithText(SidikTombol, label);
+
+bool _tombolMati(WidgetTester tester, String label) =>
+    tester.widget<SidikTombol>(_tombol(label)).onPressed == null;
+
+void main() {
+  setUpAll(() => initializeDateFormatting('id_ID'));
+
+  // ── Model ────────────────────────────────────────────────────────────────
+
+  group('model sertifikat', () {
+    test('membaca status, pengganti, pembatalan, koreksi, dan data cetak', () {
+      final s = Sertifikat.dariJson(
+        _sert(
+          status: 'digantikan',
+          digantikanOleh: {
+            'id': 9,
+            'nomor': 'CAL/2026/09/0011-R1',
+            'diterbitkan_pada': '2026-10-02T03:00:00Z',
+          },
+          catatan: 'Alamat diperbaiki.',
+          bisaMintaKoreksi: false,
+          koreksiMenunggu: {'id': 4},
+        ),
+      );
+      expect(s.status, StatusDokumen.digantikan);
+      expect(s.digantikan, isTrue);
+      expect(s.digantikanOleh!.id, 9);
+      expect(s.digantikanOleh!.nomor, endsWith('-R1'));
+      expect(s.catatanPelanggan, 'Alamat diperbaiki.');
+      expect(s.koreksiMenungguId, 4);
+      expect(s.bisaMintaKoreksi, isFalse);
+      expect(s.dataCetak!['nomor_seri'], 'HI2211-0491');
+    });
+
+    test('dibatalkan membawa tanggal pembatalan', () {
+      final s = Sertifikat.dariJson(
+        _sert(
+          status: 'dibatalkan',
+          bisaDiunduh: false,
+          dibatalkanPada: '2026-10-03',
+        ),
+      );
+      expect(s.dibatalkan, isTrue);
+      expect(s.dibatalkanPada, isNotNull);
+      expect(s.bisaDiunduh, isFalse);
+    });
+
+    test('server lama tanpa field baru: aman, dan status diturunkan', () {
+      final lama = Sertifikat.dariJson({
+        'id': 1,
+        'nomor': 'CAL/1',
+        'bisa_diunduh': true,
+        'digantikan_oleh': {'id': 2, 'nomor': 'CAL/1-R1'},
+      });
+      expect(lama.status, StatusDokumen.digantikan);
+      expect(lama.dataCetak, isNull);
+      expect(lama.bisaMintaKoreksi, isFalse);
+      expect(lama.koreksiMenungguId, isNull);
+
+      final polos = Sertifikat.dariJson({'id': 3, 'nomor': 'CAL/3'});
+      expect(polos.status, StatusDokumen.berlaku);
+    });
+  });
+
+  group('model alat', () {
+    test('membaca kunci, foto, koreksi menunggu, dan angka desimal rapi', () {
+      final a = Alat.dariJson(
+        _alat(
+          terkunci: true,
+          foto: [
+            {'id': 5, 'url': 'https://x/api/pelanggan/v1/foto/5'},
+          ],
+          koreksiMenunggu: {'id': 7},
+        ),
+      );
+      expect(a.terkunci, isTrue);
+      expect(a.fieldTerkunci, contains('serial_number'));
+      expect(a.foto.single.id, 5);
+      expect(a.koreksiMenungguId, 7);
+      expect(a.rentangMin, '0');
+      expect(a.rentangMaks, '14');
+      expect(a.resolusi, '0,01');
+      expect(a.rentang, '0 – 14 pH');
+      expect(a.catatan, 'Elektroda baru.');
+    });
+
+    test('server lama tanpa field baru', () {
+      final a = Alat.dariJson({'id': 1, 'nama': 'X'});
+      expect(a.terkunci, isFalse);
+      expect(a.fieldTerkunci, isEmpty);
+      expect(a.foto, isEmpty);
+      expect(a.koreksiMenungguId, isNull);
+    });
+  });
+
+  group('model koreksi', () {
+    test('bentuk pelanggan: tanpa pelanggan dan peninjau', () {
+      final k = Koreksi.dariJson(
+        _koreksi(
+          jenis: 'sertifikat',
+          status: 'diterima',
+          tanggapan: 'Sudah diperbaiki.',
+          revisi: {'id': 9, 'nomor': 'CAL/2026/09/0011-R1'},
+          foto: [
+            {'id': 3, 'url': 'u'},
+          ],
+        ),
+      );
+      expect(k.status, StatusKoreksi.diterima);
+      expect(k.untukSertifikat, isTrue);
+      expect(k.nomorSertifikat, 'CAL/2026/09/0011');
+      expect(k.perubahan.single.lama, 'HI2211-0491');
+      expect(k.perubahan.single.baru, 'HI2211-0419');
+      expect(k.revisiId, 9);
+      expect(k.foto.single.id, 3);
+      expect(k.tanggapan, 'Sudah diperbaiki.');
+      expect(k.diajukanOleh, 'Budi');
+    });
+
+    test('kosong-kosong tidak membuat crash', () {
+      final k = Koreksi.dariJson({'id': 1});
+      expect(k.menunggu, isTrue);
+      expect(k.perubahan, isEmpty);
+      expect(k.revisiId, isNull);
+    });
+  });
+
+  group('model permintaan', () {
+    test('tahap, resi, jadwal, progres, tindakan, dan foto alat', () {
+      final p = Permintaan.dariJson(
+        _permintaan(
+          resi: {
+            'kurir': 'JNE',
+            'nomor': 'JNE123',
+            'diisi_pada': '2026-09-23T01:00:00Z',
+          },
+          jadwal: {
+            'pada': '2026-10-01T02:00:00Z',
+            'lokasi': 'Lab QC Lantai 2',
+            'catatan': null,
+          },
+          progres: {'selesai': 7, 'total': 12},
+          fotoBaru: [
+            {'id': 8, 'url': 'u'},
+          ],
+        ),
+      );
+      expect(p.tahap, 'menunggu_alat');
+      expect(p.tahapLabel, 'Menunggu alat tiba');
+      expect(p.perluTindakan, isTrue);
+      expect(p.pesanTindakan, contains('nomor resi'));
+      expect(p.bisaIsiResi, isTrue);
+      expect(p.resi!.kurir, 'JNE');
+      expect(p.jadwal!.lokasi, 'Lab QC Lantai 2');
+      expect(p.progres!.total, 12);
+      expect(p.alat.last.foto.single.id, 8);
+    });
+
+    test('server lama tanpa field baru', () {
+      final p = Permintaan.dariJson({'id': 1, 'nomor': 'PMT/1'});
+      expect(p.tahap, isNull);
+      expect(p.resi, isNull);
+      expect(p.jadwal, isNull);
+      expect(p.progres, isNull);
+      expect(p.perluTindakan, isFalse);
+      expect(p.bisaIsiResi, isFalse);
+    });
+
+    test('foto alat baru dipetakan ke baris respons menurut urutan kirim', () {
+      final p = Permintaan.dariJson({
+        ..._permintaan(),
+        'alat': [
+          {'id': 31, 'alat_id': 88, 'baru': false, 'nama': 'Terdaftar'},
+          {'id': 40, 'alat_id': null, 'baru': true, 'nama': 'Baru A'},
+          {'id': 41, 'alat_id': null, 'baru': true, 'nama': 'Baru B'},
+        ],
+      });
+      final kelompok = petakanFotoAlatBaru(p, [
+        AlatBaru(namaAlat: 'Baru A', foto: [_png, _png]),
+        const AlatBaru(namaAlat: 'Baru B'), // tanpa foto → dilewati
+      ]);
+      expect(kelompok, hasLength(1));
+      expect(kelompok.single.itemId, 40);
+      expect(kelompok.single.foto, hasLength(2));
+
+      final kedua = petakanFotoAlatBaru(p, [
+        const AlatBaru(namaAlat: 'Baru A'),
+        AlatBaru(namaAlat: 'Baru B', foto: [_png]),
+      ]);
+      expect(kedua.single.itemId, 41);
+    });
+
+    test('foto tidak ikut payload ke server', () {
+      final a = AlatBaru(namaAlat: 'X', foto: [_png]);
+      expect(a.toJson().containsKey('foto'), isFalse);
+    });
+  });
+
+  group('kompres foto', () {
+    test('mengecilkan ke 1600px, JPEG, dan membuang EXIF/GPS', () {
+      final besar = img.Image(width: 3200, height: 2000);
+      besar.exif.gpsIfd.data[0x0002] = img.IfdValueAscii('6.9');
+      besar.exif.imageIfd.data[0x010f] = img.IfdValueAscii('Kamera X');
+      final asli = Uint8List.fromList(img.encodeJpg(besar));
+      // Prasyarat: berkas asli MEMANG membawa blok EXIF.
+      expect(_adaExif(asli), isTrue);
+
+      final hasil = kompresFoto(asli);
+      expect(hasil[0], 0xFF);
+      expect(hasil[1], 0xD8);
+      final d = img.decodeJpg(hasil)!;
+      expect(d.width, 1600);
+      expect(d.height, 1000);
+      expect(_adaExif(hasil), isFalse);
+      expect(d.exif.isEmpty, isTrue);
+    });
+
+    test('foto kecil tidak diperbesar; bukan gambar → FormatException', () {
+      final kecil = kompresFoto(
+        Uint8List.fromList(img.encodePng(img.Image(width: 40, height: 30))),
+      );
+      final d = img.decodeJpg(kecil)!;
+      expect((d.width, d.height), (40, 30));
+      expect(
+        () => kompresFoto(Uint8List.fromList([1, 2, 3])),
+        throwsFormatException,
+      );
+    });
+  });
+
+  // ── API ─────────────────────────────────────────────────────────────────
+
+  group('ApiPelanggan', () {
+    test(
+      'unggah foto: multipart bidang foto, header Bearer + perusahaan',
+      () async {
+        late http.BaseRequest diterima;
+        late String badan;
+        final api = ApiPelanggan(
+          token: 'tok',
+          perusahaanId: 3,
+          klien: MockClient.streaming((req, stream) async {
+            diterima = req;
+            badan = utf8.decode(await stream.toBytes(), allowMalformed: true);
+            return http.StreamedResponse(
+              Stream.value(
+                utf8.encode(
+                  jsonEncode({
+                    'data': {'id': 5, 'url': 'u'},
+                  }),
+                ),
+              ),
+              201,
+              headers: {'content-type': 'application/json'},
+            );
+          }),
+        );
+        final hasil = await api.unggah('/alat/5/foto', _png);
+        expect(hasil['data']['id'], 5);
+        expect(diterima.method, 'POST');
+        expect(diterima.url.path, endsWith('/alat/5/foto'));
+        expect(diterima.headers['Authorization'], 'Bearer tok');
+        expect(diterima.headers['X-Perusahaan-Id'], '3');
+        expect(
+          diterima.headers['content-type'],
+          startsWith('multipart/form-data'),
+        );
+        expect(badan, contains('name="foto"'));
+        expect(badan, isNot(contains('customer_id')));
+      },
+    );
+
+    test(
+      'unduh berkas dibatalkan → GalatApi 410 dengan pesan server',
+      () async {
+        final api = ApiPelanggan(
+          klien: MockClient(
+            (_) async => http.Response(
+              jsonEncode({'message': 'Sertifikat ini sudah dibatalkan.'}),
+              410,
+            ),
+          ),
+        );
+        await expectLater(
+          api.unduh('/sertifikat/1/unduh'),
+          throwsA(
+            isA<GalatApi>()
+                .having((e) => e.status, 'status', 410)
+                .having((e) => e.pesan, 'pesan', contains('dibatalkan')),
+          ),
+        );
+      },
+    );
+
+    test('unduh foto memakai header yang sama dan menerima image', () async {
+      late http.Request diterima;
+      final api = ApiPelanggan(
+        token: 't',
+        perusahaanId: 9,
+        klien: MockClient((r) async {
+          diterima = r;
+          return http.Response.bytes(_png, 200);
+        }),
+      );
+      final b = await api.unduh('/foto/5', terima: 'image/*');
+      expect(b, _png);
+      expect(diterima.headers['Accept'], 'image/*');
+      expect(diterima.headers['X-Perusahaan-Id'], '9');
+      expect(diterima.headers['Authorization'], 'Bearer t');
+    });
+  });
+
+  test('notifikasi: tautan baru mengarah ke layar yang benar', () {
+    expect(
+      NotifikasiScreen.tujuanTautan('pelanggan_sertifikat', 9),
+      isA<SertifikatDetailScreen>(),
+    );
+    expect(
+      NotifikasiScreen.tujuanTautan('pelanggan_koreksi', 7),
+      isA<KoreksiDetailScreen>(),
+    );
+    expect(
+      NotifikasiScreen.tujuanTautan('pelanggan_permintaan', 12),
+      isA<PermintaanDetailScreen>(),
+    );
+    expect(NotifikasiScreen.tujuanTautan('tipe_asing', 1), isNull);
+    expect(NotifikasiScreen.tujuanTautan('pelanggan_koreksi', null), isNull);
+  });
+
+  // ── Sertifikat ───────────────────────────────────────────────────────────
+
+  group('layar sertifikat', () {
+    testWidgets(
+      'digantikan: kartu peringatan, catatan, dan buka yang berlaku',
+      (tester) async {
+        final palsu = _Palsu()
+          ..sertifikatPer = (id) => Sertifikat.dariJson(
+            id == 1
+                ? _sert(
+                    status: 'digantikan',
+                    bisaMintaKoreksi: false,
+                    catatan: 'Alamat diperbaiki.',
+                    digantikanOleh: {
+                      'id': 9,
+                      'nomor': 'CAL/2026/09/0011-R1',
+                      'diterbitkan_pada': '2026-10-02T03:00:00Z',
+                    },
+                  )
+                : _sert(id: 9, nomor: 'CAL/2026/09/0011-R1'),
+          );
+        await _pasang(tester, palsu, const SertifikatDetailScreen(id: 1));
+
+        expect(find.text('Sertifikat ini sudah digantikan'), findsOneWidget);
+        expect(find.textContaining('CAL/2026/09/0011-R1'), findsOneWidget);
+        expect(find.textContaining('terbit 2 Okt 2026'), findsOneWidget);
+        expect(
+          find.textContaining('Catatan dari lab: Alamat diperbaiki.'),
+          findsOneWidget,
+        );
+        // PDF lama tetap bisa diunduh.
+        expect(_tombolMati(tester, 'Unduh PDF'), isFalse);
+        expect(
+          find.text('PDF lama tetap bisa diunduh sebagai riwayat.'),
+          findsOneWidget,
+        );
+        expect(find.text('Minta koreksi sertifikat'), findsNothing);
+
+        await tester.tap(_tombol('Buka yang berlaku'));
+        await tester.pumpAndSettle();
+        expect(find.text('CAL/2026/09/0011-R1'), findsWidgets);
+        expect(find.text('Sertifikat ini sudah digantikan'), findsNothing);
+      },
+    );
+
+    testWidgets('dibatalkan: kartu merah, unduh dimatikan', (tester) async {
+      final palsu = _Palsu()
+        ..sertifikatPer = (id) => Sertifikat.dariJson(
+          _sert(
+            status: 'dibatalkan',
+            bisaDiunduh: false,
+            bisaMintaKoreksi: false,
+            dibatalkanPada: '2026-10-03',
+            catatan: 'Salah terbit.',
+          ),
+        );
+      await _pasang(tester, palsu, const SertifikatDetailScreen(id: 1));
+
+      expect(find.text('Dibatalkan pada 3 Okt 2026'), findsOneWidget);
+      expect(find.textContaining('Salah terbit.'), findsOneWidget);
+      expect(_tombolMati(tester, 'Unduh PDF'), isTrue);
+      expect(find.text('Minta koreksi sertifikat'), findsNothing);
+    });
+
+    testWidgets(
+      'unduh dijawab 410: pesan server tampil dan kartu merah muncul',
+      (tester) async {
+        var dibatalkan = false;
+        final palsu = _Palsu()
+          ..sertifikatPer = ((id) => Sertifikat.dariJson(
+            dibatalkan
+                ? _sert(
+                    status: 'dibatalkan',
+                    bisaDiunduh: false,
+                    dibatalkanPada: '2026-10-03',
+                  )
+                : _sert(),
+          ))
+          ..galatUnduh = const GalatApi(
+            status: 410,
+            pesan: 'Sertifikat ini sudah dibatalkan.',
+          );
+        await _pasang(tester, palsu, const SertifikatDetailScreen(id: 1));
+
+        dibatalkan = true;
+        await tester.tap(_tombol('Unduh PDF'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Sertifikat ini sudah dibatalkan.'), findsOneWidget);
+        expect(find.text('Dibatalkan pada 3 Okt 2026'), findsOneWidget);
+        expect(_tombolMati(tester, 'Unduh PDF'), isTrue);
+      },
+    );
+
+    testWidgets('minta koreksi: 422 per isian tampil, lalu terkirim → detail', (
+      tester,
+    ) async {
+      final palsu = _Palsu()
+        ..sertifikatPer = ((id) => Sertifikat.dariJson(_sert()))
+        ..galatKoreksi = const GalatApi(
+          status: 422,
+          pesan: 'The given data was invalid.',
+          isian: {'perubahan.nomor_seri': 'Nomor seri maksimal 100 karakter.'},
+        );
+      await _pasang(tester, palsu, const SertifikatDetailScreen(id: 1));
+
+      await tester.tap(_tombol('Minta koreksi sertifikat'));
+      await tester.pumpAndSettle();
+      // Nilai tercetak jadi acuan.
+      expect(find.text('Sekarang: HI2211-0491'), findsOneWidget);
+
+      // Belum memilih apa pun.
+      await tester.tap(_tombol('Kirim ke lab'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pilih dulu bagian yang salah.'), findsOneWidget);
+      expect(palsu.koreksiSertifikat, isEmpty);
+
+      await tester.tap(_diSheet('Nomor seri'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Nomor seri yang benar'),
+        'HI2211-0419',
+      );
+      await tester.tap(_tombol('Kirim ke lab'));
+      await tester.pumpAndSettle();
+
+      expect(palsu.koreksiSertifikat.single, {'nomor_seri': 'HI2211-0419'});
+      expect(find.text('Nomor seri maksimal 100 karakter.'), findsOneWidget);
+
+      // Kirim ulang → berhasil → layar detail koreksi.
+      await tester.tap(_tombol('Kirim ke lab'));
+      await tester.pumpAndSettle();
+      expect(palsu.koreksiSertifikat, hasLength(2));
+      expect(find.text('YANG DIMINTA DIGANTI'), findsOneWidget);
+      expect(find.text('HI2211-0419'), findsOneWidget);
+    });
+
+    testWidgets('galat keadaan (422 tanpa errors) ditampilkan apa adanya', (
+      tester,
+    ) async {
+      final palsu = _Palsu()
+        ..sertifikatPer = ((id) => Sertifikat.dariJson(_sert()))
+        ..galatKoreksi = const GalatApi(
+          status: 422,
+          pesan: 'Sudah ada koreksi yang menunggu untuk sertifikat ini.',
+        );
+      await _pasang(tester, palsu, const SertifikatDetailScreen(id: 1));
+      await tester.tap(_tombol('Minta koreksi sertifikat'));
+      await tester.pumpAndSettle();
+      await tester.tap(_diSheet('Merk'));
+      await tester.pumpAndSettle();
+      await tester.tap(_tombol('Kirim ke lab'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Sudah ada koreksi yang menunggu untuk sertifikat ini.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('koreksi menunggu: tombol diganti kartu tautan', (
+      tester,
+    ) async {
+      final palsu = _Palsu()
+        ..sertifikatPer = (id) => Sertifikat.dariJson(
+          _sert(bisaMintaKoreksi: false, koreksiMenunggu: {'id': 7}),
+        );
+      await _pasang(tester, palsu, const SertifikatDetailScreen(id: 1));
+      expect(find.text('Koreksi sedang ditinjau lab'), findsOneWidget);
+      expect(find.text('Minta koreksi sertifikat'), findsNothing);
+
+      await tester.tap(find.text('Koreksi sedang ditinjau lab'));
+      await tester.pumpAndSettle();
+      expect(find.text('YANG DIMINTA DIGANTI'), findsOneWidget);
+    });
+  });
+
+  // ── Alat ─────────────────────────────────────────────────────────────────
+
+  group('layar ubah alat', () {
+    testWidgets('terkunci: identitas dibaca saja, lokasi & catatan tersimpan', (
+      tester,
+    ) async {
+      final palsu = _Palsu()..alatJson = _alat(terkunci: true);
+      await _pasang(tester, palsu, const UbahAlatScreen(id: 5));
+
+      expect(
+        find.textContaining(
+          'Identitas terkunci — sudah tercetak di sertifikat CAL/2025/09/0088',
+        ),
+        findsOneWidget,
+      );
+      // Tidak ada kolom isian identitas.
+      expect(find.widgetWithText(TextField, 'Nama alat *'), findsNothing);
+      expect(find.widgetWithText(TextField, 'Nomor seri'), findsNothing);
+      expect(find.text('HI2211-0491'), findsOneWidget);
+      expect(_tombol('Minta koreksi ke lab'), findsOneWidget);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Lokasi alat'),
+        'Lantai 3',
+      );
+      await tester.tap(_tombol('Simpan perubahan'));
+      await tester.pumpAndSettle();
+      // Hanya yang berubah, dan tidak ada kolom identitas.
+      expect(palsu.ubahAlatBody.single, {'lokasi': 'Lantai 3'});
+    });
+
+    testWidgets('terkunci: minta koreksi ke lab mengirim kunci identitas', (
+      tester,
+    ) async {
+      final palsu = _Palsu()..alatJson = _alat(terkunci: true);
+      await _pasang(tester, palsu, const UbahAlatScreen(id: 5));
+
+      await tester.tap(_tombol('Minta koreksi ke lab'));
+      await tester.pumpAndSettle();
+      await tester.tap(_diSheet('Nomor seri'));
+      await tester.tap(_diSheet('Rentang maks.'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Nomor seri yang benar'),
+        'HI2211-0419',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Rentang maks. yang benar'),
+        '14,5',
+      );
+      await tester.tap(_tombol('Kirim ke lab'));
+      await tester.pumpAndSettle();
+
+      expect(palsu.koreksiAlat.single, {
+        'serial_number': 'HI2211-0419',
+        'range_max': 14.5,
+      });
+      expect(find.text('YANG DIMINTA DIGANTI'), findsOneWidget);
+    });
+
+    testWidgets(
+      'PATCH dijawab field_terkunci: pesan tampil, alat ditarik ulang',
+      (tester) async {
+        final palsu = _Palsu()
+          ..alatJson = _alat()
+          ..galatUbah = const GalatApi(
+            status: 422,
+            kode: 'field_terkunci',
+            pesan:
+                'Identitas alat terkunci karena sudah tercetak di sertifikat.',
+            isian: {'serial_number': 'Kolom ini terkunci.'},
+          );
+        await _pasang(tester, palsu, const UbahAlatScreen(id: 5));
+
+        // Belum terkunci: identitas bisa diisi.
+        expect(find.widgetWithText(TextField, 'Nama alat *'), findsOneWidget);
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Nomor seri'),
+          'HI2211-0419',
+        );
+        // Sertifikat terbit sejak layar dibuka: server kini menganggapnya terkunci.
+        palsu.alatJson = _alat(terkunci: true);
+        await tester.tap(_tombol('Simpan perubahan'));
+        await tester.pumpAndSettle();
+
+        expect(palsu.ubahAlatBody.single, {'serial_number': 'HI2211-0419'});
+        expect(
+          find.text(
+            'Identitas alat terkunci karena sudah tercetak di sertifikat.',
+          ),
+          findsOneWidget,
+        );
+        // Layar pindah ke mode terkunci tanpa kehilangan State.
+        expect(find.widgetWithText(TextField, 'Nama alat *'), findsNothing);
+        expect(_tombol('Minta koreksi ke lab'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'belum terkunci: identitas ikut PATCH, angka dikirim sebagai angka',
+      (tester) async {
+        final palsu = _Palsu()..alatJson = _alat();
+        await _pasang(tester, palsu, const UbahAlatScreen(id: 5));
+
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Merk'),
+          'Mettler',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Resolusi'),
+          '0,001',
+        );
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Catatan (opsional)'),
+          '',
+        );
+        await tester.tap(_tombol('Simpan perubahan'));
+        await tester.pumpAndSettle();
+
+        expect(palsu.ubahAlatBody.single, {
+          'catatan': null,
+          'merk': 'Mettler',
+          'resolusi': 0.001,
+        });
+      },
+    );
+
+    testWidgets('tidak ada yang berubah → tidak ada panggilan ke server', (
+      tester,
+    ) async {
+      final palsu = _Palsu()..alatJson = _alat();
+      await _pasang(tester, palsu, const UbahAlatScreen(id: 5));
+      await tester.tap(_tombol('Simpan perubahan'));
+      await tester.pumpAndSettle();
+      expect(palsu.ubahAlatBody, isEmpty);
+      expect(find.text('Belum ada yang diubah.'), findsOneWidget);
+    });
+
+    testWidgets('foto: unggah gagal bisa diulang per foto, lalu hapus', (
+      tester,
+    ) async {
+      final palsu = _Palsu()
+        ..alatJson = _alat(
+          foto: [
+            {'id': 5, 'url': 'u'},
+          ],
+        )
+        ..galatFoto = const GalatApi(
+          status: 422,
+          pesan: 'Foto gagal.',
+          isian: {'foto': 'Maksimal 3 foto.'},
+        );
+      final pemilih = _PemilihPalsu();
+      await _pasang(
+        tester,
+        palsu,
+        const UbahAlatScreen(id: 5),
+        pemilih: pemilih,
+      );
+
+      expect(find.textContaining('Foto pelat nama 1 dari 3'), findsOneWidget);
+
+      await tester.tap(find.text('Tambah'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ambil dengan kamera'));
+      await tester.pumpAndSettle();
+      expect(pemilih.diambil, 1);
+      expect(palsu.fotoAlatUnggah, [5]);
+      expect(find.text('Ulangi'), findsOneWidget);
+      expect(find.textContaining('dari 3'), findsOneWidget);
+      expect(find.textContaining('Foto pelat nama 2 dari 3'), findsOneWidget);
+
+      // Ketuk foto gagal → ulangi unggah.
+      await tester.tap(find.text('Ulangi'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ulangi unggah'));
+      await tester.pumpAndSettle();
+      expect(palsu.fotoAlatUnggah, [5, 5]);
+      expect(find.text('Ulangi'), findsNothing);
+
+      // Hapus foto lama (id 5).
+      await tester.tap(find.byType(Image).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hapus foto'));
+      await tester.pumpAndSettle();
+      expect(palsu.fotoDihapus, [5]);
+      expect(find.textContaining('Foto pelat nama 1 dari 3'), findsOneWidget);
+    });
+  });
+
+  // ── Foto alat baru sesudah permintaan terkirim ───────────────────────────
+
+  group('foto susulan', () {
+    testWidgets('diunggah ke item yang benar; yang gagal bisa diulang', (
+      tester,
+    ) async {
+      final palsu = _Palsu()
+        ..galatFoto = const GalatApi(
+          status: 422,
+          pesan: 'Foto gagal.',
+          isian: {'foto': 'Berkas terlalu besar.'},
+        );
+      final p = Permintaan.dariJson(_permintaan());
+      await _pasang(
+        tester,
+        palsu,
+        FotoSusulanScreen(
+          permintaan: p,
+          kelompok: [
+            KelompokFotoAlat(itemId: 32, nama: 'pH Meter', foto: [_png, _png]),
+          ],
+        ),
+      );
+
+      // Foto pertama gagal, kedua berhasil — permintaan tetap terkirim.
+      expect(palsu.fotoItemUnggah, [(12, 32), (12, 32)]);
+      expect(find.textContaining('sudah terkirim'), findsOneWidget);
+      expect(find.text('Gagal unggah: Berkas terlalu besar.'), findsOneWidget);
+      expect(find.text('Terunggah'), findsOneWidget);
+
+      await tester.tap(find.text('Ulangi'));
+      await tester.pumpAndSettle();
+      expect(palsu.fotoItemUnggah, hasLength(3));
+      expect(find.text('Terunggah'), findsNWidgets(2));
+      expect(find.text('Ulangi'), findsNothing);
+    });
+  });
+
+  testWidgets(
+    'form alat baru: foto maks 3, ikut hasil form tapi bukan payload',
+    (tester) async {
+      AlatBaru? hasil;
+      await _pasang(
+        tester,
+        _Palsu(),
+        Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () async =>
+                  hasil = await Navigator.of(context).push<AlatBaru>(
+                    MaterialPageRoute(builder: (_) => const FormAlatScreen()),
+                  ),
+              child: const Text('buka'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('buka'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Nama alat *'),
+        'pH Meter',
+      );
+
+      for (var i = 0; i < 3; i++) {
+        await tester.ensureVisible(find.text('Tambah'));
+        await tester.tap(find.text('Tambah'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Pilih dari galeri'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.textContaining('Foto pelat nama 3 dari 3'), findsOneWidget);
+      // Sudah penuh: tombol tambah hilang.
+      expect(find.text('Tambah'), findsNothing);
+
+      await tester.ensureVisible(_tombol('Simpan alat'));
+      await tester.tap(_tombol('Simpan alat'));
+      await tester.pumpAndSettle();
+      expect(hasil, isNotNull);
+      expect(hasil!.foto, hasLength(3));
+      expect(hasil!.toJson().containsKey('foto'), isFalse);
+    },
+  );
+
+  // ── Koreksi ──────────────────────────────────────────────────────────────
+
+  group('layar koreksi', () {
+    testWidgets('daftar: empat tab, kartu, dan tab menarik ulang', (
+      tester,
+    ) async {
+      final palsu = _Palsu()
+        ..daftarK = Halaman.dariJson({
+          'data': [
+            _koreksi(),
+            _koreksi(id: 8, jenis: 'sertifikat', status: 'ditolak'),
+          ],
+          'meta': {'total': 2},
+        }, Koreksi.dariJson);
+      await _pasang(tester, palsu, const KoreksiScreen());
+
+      expect(palsu.statusKoreksiDiminta.last, 'semua');
+      for (final t in ['Menunggu', 'Diterima', 'Ditolak', 'Semua']) {
+        expect(find.text(t), findsWidgets);
+      }
+      expect(find.text('Menunggu ditinjau'), findsOneWidget);
+      expect(find.text('Ditolak'), findsWidgets);
+      expect(find.text('Sertifikat CAL/2026/09/0011'), findsOneWidget);
+
+      await tester.tap(find.text('Menunggu').first);
+      await tester.pumpAndSettle();
+      expect(palsu.statusKoreksiDiminta.last, 'menunggu');
+    });
+
+    testWidgets(
+      'detail menunggu: lama → baru, catatan, dan foto bisa ditambah',
+      (tester) async {
+        final palsu = _Palsu()..detailKoreksi = Koreksi.dariJson(_koreksi());
+        await _pasang(tester, palsu, const KoreksiDetailScreen(id: 7));
+
+        expect(find.text('Nomor seri'), findsOneWidget);
+        expect(find.text('HI2211-0491'), findsOneWidget);
+        expect(find.text('HI2211-0419'), findsOneWidget);
+        expect(find.text('Tertukar dua digit.'), findsOneWidget);
+        expect(find.textContaining('sedang ditinjau lab'), findsOneWidget);
+        expect(find.text('Tambah'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'detail diterima: jawaban lab dan tautan ke sertifikat revisi',
+      (tester) async {
+        final palsu = _Palsu()
+          ..detailKoreksi = Koreksi.dariJson(
+            _koreksi(
+              jenis: 'sertifikat',
+              status: 'diterima',
+              tanggapan: 'Sudah kami terbitkan ulang.',
+              revisi: {'id': 9, 'nomor': 'CAL/2026/09/0011-R1'},
+            ),
+          )
+          ..sertifikatPer = (id) =>
+              Sertifikat.dariJson(_sert(id: id, nomor: 'CAL/2026/09/0011-R1'));
+        await _pasang(tester, palsu, const KoreksiDetailScreen(id: 7));
+
+        expect(find.text('Sudah kami terbitkan ulang.'), findsOneWidget);
+        // Sudah diputus: foto tidak bisa ditambah lagi.
+        expect(find.text('Tambah'), findsNothing);
+        await tester.tap(
+          find.text('Buka sertifikat revisi CAL/2026/09/0011-R1'),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('NOMOR SERTIFIKAT'), findsOneWidget);
+      },
+    );
+  });
+
+  // ── Permintaan ───────────────────────────────────────────────────────────
+
+  group('layar permintaan', () {
+    testWidgets('daftar: tahap, perlu tindakan, progres, dan jadwal teknisi', (
+      tester,
+    ) async {
+      final palsu = _Palsu()
+        ..daftarP = DaftarPermintaan.dariJson({
+          'data': [
+            _permintaan(),
+            _permintaan(
+              id: 19,
+              tahap: 'teknisi_dijadwalkan',
+              tahapLabel: 'Teknisi dijadwalkan',
+              perluTindakan: false,
+              jadwal: {
+                'pada': '2026-10-01T02:00:00Z',
+                'lokasi': 'Lab QC Lantai 2',
+              },
+            ),
+            _permintaan(
+              id: 21,
+              tahap: 'sedang_dikalibrasi',
+              tahapLabel: 'Sedang dikalibrasi',
+              perluTindakan: false,
+              progres: {'selesai': 7, 'total': 12},
+            ),
+          ],
+          'meta': {
+            'total': 3,
+            'jumlah': {'aktif': 3, 'selesai': 0},
+          },
+        });
+      await _pasang(tester, palsu, const PermintaanScreen());
+
+      expect(find.text('Menunggu alat tiba'), findsOneWidget);
+      expect(
+        find.text('Kirim alatnya ke lab, lalu isi nomor resi.'),
+        findsOneWidget,
+      );
+      expect(find.text('Teknisi dijadwalkan'), findsOneWidget);
+      expect(find.textContaining('Lab QC Lantai 2'), findsOneWidget);
+      expect(find.text('7/12 selesai'), findsOneWidget);
+    });
+
+    testWidgets(
+      'detail: isi nomor resi lewat sheet, 422 tampil, lalu tersimpan',
+      (tester) async {
+        final palsu = _Palsu()
+          ..galatResi = const GalatApi(
+            status: 422,
+            pesan: 'The given data was invalid.',
+            isian: {'nomor_resi': 'Nomor resi tidak valid.'},
+          );
+        await _pasang(tester, palsu, const PermintaanDetailScreen(id: 12));
+
+        expect(
+          find.text('Kirim alatnya ke lab, lalu isi nomor resi.'),
+          findsOneWidget,
+        );
+        await tester.tap(_tombol('Isi nomor resi'));
+        await tester.pumpAndSettle();
+
+        // Kosong ditahan di aplikasi.
+        await tester.tap(_tombol('Simpan nomor resi'));
+        await tester.pumpAndSettle();
+        expect(find.text('Isi nama kurirnya.'), findsOneWidget);
+        expect(palsu.resi, isEmpty);
+
+        await tester.enterText(find.widgetWithText(TextField, 'Kurir'), 'JNE');
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Nomor resi'),
+          'JNE0001',
+        );
+        await tester.tap(_tombol('Simpan nomor resi'));
+        await tester.pumpAndSettle();
+        expect(palsu.resi.single, ('JNE', 'JNE0001'));
+        expect(find.text('Nomor resi tidak valid.'), findsOneWidget);
+
+        await tester.tap(_tombol('Simpan nomor resi'));
+        await tester.pumpAndSettle();
+        expect(palsu.resi, hasLength(2));
+        expect(
+          find.text('Nomor resi tersimpan. Lab sudah diberi tahu.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('detail: resi yang sudah terisi tampil dan bisa diubah', (
+      tester,
+    ) async {
+      final palsu = _Palsu()
+        ..detailPermintaan = Permintaan.dariJson(
+          _permintaan(
+            tahap: 'dalam_pengiriman',
+            tahapLabel: 'Dalam pengiriman',
+            perluTindakan: false,
+            resi: {'kurir': 'JNE', 'nomor': 'JNE0001'},
+          ),
+        );
+      await _pasang(tester, palsu, const PermintaanDetailScreen(id: 12));
+      expect(find.text('JNE0001'), findsOneWidget);
+      expect(_tombol('Ubah nomor resi'), findsOneWidget);
+
+      await tester.tap(_tombol('Ubah nomor resi'));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextField, 'Kurir'), findsOneWidget);
+      expect(find.text('JNE'), findsWidgets);
+    });
+
+    testWidgets('detail: tahap lain tidak menawarkan isi resi', (tester) async {
+      final palsu = _Palsu()
+        ..detailPermintaan = Permintaan.dariJson(
+          _permintaan(
+            tahap: 'sedang_dikalibrasi',
+            tahapLabel: 'Sedang dikalibrasi',
+            perluTindakan: false,
+          ),
+        );
+      await _pasang(tester, palsu, const PermintaanDetailScreen(id: 12));
+      expect(_tombol('Isi nomor resi'), findsNothing);
+    });
+  });
+
+  testWidgets('preferensi: ringkasan mingguan menyebut jadwal kirimnya', (
+    tester,
+  ) async {
+    await _pasang(tester, _Palsu(), const PreferensiScreen());
+    expect(
+      find.text('Dikirim tiap Senin pukul 07.15 WIB ke email akun kamu.'),
+      findsOneWidget,
+    );
+  });
+}
