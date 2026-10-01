@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Template Flutter cuma menaruh izin ini di manifest debug & profile.
+         Tanpa baris ini build RELEASE tidak bisa membuka koneksi sama sekali:
+         login, daftar alat, dan unduh sertifikat gagal di HP pelanggan,
+         padahal semuanya lancar saat dicoba dengan `flutter run`. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="sidik_pelanggan"
         android:name="${applicationName}"
