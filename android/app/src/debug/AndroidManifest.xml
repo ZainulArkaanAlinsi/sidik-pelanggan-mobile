@@ -4,4 +4,14 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Izinkan HTTP polos HANYA di build debug. Server uji lokal jalan lewat
+         `php artisan serve` (http://<IP-laptop>:8000), dan tanpa ini Android 9+
+         menolak tiap request dengan CLEARTEXT_NOT_PERMITTED — aplikasi kelihatan
+         "tidak bisa terhubung" padahal servernya hidup.
+
+         SENGAJA tidak di manifest `main`: build release tetap menolak HTTP polos,
+         jadi APK yang dipegang pelanggan tidak mungkin mengirim sandi & token
+         tanpa TLS. Pola yang sama dengan aplikasi lab (sidik-calibration-mobile). -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>
