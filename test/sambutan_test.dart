@@ -8,7 +8,6 @@ import 'package:sidik_pelanggan/core/penyimpan_sesi.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/providers/perangkat_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
-import 'package:sidik_pelanggan/screens/akun/preferensi_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/masuk_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/sambutan_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/terima_undangan_screen.dart';
@@ -54,6 +53,8 @@ Widget _aplikasi(
     penyimpanSesiProvider.overrideWithValue(_SesiKosong()),
     statusAplikasiProvider.overrideWith((ref) async => status),
     versiAplikasiProvider.overrideWith((ref) async => '1.0.0'),
+    // PackageInfo tak punya plugin di flutter_test (panggilannya menggantung).
+    infoPaketProvider.overrideWith((ref) async => (versi: '1.0.0', build: '1')),
   ],
   child: const SidikPelangganApp(),
 );
@@ -145,51 +146,5 @@ void main() {
 
     expect(find.text('Perbarui aplikasi'), findsOneWidget);
     expect(find.byType(SambutanScreen), findsNothing);
-  });
-
-  group('preferensi', () {
-    Future<void> bukaPreferensi(WidgetTester tester) async {
-      final konteks = tester.element(find.byType(Scaffold).first);
-      Navigator.of(
-        konteks,
-      ).push(MaterialPageRoute<void>(builder: (_) => const PreferensiScreen()));
-      await tester.pumpAndSettle();
-    }
-
-    Brightness kecerahan(WidgetTester tester) =>
-        Theme.of(tester.element(find.byType(PreferensiScreen))).brightness;
-
-    testWidgets('memilih Gelap langsung berlaku dan disimpan', (tester) async {
-      final perangkat = _PerangkatMemori()..isi['sambutan'] = '1';
-      await tester.pumpWidget(_aplikasi(perangkat));
-      await tester.pumpAndSettle();
-      await bukaPreferensi(tester);
-      expect(kecerahan(tester), Brightness.light);
-
-      await tester.tap(find.text('Gelap'));
-      await tester.pumpAndSettle();
-
-      expect(kecerahan(tester), Brightness.dark);
-      expect(perangkat.isi['tema'], 'gelap');
-    });
-
-    testWidgets('pilihan tema diingat di peluncuran berikutnya', (
-      tester,
-    ) async {
-      final perangkat = _PerangkatMemori()
-        ..isi['sambutan'] = '1'
-        ..isi['tema'] = 'gelap';
-      await tester.pumpWidget(_aplikasi(perangkat));
-      await tester.pumpAndSettle();
-      await bukaPreferensi(tester);
-
-      expect(kecerahan(tester), Brightness.dark);
-      final grup = tester.widget<RadioGroup<ThemeMode>>(
-        find.byType(RadioGroup<ThemeMode>),
-      );
-      expect(grup.groupValue, ThemeMode.dark);
-    });
-    // Sakelar notifikasi kini disimpan di server — ujinya di permintaan_test.dart
-    // (grup 'preferensi notifikasi') dengan layanan palsu.
   });
 }

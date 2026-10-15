@@ -2,25 +2,70 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
+import '../../core/konfigurasi.dart';
 import '../../core/theme/sidik_material.dart';
 import '../../providers/sesi_provider.dart';
 import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
 import '../gerbang.dart';
-import '../koreksi/koreksi_screen.dart';
-import 'anggota_screen.dart';
-import 'preferensi_screen.dart';
-import 'profil_hapus_screen.dart';
+import 'bantuan_screen.dart';
 
-/// Akun: siapa saya, perusahaan aktif, anggota tim, sandi, keluar.
+/// Teks kaki Akun (S17): versi + build + ID pengguna, untuk dukungan.
+String teksVersi({
+  required String versi,
+  required String build,
+  required int idPengguna,
+  String lingkungan = Konfigurasi.lingkungan,
+}) => [
+  'SIDIK Pelanggan $versi (build $build)',
+  'ID pengguna $idPengguna',
+  if (lingkungan != 'prod') lingkungan.toUpperCase(),
+].join(' · ');
+
+/// Akun (S17): siapa saya, perusahaan aktif (ganti kalau anggota lebih dari
+/// satu), bantuan & privasi, keluar (HP ini / semua perangkat), dan versi.
 class AkunScreen extends ConsumerWidget {
   const AkunScreen({super.key});
+
+  Future<void> _keluarSemua(BuildContext context, WidgetRef ref) async {
+    final yakin = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Keluar dari semua perangkat?'),
+        content: const Text(
+          'Sesi akun Anda di SEMUA HP — termasuk HP ini — langsung berakhir, '
+          'dan HP-HP itu berhenti menerima notifikasi. Anda perlu masuk lagi.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(d).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(d).pop(true),
+            child: const Text('Keluar dari semua'),
+          ),
+        ],
+      ),
+    );
+    if (yakin != true || !context.mounted) return;
+    final pesan = ScaffoldMessenger.of(context);
+    try {
+      final n = await ref.read(sesiProvider.notifier).keluarSemua();
+      pesan.showSnackBar(
+        SnackBar(content: Text('Anda keluar dari $n sesi perangkat.')),
+      );
+    } on GalatApi catch (e) {
+      // Sesi lokal TIDAK dibuang: token di HP lain belum tentu tercabut.
+      pesan.showSnackBar(SnackBar(content: Text(e.pesan)));
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sesi = ref.watch(sesiProvider).value;
-    final versi = ref.watch(versiAplikasiProvider).value;
+    final paket = ref.watch(infoPaketProvider).value;
     final m = SidikMaterial.of(context);
     final t = Theme.of(context).textTheme;
     if (sesi == null) return const SizedBox.shrink();
@@ -48,88 +93,44 @@ class AkunScreen extends ConsumerWidget {
               ],
             ),
           ),
+          if (sesi.akun.lebihDariSatuPerusahaan) ...[
+            const SizedBox(height: jarak),
+            Kertas(
+              child: ListTile(
+                leading: const Icon(Icons.swap_horiz),
+                title: const Text('Ganti perusahaan'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        const PilihPerusahaanScreen(bisaKembali: true),
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: jarak),
           Kertas(
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.person_outline),
-                  title: const Text('Profil saya'),
-                  subtitle: const Text('Nama, nomor HP, jabatan'),
+                  leading: const Icon(Icons.support_agent),
+                  title: const Text('Bantuan & kontak'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const ProfilSayaScreen(),
+                      builder: (_) => const BantuanScreen(),
                     ),
                   ),
                 ),
                 const Divider(height: 1, indent: 56),
                 ListTile(
-                  leading: const Icon(Icons.groups_outlined),
-                  title: const Text('Anggota tim'),
-                  subtitle: Text(
-                    aktif?.picUtama == true
-                        ? 'Lihat, undang, dan nonaktifkan anggota'
-                        : 'Lihat siapa saja di tim Anda',
-                  ),
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: const Text('Privasi & ketentuan'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const AnggotaScreen(),
-                    ),
-                  ),
-                ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.rule_folder_outlined),
-                  title: const Text('Koreksi'),
-                  subtitle: const Text(
-                    'Permintaan koreksi data alat dan sertifikat',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const KoreksiScreen(),
-                    ),
-                  ),
-                ),
-                if (sesi.akun.lebihDariSatuPerusahaan) ...[
-                  const Divider(height: 1, indent: 56),
-                  ListTile(
-                    leading: const Icon(Icons.swap_horiz),
-                    title: const Text('Ganti perusahaan'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) =>
-                            const PilihPerusahaanScreen(bisaKembali: true),
-                      ),
-                    ),
-                  ),
-                ],
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.tune),
-                  title: const Text('Preferensi'),
-                  subtitle: const Text('Tema tampilan dan notifikasi'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const PreferensiScreen(),
-                    ),
-                  ),
-                ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.lock_outline),
-                  title: const Text('Ganti sandi'),
-                  subtitle: const Text(
-                    'Sesi di perangkat lain ikut dikeluarkan',
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const _GantiSandiScreen(),
+                      builder: (_) => const PrivasiScreen(),
                     ),
                   ),
                 ),
@@ -165,110 +166,19 @@ class AkunScreen extends ConsumerWidget {
             },
           ),
           SidikTombol(
-            label: 'Hapus akun',
+            label: 'Keluar dari semua perangkat',
             ragam: RagamTombol.teks,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const HapusAkunScreen()),
-            ),
+            onPressed: () => _keluarSemua(context, ref),
           ),
           const SizedBox(height: jarak),
-          Text(
-            'SIDIK Pelanggan ${versi ?? ''}',
+          SelectableText(
+            teksVersi(
+              versi: paket?.versi ?? '-',
+              build: paket?.build ?? '-',
+              idPengguna: sesi.akun.id,
+            ),
             textAlign: TextAlign.center,
             style: t.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GantiSandiScreen extends ConsumerStatefulWidget {
-  const _GantiSandiScreen();
-
-  @override
-  ConsumerState<_GantiSandiScreen> createState() => _GantiSandiScreenState();
-}
-
-class _GantiSandiScreenState extends ConsumerState<_GantiSandiScreen> {
-  final _lama = TextEditingController();
-  final _baru = TextEditingController();
-  bool _sibuk = false;
-  Map<String, String> _galatIsian = const {};
-  String? _galat;
-
-  @override
-  void dispose() {
-    _lama.dispose();
-    _baru.dispose();
-    super.dispose();
-  }
-
-  Future<void> _simpan() async {
-    setState(() {
-      _sibuk = true;
-      _galat = null;
-      _galatIsian = const {};
-    });
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      await ref.read(layananProvider).gantiSandi(_lama.text, _baru.text);
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Sandi diganti. Perangkat lain sudah dikeluarkan.'),
-        ),
-      );
-      navigator.pop();
-    } on GalatApi catch (e) {
-      if (mounted) {
-        setState(() {
-          _galat = e.isian.isEmpty ? e.pesan : null;
-          _galatIsian = e.isian;
-        });
-      }
-    } finally {
-      if (mounted) setState(() => _sibuk = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Ganti sandi')),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          TextField(
-            controller: _lama,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: 'Sandi sekarang',
-              errorText: _galatIsian['sandi_lama'],
-            ),
-          ),
-          const SizedBox(height: jarak),
-          TextField(
-            controller: _baru,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: 'Sandi baru',
-              helperText: 'Minimal 10 karakter',
-              errorText: _galatIsian['sandi'],
-            ),
-          ),
-          if (_galat != null) ...[
-            const SizedBox(height: 12),
-            Text(_galat!, style: TextStyle(color: m.gagal)),
-          ],
-          const SizedBox(height: 24),
-          SidikTombol(
-            label: 'Simpan',
-            ragam: RagamTombol.utama,
-            penuh: true,
-            sibuk: _sibuk,
-            onPressed: _simpan,
           ),
         ],
       ),

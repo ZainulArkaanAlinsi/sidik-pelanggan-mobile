@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../core/konfigurasi.dart';
 import '../core/theme/sidik_material.dart';
 import '../providers/perangkat_provider.dart';
 import '../providers/sesi_provider.dart';
 import '../widgets/sidik/sidik_permukaan.dart';
 import '../widgets/sidik/sidik_tombol.dart';
 import '../widgets/umum.dart';
+import 'akun/bantuan_screen.dart';
 import 'auth/masuk_screen.dart';
 import 'auth/sambutan_screen.dart';
 import 'rangka.dart';
@@ -30,27 +35,15 @@ class Gerbang extends ConsumerWidget {
 
     final s = status.value;
     if (s != null && s.pemeliharaan) {
-      return _LayarInfo(
-        ikon: Icons.build_circle_outlined,
-        judul: 'Sedang dalam perbaikan',
-        isi: s.pesanPemeliharaan,
-        aksi: 'Periksa lagi',
-        onAksi: () => ref.invalidate(statusAplikasiProvider),
-      );
+      return LayarPemeliharaan(pesan: s.pesanPemeliharaan);
     }
     if (s != null && versi != null && s.wajibPerbarui(versi)) {
-      return _LayarInfo(
-        ikon: Icons.system_update_outlined,
-        judul: 'Perbarui aplikasi',
-        isi:
-            'Versi $versi sudah tidak didukung. Perbarui SIDIK Pelanggan ke versi ${s.versiTerbaru} '
-            'lewat toko aplikasi, lalu buka lagi.',
-      );
+      return LayarWajibPerbarui(terpasang: versi, terbaru: s.versiTerbaru);
     }
 
     final sesi = ref.watch(sesiProvider);
     return sesi.when(
-      loading: () => const Scaffold(body: Memuat()),
+      loading: () => const _Pembuka(),
       error: (e, _) => Scaffold(
         body: SafeArea(
           child: KeadaanGalat(
@@ -69,6 +62,10 @@ class Gerbang extends ConsumerWidget {
 
         if (sesi.akun.butuhVerifikasi || !sesi.akun.punyaPerusahaan) {
           final ditolak = sesi.akun.pengajuan?.status == 'ditolak';
+          // S06: status, kontak PT Sidik (kalau server memberikannya),
+          // periksa lagi, keluar.
+          final adaKontak =
+              ref.watch(infoAplikasiProvider).value?.adaKontak ?? false;
           return _LayarInfo(
             ikon: ditolak ? Icons.block : Icons.hourglass_top_outlined,
             judul: ditolak ? 'Akun tidak disetujui' : 'Akun belum aktif',
@@ -79,6 +76,10 @@ class Gerbang extends ConsumerWidget {
                       'Anda perlu menautkannya dulu. Halaman ini diperbarui otomatis saat Anda membukanya lagi.',
             aksi: 'Periksa lagi',
             onAksi: () => ref.read(sesiProvider.notifier).segarkan(),
+            aksiTengah: adaKontak ? 'Hubungi PT Sidik' : null,
+            onAksiTengah: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const BantuanScreen()),
+            ),
             aksiKedua: 'Keluar',
             onAksiKedua: () => ref.read(sesiProvider.notifier).keluar(),
           );
@@ -155,13 +156,133 @@ class PilihPerusahaanScreen extends ConsumerWidget {
   }
 }
 
+/// Layar pembuka selagi sesi dipulihkan — nama aplikasi + bilah tipis,
+/// bukan pemutar kosong.
+class _Pembuka extends StatelessWidget {
+  const _Pembuka();
+
+  @override
+  Widget build(BuildContext context) {
+    final m = SidikMaterial.of(context);
+    return Scaffold(
+      body: Center(
+        child: Semantics(
+          label: 'Memuat SIDIK Pelanggan',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('SIDIK PELANGGAN', style: m.gayaEtsa(ukuran: 14)),
+              const SizedBox(height: 16),
+              const SizedBox(width: 120, child: LinearProgressIndicator()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// S22 — server sedang pemeliharaan. Memeriksa ulang sendiri tiap 60 detik
+/// (dan lewat tombol), jadi pelanggan tidak perlu menutup-buka aplikasi.
+class LayarPemeliharaan extends ConsumerStatefulWidget {
+  const LayarPemeliharaan({
+    super.key,
+    required this.pesan,
+    this.selang = const Duration(seconds: 60),
+  });
+
+  final String pesan;
+  final Duration selang;
+
+  @override
+  ConsumerState<LayarPemeliharaan> createState() => _LayarPemeliharaanState();
+}
+
+class _LayarPemeliharaanState extends ConsumerState<LayarPemeliharaan> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(
+      widget.selang,
+      (_) => ref.invalidate(statusAplikasiProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pesan = widget.pesan.trim();
+    return _LayarInfo(
+      ikon: Icons.build_circle_outlined,
+      judul: 'Sedang dalam perbaikan',
+      isi: pesan.isEmpty ? 'Layanan sedang diperbarui.' : pesan,
+      catatan: 'Aplikasi memeriksa ulang sendiri setiap menit.',
+      aksi: 'Periksa lagi',
+      onAksi: () => ref.invalidate(statusAplikasiProvider),
+    );
+  }
+}
+
+/// S21 — versi terpasang di bawah versi minimum. Tidak bisa ditutup: satu-
+/// satunya jalan keluar adalah memperbarui lewat Play Store.
+class LayarWajibPerbarui extends StatelessWidget {
+  const LayarWajibPerbarui({
+    super.key,
+    required this.terpasang,
+    required this.terbaru,
+  });
+
+  final String terpasang;
+  final String terbaru;
+
+  static Future<void> bukaPlayStore() async {
+    // Aplikasi Play Store kalau ada; peramban kalau tidak.
+    try {
+      if (await launchUrl(
+        Konfigurasi.tautanPasar,
+        mode: LaunchMode.externalApplication,
+      )) {
+        return;
+      }
+    } catch (_) {}
+    await launchUrl(
+      Konfigurasi.tautanPlayStore,
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    child: _LayarInfo(
+      ikon: Icons.system_update_outlined,
+      judul: 'Perbarui aplikasi',
+      isi:
+          'Versi $terpasang sudah tidak didukung. Perbarui SIDIK Pelanggan '
+          'ke versi $terbaru untuk melanjutkan.',
+      aksi: 'Perbarui di Play Store',
+      onAksi: bukaPlayStore,
+    ),
+  );
+}
+
 class _LayarInfo extends StatelessWidget {
   const _LayarInfo({
     required this.ikon,
     required this.judul,
     required this.isi,
+    this.catatan,
     this.aksi,
     this.onAksi,
+    this.aksiTengah,
+    this.onAksiTengah,
     this.aksiKedua,
     this.onAksiKedua,
   });
@@ -169,8 +290,11 @@ class _LayarInfo extends StatelessWidget {
   final IconData ikon;
   final String judul;
   final String isi;
+  final String? catatan;
   final String? aksi;
   final VoidCallback? onAksi;
+  final String? aksiTengah;
+  final VoidCallback? onAksiTengah;
   final String? aksiKedua;
   final VoidCallback? onAksiKedua;
 
@@ -197,6 +321,14 @@ class _LayarInfo extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(isi, style: t.bodyMedium, textAlign: TextAlign.center),
+                  if (catatan != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      catatan!,
+                      style: t.bodySmall,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   if (aksi != null)
                     SidikTombol(
@@ -205,6 +337,15 @@ class _LayarInfo extends StatelessWidget {
                       penuh: true,
                       onPressed: onAksi,
                     ),
+                  if (aksiTengah != null) ...[
+                    const SizedBox(height: 10),
+                    SidikTombol(
+                      label: aksiTengah!,
+                      ikon: Icons.support_agent,
+                      penuh: true,
+                      onPressed: onAksiTengah,
+                    ),
+                  ],
                   if (aksiKedua != null)
                     SidikTombol(
                       label: aksiKedua!,

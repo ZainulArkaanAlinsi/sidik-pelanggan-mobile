@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
+import '../../widgets/daftar_berhalaman.dart';
 import '../../widgets/umum.dart';
 import 'sertifikat_detail_screen.dart';
 
-/// Daftar sertifikat terbit. Bawaannya cuma yang MASIH BERLAKU sebagai
+/// Daftar sertifikat terbit (cari + infinite scroll). Dibuka dari Beranda
+/// ("Lihat semua") dan tab Alat. Bawaannya cuma yang MASIH BERLAKU sebagai
 /// dokumen — yang sudah digantikan revisi disembunyikan supaya nomor lama
 /// tidak terkirim ke auditor. Satu sakelar untuk menampilkannya.
 class SertifikatScreen extends ConsumerStatefulWidget {
@@ -69,37 +72,30 @@ class _SertifikatScreenState extends ConsumerState<SertifikatScreen> {
                 ref.invalidate(daftarSertifikatProvider(kunci));
                 await ref.read(daftarSertifikatProvider(kunci).future);
               },
-              child: async.when(
-                loading: () => const Memuat(),
-                error: (e, _) => KeadaanGalat(
-                  galat: e,
-                  cobaLagi: () =>
-                      ref.invalidate(daftarSertifikatProvider(kunci)),
+              child: DaftarBerhalaman<Sertifikat>(
+                async: async,
+                namaButir: 'sertifikat',
+                muatLagi: ({ulangiGalat = false}) => ref
+                    .read(daftarSertifikatProvider(kunci).notifier)
+                    .muatLagi(ulangiGalat: ulangiGalat),
+                cobaLagi: () => ref.invalidate(daftarSertifikatProvider(kunci)),
+                kosong: KeadaanKosong(
+                  ikon: Icons.description_outlined,
+                  judul: _kata.isEmpty
+                      ? 'Belum ada sertifikat'
+                      : 'Tidak ada yang cocok',
+                  keterangan: _kata.isEmpty
+                      ? 'Sertifikat muncul di sini begitu diterbitkan dan disahkan laboratorium.'
+                      : 'Coba nomor atau nama alat yang lain.',
                 ),
-                data: (h) => h.isi.isEmpty
-                    ? KeadaanKosong(
-                        ikon: Icons.description_outlined,
-                        judul: _kata.isEmpty
-                            ? 'Belum ada sertifikat'
-                            : 'Tidak ada yang cocok',
-                        keterangan: _kata.isEmpty
-                            ? 'Sertifikat muncul di sini begitu diterbitkan dan disahkan laboratorium.'
-                            : 'Coba nomor atau nama alat yang lain.',
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(jarak, 4, jarak, 32),
-                        itemCount: h.isi.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (context, i) => KartuSertifikat(
-                          sertifikat: h.isi[i],
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  SertifikatDetailScreen(id: h.isi[i].id),
-                            ),
-                          ),
-                        ),
-                      ),
+                butir: (context, s) => KartuSertifikat(
+                  sertifikat: s,
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SertifikatDetailScreen(id: s.id),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

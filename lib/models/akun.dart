@@ -128,3 +128,76 @@ class StatusAplikasi {
     return 0;
   }
 }
+
+String? _teksInfo(Object? v) {
+  final s = v == null ? null : '$v'.trim();
+  return s == null || s.isEmpty ? null : s;
+}
+
+/// `GET /app/info` (kontrak lengkap §6) — kontak, dokumen hukum, alamat lab,
+/// dan petunjuk pengemasan. Diisi admin lab di panel; yang belum diisi
+/// `null`, dan aplikasi MENYEMBUNYIKAN tombolnya — tidak pernah mengarang
+/// nomor atau tautan.
+class InfoAplikasi {
+  const InfoAplikasi({
+    this.namaOrganisasi,
+    this.alamatOrganisasi,
+    this.teleponOrganisasi,
+    this.whatsapp,
+    this.whatsappUrl,
+    this.email,
+    this.jamLayanan,
+    this.kebijakanPrivasiUrl,
+    this.kebijakanPrivasiVersi,
+    this.syaratUrl,
+    this.syaratVersi,
+    this.hapusAkunUrl,
+    this.petunjukPengemasan,
+  });
+
+  static const kosong = InfoAplikasi();
+
+  final String? namaOrganisasi;
+  final String? alamatOrganisasi;
+  final String? teleponOrganisasi;
+  final String? whatsapp;
+  final String? whatsappUrl;
+  final String? email;
+  final String? jamLayanan;
+  final String? kebijakanPrivasiUrl;
+  final String? kebijakanPrivasiVersi;
+  final String? syaratUrl;
+  final String? syaratVersi;
+  final String? hapusAkunUrl;
+  final String? petunjukPengemasan;
+
+  /// Ada setidaknya satu jalan menghubungi lab.
+  bool get adaKontak =>
+      whatsappUrl != null || email != null || teleponOrganisasi != null;
+
+  bool get adaDokumen =>
+      kebijakanPrivasiUrl != null || syaratUrl != null || hapusAkunUrl != null;
+
+  factory InfoAplikasi.dariJson(Map<String, dynamic> j) {
+    final org = (j['organisasi'] as Map?) ?? const {};
+    final kontak = (j['kontak'] as Map?) ?? const {};
+    final dok = (j['dokumen'] as Map?) ?? const {};
+    final privasi = (dok['kebijakan_privasi'] as Map?) ?? const {};
+    final syarat = (dok['syarat_ketentuan'] as Map?) ?? const {};
+    return InfoAplikasi(
+      namaOrganisasi: _teksInfo(org['nama']),
+      alamatOrganisasi: _teksInfo(org['alamat']),
+      teleponOrganisasi: _teksInfo(org['telepon']),
+      whatsapp: _teksInfo(kontak['whatsapp']),
+      whatsappUrl: _teksInfo(kontak['whatsapp_url']),
+      email: _teksInfo(kontak['email']),
+      jamLayanan: _teksInfo(kontak['jam_layanan']),
+      kebijakanPrivasiUrl: _teksInfo(privasi['url']),
+      kebijakanPrivasiVersi: _teksInfo(privasi['versi']),
+      syaratUrl: _teksInfo(syarat['url']),
+      syaratVersi: _teksInfo(syarat['versi']),
+      hapusAkunUrl: _teksInfo(dok['hapus_akun_url']),
+      petunjukPengemasan: _teksInfo(j['petunjuk_pengemasan']),
+    );
+  }
+}

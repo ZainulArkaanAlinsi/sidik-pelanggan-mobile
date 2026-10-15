@@ -4,7 +4,7 @@ import '../core/api_pelanggan.dart';
 import '../core/format.dart';
 import '../core/theme/sidik_material.dart';
 import '../models/data_pelanggan.dart';
-import 'koreksi.dart' show statusDokumen;
+import 'kerangka.dart';
 import 'sidik/sidik_permukaan.dart';
 import 'sidik/sidik_status.dart';
 import 'sidik/sidik_tombol.dart';
@@ -15,13 +15,18 @@ import 'sidik/sidik_tombol.dart';
 
 const jarak = 16.0;
 
-/// Pemutar di tengah — dipakai waktu data pertama kali dimuat.
+/// Keadaan memuat: KERANGKA, bukan pemutar kosong (04-UI-UX §1.2).
+/// [Memuat.new] untuk daftar, [Memuat.detail] untuk layar detail.
 class Memuat extends StatelessWidget {
-  const Memuat({super.key});
+  const Memuat({super.key}) : _detail = false;
+
+  const Memuat.detail({super.key}) : _detail = true;
+
+  final bool _detail;
 
   @override
   Widget build(BuildContext context) =>
-      const Center(child: CircularProgressIndicator());
+      _detail ? const KerangkaDetail() : const KerangkaDaftar();
 }
 
 /// Galat yang MENJELASKAN langkah berikutnya, bukan cuma "error".
@@ -64,9 +69,38 @@ class KeadaanGalat extends StatelessWidget {
   }
 }
 
-/// Keadaan kosong: ikon + judul + satu kalimat yang bilang apa artinya.
+/// Keadaan kosong: ikon + judul + satu kalimat yang bilang apa artinya,
+/// dan bila ada, satu ajakan tindakan ([aksi], 04-UI-UX §1.2). Berupa
+/// `ListView` supaya tarik-untuk-muat-ulang tetap jalan.
 class KeadaanKosong extends StatelessWidget {
   const KeadaanKosong({
+    super.key,
+    required this.ikon,
+    required this.judul,
+    required this.keterangan,
+    this.aksi,
+  });
+
+  final IconData ikon;
+  final String judul;
+  final String keterangan;
+  final Widget? aksi;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    physics: const AlwaysScrollableScrollPhysics(),
+    padding: const EdgeInsets.all(jarak * 2),
+    children: [
+      KeadaanKosongIsi(ikon: ikon, judul: judul, keterangan: keterangan),
+      if (aksi != null) ...[const SizedBox(height: jarak), Center(child: aksi)],
+    ],
+  );
+}
+
+/// Isi [KeadaanKosong] tanpa daftar bergulir — untuk ditaruh di dalam
+/// daftar lain.
+class KeadaanKosongIsi extends StatelessWidget {
+  const KeadaanKosongIsi({
     super.key,
     required this.ikon,
     required this.judul,
@@ -80,8 +114,7 @@ class KeadaanKosong extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    return ListView(
-      padding: const EdgeInsets.all(jarak * 2),
+    return Column(
       children: [
         Icon(
           ikon,
@@ -151,43 +184,74 @@ class BarisInfo extends StatelessWidget {
 }
 
 /// Status kalibrasi alat sebagai lencana — satu-satunya pemetaan
-/// status → warna di aplikasi ini.
-StatusSidik statusAlat(StatusKalibrasi s) => switch (s) {
-  StatusKalibrasi.aman => const StatusSidik(
-    'Aman',
+/// status → warna di aplikasi ini (04-UI-UX §5: abu / biru / hijau / kuning /
+/// merah, selalu dengan teks dan ikon). [hari] = `hari_ke_jatuh_tempo`.
+StatusSidik statusAlat(StatusKalibrasi s, [int? hari]) => switch (s) {
+  StatusKalibrasi.terkalibrasi => StatusSidik(
+    s.label(hari),
     NadaStatus.lulus,
     Icons.check_circle_outline,
   ),
-  StatusKalibrasi.segera => const StatusSidik(
-    'Segera jatuh tempo',
+  StatusKalibrasi.mendekati => StatusSidik(
+    s.label(hari),
     NadaStatus.awas,
     Icons.schedule,
   ),
-  StatusKalibrasi.lewat => const StatusSidik(
-    'Lewat jatuh tempo',
+  StatusKalibrasi.lewat => StatusSidik(
+    s.label(hari),
     NadaStatus.gagal,
     Icons.error_outline,
   ),
-  StatusKalibrasi.nonaktif => const StatusSidik(
-    'Tidak aktif',
+  StatusKalibrasi.belumPernah => StatusSidik(
+    s.label(hari),
+    NadaStatus.draf,
+    Icons.event_busy_outlined,
+  ),
+  StatusKalibrasi.dalamProses => StatusSidik(
+    s.label(hari),
+    NadaStatus.tunggu,
+    Icons.autorenew,
+  ),
+  StatusKalibrasi.nonaktif => StatusSidik(
+    s.label(hari),
     NadaStatus.draf,
     Icons.pause_circle_outline,
   ),
-  StatusKalibrasi.belumAda => const StatusSidik(
-    'Belum ada jadwal',
-    NadaStatus.tunggu,
-    Icons.event_busy_outlined,
-  ),
 };
 
+/// Keputusan sertifikat. FAIL TIDAK dilunakkan (REQ-SRT-04): labelnya
+/// "Tidak memenuhi toleransi", merah, dengan ikon.
 StatusSidik? statusKeputusan(String? keputusan) => switch (keputusan) {
   'PASS' => const StatusSidik(
-    'PASS',
+    'Memenuhi toleransi',
     NadaStatus.lulus,
     Icons.check_circle_outline,
   ),
-  'FAIL' => const StatusSidik('FAIL', NadaStatus.gagal, Icons.cancel_outlined),
+  'FAIL' => const StatusSidik(
+    'Tidak memenuhi toleransi',
+    NadaStatus.gagal,
+    Icons.cancel_outlined,
+  ),
   _ => null,
+};
+
+/// Satu-satunya pemetaan status dokumen sertifikat → lencana.
+StatusSidik statusDokumen(StatusDokumen s) => switch (s) {
+  StatusDokumen.berlaku => StatusSidik(
+    s.label,
+    NadaStatus.lulus,
+    Icons.verified_outlined,
+  ),
+  StatusDokumen.digantikan => StatusSidik(
+    s.label,
+    NadaStatus.awas,
+    Icons.swap_horiz,
+  ),
+  StatusDokumen.dibatalkan => StatusSidik(
+    s.label,
+    NadaStatus.gagal,
+    Icons.block,
+  ),
 };
 
 /// Kartu satu alat di daftar.
@@ -211,7 +275,11 @@ class KartuAlat extends StatelessWidget {
             children: [
               Expanded(child: Text(alat.nama, style: t.titleSmall)),
               const SizedBox(width: 8),
-              SidikLencana(statusAlat(alat.status)),
+              Flexible(
+                child: SidikLencana(
+                  statusAlat(alat.status, alat.hariKeJatuhTempo),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -219,6 +287,7 @@ class KartuAlat extends StatelessWidget {
             [
               alat.merkModel,
               if (alat.serial != null) 'SN ${alat.serial}',
+              ?alat.lokasi,
             ].where((s) => s.isNotEmpty).join(' · '),
             style: t.bodySmall,
             maxLines: 1,
@@ -232,8 +301,9 @@ class KartuAlat extends StatelessWidget {
               Expanded(
                 child: Text(
                   alat.jatuhTempo == null
-                      ? 'Belum ada jadwal kalibrasi'
-                      : 'Jatuh tempo ${Format.tanggal(alat.jatuhTempo)} · ${Format.sisaHari(alat.hariKeJatuhTempo)}',
+                      ? 'Belum ada jadwal kalibrasi ulang'
+                      : '${Format.sisaHari(alat.hariKeJatuhTempo)} · '
+                            '${Format.tanggal(alat.jatuhTempo)}',
                   style: t.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -310,63 +380,6 @@ class KartuSertifikat extends StatelessWidget {
               ],
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-/// Kartu satu paket: nomor, tahap, dan batang kemajuan "x dari y alat".
-class KartuPaket extends StatelessWidget {
-  const KartuPaket({super.key, required this.paket, required this.onTap});
-
-  final Paket paket;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final m = SidikMaterial.of(context);
-    return Kertas(
-      onTap: onTap,
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(child: Text(paket.nomor, style: t.titleSmall)),
-              if (paket.terlambat)
-                const SidikLencana(
-                  StatusSidik(
-                    'Melewati janji',
-                    NadaStatus.awas,
-                    Icons.schedule,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            paket.tahapLabel,
-            style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: paket.kemajuan,
-              minHeight: 8,
-              backgroundColor: m.kertas2,
-              color: m.lulus,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${paket.jumlahSelesai} dari ${paket.jumlahAlat} alat selesai'
-            '${paket.janjiSelesai == null ? '' : ' · janji ${Format.tanggal(paket.janjiSelesai)}'}',
-            style: t.bodySmall,
-          ),
         ],
       ),
     );

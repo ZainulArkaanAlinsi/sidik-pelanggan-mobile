@@ -4,9 +4,10 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart' show MediaType;
 
+import 'id_unik.dart';
 import 'konfigurasi.dart';
+import 'penyimpan_cache.dart';
 
 /// Galat dari server, dalam bentuk kontrak `/api/pelanggan/v1`:
 /// `{"kode": "...", "message": "...", "errors": {...}}`.
@@ -51,17 +52,41 @@ class GalatApi implements Exception {
 
 /// Klien HTTP satu-satunya untuk aplikasi pelanggan.
 ///
-/// Dua header dipasang di SATU tempat ini:
+/// Header yang dipasang di SATU tempat ini:
 /// - `Authorization: Bearer` — token pelanggan (ability `pelanggan`);
 /// - `X-Perusahaan-Id` — perusahaan aktif, untuk akun yang jadi anggota lebih
 ///   dari satu perusahaan. Server tetap memeriksa keanggotaannya sendiri;
-///   header ini cuma MEMILIH, tidak pernah memberi akses.
+///   header ini cuma MEMILIH, tidak pernah memberi akses;
+/// - `X-App-Versi` — versi aplikasi terpasang (gerbang versi minimum di server
+///   dan bahan dukungan);
+/// - `X-Request-Id` — UUID per panggilan (NFR-11), supaya keluhan "tadi pagi
+///   gagal" bisa dicari di log server. Percobaan ulang memakai ID yang sama.
+///
+/// Jaringan (NFR-06):
+/// - `GET` diulang otomatis 2× kalau koneksi gagal CEPAT (soket/klien). Batas
+///   waktu 20 detik tidak diulang — tiga kali 20 detik adalah satu menit
+///   menatap layar kosong.
+/// - Jawaban `GET` yang berhasil disimpan ke [cache]; kalau jaringan putus,
+///   jawaban terakhir itu yang dikembalikan dan [saatOffline] dipanggil
+///   dengan waktunya (banner "Anda sedang offline…"). Galat server (4xx/5xx)
+///   TIDAK pernah dijawab dari cache: data yang ditolak server tidak boleh
+///   tampil seolah masih boleh dilihat.
 class ApiPelanggan {
   ApiPelanggan({
     http.Client? klien,
     this.token,
     this.perusahaanId,
     this.saatTokenDitolak,
+    this.cache,
+    this.lingkupCache,
+    this.versiApp,
+    this.saatOffline,
+    this.saatOnline,
+    this.jedaUlang = const [
+      Duration(milliseconds: 500),
+      Duration(milliseconds: 1500),
+    ],
+    this.batasWaktu = Konfigurasi.batasWaktu,
   }) : _klien = klien ?? http.Client();
 
   final http.Client _klien;
@@ -70,6 +95,29 @@ class ApiPelanggan {
 
   /// Dipanggil sekali waktu server menjawab 401 — sesi dianggap berakhir.
   void Function()? saatTokenDitolak;
+
+  /// Cache jawaban `GET`. `null` = tanpa cache.
+  PenyimpanCache? cache;
+
+  /// Pemilik cache — `u{id pengguna}`. Tanpa ini tidak ada yang disimpan
+  /// maupun dibaca, jadi data akun A tidak pernah tersaji ke akun B.
+  String? lingkupCache;
+
+  /// Versi aplikasi terpasang (`1.2.0+7`), dikirim sebagai `X-App-Versi`.
+  String? versiApp;
+
+  /// Jaringan putus. Argumennya waktu data cache yang disajikan, atau `null`
+  /// kalau tidak ada cache untuk permintaan itu.
+  void Function(DateTime? dataTerakhir)? saatOffline;
+
+  /// Satu permintaan berhasil sampai ke server (apa pun status HTTP-nya).
+  void Function()? saatOnline;
+
+  /// Jeda sebelum percobaan ulang GET ke-1, ke-2. Panjangnya = jumlah ulang.
+  final List<Duration> jedaUlang;
+
+  /// Batas waktu satu panggilan JSON (NFR-06: 20 detik).
+  final Duration batasWaktu;
 
   Uri _uri(String jalur, [Map<String, String?>? query]) {
     final bersih = <String, String>{
@@ -81,47 +129,95 @@ class ApiPelanggan {
     ).replace(queryParameters: bersih.isEmpty ? null : bersih);
   }
 
-  Map<String, String> get _header => {
+  Map<String, String> _header(String idPermintaan) => {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
     if (token != null) 'Authorization': 'Bearer $token',
     if (perusahaanId != null) 'X-Perusahaan-Id': '$perusahaanId',
+    'X-App-Versi': ?versiApp,
+    'X-Request-Id': idPermintaan,
   };
+
+  /// Kunci cache: pemilik + perusahaan + jalur lengkap dengan query. `null`
+  /// kalau belum ada pemilik (belum masuk) — tidak ada yang disimpan.
+  String? _kunciCache(Uri uri) {
+    final lingkup = lingkupCache;
+    if (cache == null || lingkup == null) return null;
+    final jalur = uri.hasQuery ? '${uri.path}?${uri.query}' : uri.path;
+    return '$lingkup|p${perusahaanId ?? '-'}|$jalur';
+  }
 
   Future<Map<String, dynamic>> get(
     String jalur, {
     Map<String, String?>? query,
-  }) => _kirim(() => _klien.get(_uri(jalur, query), headers: _header));
+  }) async {
+    final uri = _uri(jalur, query);
+    final kunci = _kunciCache(uri);
+    final id = IdUnik.uuid4();
+    try {
+      return await _kirim(
+        () => _klien.get(uri, headers: _header(id)),
+        ulang: true,
+        simpanKe: kunci,
+      );
+    } on GalatApi catch (e) {
+      // Tanpa kunci, `_kirim` sudah memanggil `saatOffline` sendiri.
+      if (!e.jaringan || kunci == null) rethrow;
+      final simpanan = await cache!.baca(kunci);
+      saatOffline?.call(simpanan?.waktu);
+      if (simpanan == null) rethrow;
+      final isi = jsonDecode(simpanan.isi);
+      return isi is Map<String, dynamic> ? isi : {'data': isi};
+    }
+  }
 
-  Future<Map<String, dynamic>> post(String jalur, [Object? badan]) => _kirim(
-    () => _klien.post(
-      _uri(jalur),
-      headers: _header,
-      body: jsonEncode(badan ?? {}),
-    ),
-  );
+  Future<Map<String, dynamic>> post(String jalur, [Object? badan]) {
+    final id = IdUnik.uuid4();
+    return _kirim(
+      () => _klien.post(
+        _uri(jalur),
+        headers: _header(id),
+        body: jsonEncode(badan ?? {}),
+      ),
+    );
+  }
 
-  Future<Map<String, dynamic>> put(String jalur, Object badan) => _kirim(
-    () => _klien.put(_uri(jalur), headers: _header, body: jsonEncode(badan)),
-  );
+  Future<Map<String, dynamic>> put(String jalur, Object badan) {
+    final id = IdUnik.uuid4();
+    return _kirim(
+      () => _klien.put(
+        _uri(jalur),
+        headers: _header(id),
+        body: jsonEncode(badan),
+      ),
+    );
+  }
 
-  Future<Map<String, dynamic>> patch(String jalur, Object badan) => _kirim(
-    () => _klien.patch(_uri(jalur), headers: _header, body: jsonEncode(badan)),
-  );
+  Future<Map<String, dynamic>> patch(String jalur, Object badan) {
+    final id = IdUnik.uuid4();
+    return _kirim(
+      () => _klien.patch(
+        _uri(jalur),
+        headers: _header(id),
+        body: jsonEncode(badan),
+      ),
+    );
+  }
 
-  Future<Map<String, dynamic>> delete(String jalur, [Object? badan]) => _kirim(
-    () => _klien.delete(
-      _uri(jalur),
-      headers: _header,
-      body: badan == null ? null : jsonEncode(badan),
-    ),
-  );
+  Future<Map<String, dynamic>> delete(String jalur, [Object? badan]) {
+    final id = IdUnik.uuid4();
+    return _kirim(
+      () => _klien.delete(
+        _uri(jalur),
+        headers: _header(id),
+        body: badan == null ? null : jsonEncode(badan),
+      ),
+    );
+  }
 
   /// Unduh berkas (PDF sertifikat) sebagai byte — lewat header Bearer yang
   /// sama. Tidak bisa diserahkan ke peramban: peramban tidak membawa token.
-  ///
-  /// [terima] = tipe berkas yang diharapkan (`application/pdf` bawaan,
-  /// `image/*` untuk foto pelat nama).
+
   Future<Uint8List> unduh(
     String jalur, {
     String terima = 'application/pdf',
@@ -129,63 +225,59 @@ class ApiPelanggan {
     final http.Response r;
     try {
       r = await _klien
-          .get(_uri(jalur), headers: {..._header, 'Accept': terima})
+          .get(
+            _uri(jalur),
+            headers: {..._header(IdUnik.uuid4()), 'Accept': terima},
+          )
           .timeout(const Duration(seconds: 60));
     } on SocketException {
+      saatOffline?.call(null);
       throw GalatApi.jaringan();
     } on TimeoutException {
       throw GalatApi.jaringan();
     } on http.ClientException {
+      saatOffline?.call(null);
       throw GalatApi.jaringan();
     }
+    saatOnline?.call();
     if (r.statusCode >= 200 && r.statusCode < 300) return r.bodyBytes;
     throw _galatDari(r);
   }
 
-  /// Unggah satu berkas sebagai multipart (bidang [bidang], mis. `foto`).
-  /// `Content-Type` sengaja TIDAK dipasang: `MultipartRequest` menulis sendiri
-  /// dengan batas (boundary) yang benar.
-  Future<Map<String, dynamic>> unggah(
-    String jalur,
-    Uint8List byte, {
-    String bidang = 'foto',
-    String namaBerkas = 'foto.jpg',
-    String tipe = 'image/jpeg',
-  }) => _kirim(() async {
-    final req = http.MultipartRequest('POST', _uri(jalur))
-      ..headers.addAll({
-        for (final e in _header.entries)
-          if (e.key != 'Content-Type') e.key: e.value,
-      })
-      ..files.add(
-        http.MultipartFile.fromBytes(
-          bidang,
-          byte,
-          filename: namaBerkas,
-          contentType: MediaType.parse(tipe),
-        ),
-      );
-    return http.Response.fromStream(await _klien.send(req));
-  }, batas: const Duration(seconds: 60));
-
   Future<Map<String, dynamic>> _kirim(
     Future<http.Response> Function() aksi, {
-    Duration batas = Konfigurasi.batasWaktu,
+    Duration? batas,
+    bool ulang = false,
+    String? simpanKe,
   }) async {
-    final http.Response r;
-    try {
-      r = await aksi().timeout(batas);
-    } on SocketException {
-      throw GalatApi.jaringan();
-    } on TimeoutException {
-      throw GalatApi.jaringan();
-    } on http.ClientException {
-      throw GalatApi.jaringan();
+    http.Response? r;
+    for (var percobaan = 0; r == null; percobaan++) {
+      try {
+        r = await aksi().timeout(batas ?? batasWaktu);
+      } on TimeoutException {
+        if (simpanKe == null) saatOffline?.call(null);
+        throw GalatApi.jaringan();
+      } on Exception catch (e) {
+        if (e is! SocketException && e is! http.ClientException) rethrow;
+        if (ulang && percobaan < jedaUlang.length) {
+          await Future<void>.delayed(jedaUlang[percobaan]);
+          continue;
+        }
+        // GET yang punya cache memanggil saatOffline sendiri, bersama waktu
+        // datanya — jangan dua kali.
+        if (simpanKe == null) saatOffline?.call(null);
+        throw GalatApi.jaringan();
+      }
     }
+    saatOnline?.call();
 
     if (r.statusCode >= 200 && r.statusCode < 300) {
       if (r.body.isEmpty) return const {};
       final isi = jsonDecode(r.body);
+      if (simpanKe != null) {
+        // Tidak ditunggu: menulis cache tidak boleh memperlambat layar.
+        unawaited(cache?.simpan(simpanKe, r.body));
+      }
       return isi is Map<String, dynamic> ? isi : {'data': isi};
     }
 
@@ -215,7 +307,13 @@ class ApiPelanggan {
     return GalatApi(
       status: r.statusCode,
       kode: isi['kode'] as String?,
-      pesan: (isi['message'] as String?) ?? _pesanUmum(r.statusCode),
+      // 404 selalu memakai kalimat yang sama (04-UI-UX §6): pesan bawaan
+      // Laravel menyebut nama model ("No query results for model …"), dan
+      // "tidak ditemukan" saja membuat pelanggan mengira datanya hilang
+      // padahal bisa jadi milik perusahaan lain (BR-02).
+      pesan: r.statusCode == 404
+          ? pesan404
+          : (isi['message'] as String?) ?? _pesanUmum(r.statusCode),
       isian: isian,
       data: isi['data'] is Map<String, dynamic>
           ? isi['data'] as Map<String, dynamic>
@@ -223,10 +321,13 @@ class ApiPelanggan {
     );
   }
 
+  static const pesan404 =
+      'Data ini tidak ditemukan atau Anda tidak punya akses.';
+
   static String _pesanUmum(int status) => switch (status) {
     401 => 'Sesi Anda berakhir. Silakan masuk lagi.',
     403 => 'Akun ini belum boleh membuka bagian ini.',
-    404 => 'Data tidak ditemukan.',
+    404 => pesan404,
     429 => 'Terlalu banyak percobaan. Tunggu sebentar, lalu coba lagi.',
     503 => 'Layanan sedang dalam perbaikan. Coba lagi sebentar lagi.',
     _ => 'Terjadi kesalahan di server ($status). Coba lagi.',

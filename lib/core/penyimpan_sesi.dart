@@ -11,11 +11,21 @@ class PenyimpanSesi {
 
   static const _kunciToken = 'pelanggan.token';
   static const _kunciPerusahaan = 'pelanggan.perusahaan_id';
+  static const _kunciPengguna = 'pelanggan.user_id';
 
   Future<String?> token() => _s.read(key: _kunciToken);
 
   Future<int?> perusahaanId() async =>
       int.tryParse(await _s.read(key: _kunciPerusahaan) ?? '');
+
+  /// ID akun yang terakhir masuk di HP ini — pemilik cache offline. Dibaca
+  /// SEBELUM `GET /saya`, supaya aplikasi yang dibuka tanpa sinyal tetap bisa
+  /// memulihkan akun & data terakhirnya dari cache.
+  Future<int?> penggunaId() async =>
+      int.tryParse(await _s.read(key: _kunciPengguna) ?? '');
+
+  Future<void> simpanPengguna(int id) =>
+      _s.write(key: _kunciPengguna, value: '$id');
 
   Future<void> simpanToken(String token) =>
       _s.write(key: _kunciToken, value: token);
@@ -27,5 +37,6 @@ class PenyimpanSesi {
   Future<void> hapus() async {
     await _s.delete(key: _kunciToken);
     await _s.delete(key: _kunciPerusahaan);
+    await _s.delete(key: _kunciPengguna);
   }
 }
