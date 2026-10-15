@@ -5,10 +5,20 @@
          padahal semuanya lancar saat dicoba dengan `flutter run`. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Android 13+: izin menampilkan notifikasi. Dimintanya KONTEKSTUAL
+         (saat alat pertama tampil di Beranda, REQ-NTF-08), bukan saat aplikasi dibuka. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Cadangan otomatis dimatikan: token sesi terkunci ke Keystore HP ini
+         dan cache berisi data perusahaan pelanggan. Lihat
+         res/xml/aturan_ekstraksi_data.xml. -->
     <application
-        android:label="sidik_pelanggan"
+        android:label="SIDIK Pelanggan"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/aturan_ekstraksi_data">
         <activity
             android:name=".MainActivity"
             android:exported="true"

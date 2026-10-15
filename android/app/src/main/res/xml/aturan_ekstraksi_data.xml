@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+ : tidak ada satu pun data aplikasi ini yang ikut cadangan awan
+     maupun pindah-HP (device transfer).
+
+     - Token sesi ada di flutter_secure_storage, terkunci ke Keystore HP ini.
+       Dipulihkan ke HP lain, kuncinya tidak ada dan bacaannya melempar
+       InvalidKeyException (README flutter_secure_storage, "Disabling Auto
+       Backup").
+     - Cache data perusahaan & draf permintaan memuat data pelanggan; tempatnya
+       di HP ini saja, tidak di Google Drive.
+
+     Pasangan untuk Android 11 ke bawah: android:fullBackupContent="false"
+     di AndroidManifest.xml. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </device-transfer>
+</data-extraction-rules>
