@@ -102,10 +102,11 @@ void main() {
       expect(n, 1);
     });
 
-    test('batas waktu tidak diulang', () async {
+    test('GET kena batas waktu diulang SEKALI dengan batas bangun', () async {
       var n = 0;
       final api = ApiPelanggan(
         batasWaktu: const Duration(milliseconds: 20),
+        batasBangun: const Duration(milliseconds: 20),
         jedaUlang: const [Duration.zero, Duration.zero],
         klien: MockClient((_) async {
           n++;
@@ -114,6 +115,60 @@ void main() {
         }),
       );
       await expectLater(api.get('/alat'), throwsA(isA<GalatApi>()));
+      expect(n, 2);
+    });
+
+    test(
+      'server bangun: percobaan kedua dengan batas panjang berhasil',
+      () async {
+        var n = 0;
+        final api = ApiPelanggan(
+          batasWaktu: const Duration(milliseconds: 20),
+          batasBangun: const Duration(seconds: 5),
+          jedaUlang: const [Duration.zero, Duration.zero],
+          klien: MockClient((_) async {
+            n++;
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            return json({'ok': true});
+          }),
+        );
+        expect(await api.get('/alat'), {'ok': true});
+        expect(n, 2);
+      },
+    );
+
+    test(
+      '502 saat bangun diulang sekali untuk GET, tidak untuk POST',
+      () async {
+        var n = 0;
+        ApiPelanggan buat() => ApiPelanggan(
+          jedaBangun: Duration.zero,
+          jedaUlang: const [Duration.zero, Duration.zero],
+          klien: MockClient((_) async {
+            n++;
+            return n == 1 ? http.Response('', 502) : json({'ok': true});
+          }),
+        );
+        expect(await buat().get('/alat'), {'ok': true});
+        expect(n, 2);
+
+        n = 0;
+        await expectLater(buat().post('/x', {}), throwsA(isA<GalatApi>()));
+        expect(n, 1);
+      },
+    );
+
+    test('POST kena batas waktu tidak diulang', () async {
+      var n = 0;
+      final api = ApiPelanggan(
+        batasWaktu: const Duration(milliseconds: 20),
+        klien: MockClient((_) async {
+          n++;
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+          return json({});
+        }),
+      );
+      await expectLater(api.post('/x', {}), throwsA(isA<GalatApi>()));
       expect(n, 1);
     });
   });

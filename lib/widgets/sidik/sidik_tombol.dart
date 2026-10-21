@@ -80,7 +80,8 @@ class _SidikTombolState extends State<SidikTombol> {
   @override
   Widget build(BuildContext context) {
     final m = SidikMaterial.of(context);
-    final tinggi = widget.kecil ? 42.0 : 48.0;
+    // Minimal 44 dp supaya tetap mudah ditekan jempol.
+    final tinggi = widget.kecil ? 44.0 : 48.0;
     final radius = widget.kecil
         ? SidikMaterial.sudutLogam - 1
         : SidikMaterial.sudutLogam;

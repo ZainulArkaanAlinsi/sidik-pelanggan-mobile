@@ -157,24 +157,64 @@ class PilihPerusahaanScreen extends ConsumerWidget {
 }
 
 /// Layar pembuka selagi sesi dipulihkan — nama aplikasi + bilah tipis,
-/// bukan pemutar kosong.
-class _Pembuka extends StatelessWidget {
+/// bukan pemutar kosong. Server gratis bisa tidur dan butuh 30-90 detik untuk
+/// bangun; sesudah beberapa detik keterangannya muncul supaya layar tidak
+/// terlihat macet.
+class _Pembuka extends StatefulWidget {
   const _Pembuka();
+
+  /// Lama menunggu sebelum keterangan "server sedang dinyalakan" muncul.
+  static const jedaKeterangan = Duration(seconds: 5);
+
+  @override
+  State<_Pembuka> createState() => _PembukaState();
+}
+
+class _PembukaState extends State<_Pembuka> {
+  Timer? _timer;
+  bool _lama = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(_Pembuka.jedaKeterangan, () {
+      if (mounted) setState(() => _lama = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final m = SidikMaterial.of(context);
+    final teks = Theme.of(context).textTheme;
     return Scaffold(
       body: Center(
         child: Semantics(
           label: 'Memuat SIDIK Pelanggan',
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('SIDIK PELANGGAN', style: m.gayaEtsa(ukuran: 14)),
-              const SizedBox(height: 16),
-              const SizedBox(width: 120, child: LinearProgressIndicator()),
-            ],
+          liveRegion: true,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('SIDIK PELANGGAN', style: m.gayaEtsa(ukuran: 14)),
+                const SizedBox(height: 16),
+                const SizedBox(width: 120, child: LinearProgressIndicator()),
+                if (_lama) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Server sedang dinyalakan.\nBiasanya 30–60 detik, mohon tunggu.',
+                    textAlign: TextAlign.center,
+                    style: teks.bodyMedium,
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
