@@ -21,8 +21,13 @@ const _izinTulis = <String>{
   'POST /notifikasi/dibaca-semua',
 };
 
-/// Only file allowed to talk HTTP directly.
+/// Only file allowed to talk HTTP to OUR API.
 const _klienHttp = 'lib/core/api_pelanggan.dart';
+
+/// The in-app updater's GitHub Releases client (manifest + APK download).
+/// It is the only other file allowed to import package:http, and it must never
+/// see the customer session: see the "update client" test below.
+const _klienRilis = 'lib/services/klien_rilis.dart';
 
 final _panggilTulis = RegExp(
   r'(\w+)\s*\.\s*(post|put|patch|delete)\s*\(\s*'
@@ -45,10 +50,35 @@ void main() {
     final pelanggar = [
       for (final f in _berkasDart())
         if (_jalur(f) != _klienHttp &&
+            _jalur(f) != _klienRilis &&
             f.readAsStringSync().contains('package:http/'))
           _jalur(f),
     ];
     expect(pelanggar, isEmpty);
+  });
+
+  test('update client is GET-only and never carries the session', () {
+    final isi = File(_klienRilis).readAsStringSync();
+    // No path to the bearer token, active company, or API client.
+    for (final terlarang in [
+      'api_pelanggan.dart',
+      'penyimpan_sesi.dart',
+      'sesi_provider.dart',
+      'ApiPelanggan',
+      'Authorization',
+      'Bearer',
+      'X-Perusahaan',
+      'token',
+    ]) {
+      expect(isi, isNot(contains(terlarang)), reason: terlarang);
+    }
+    // Requests it builds: only GETs.
+    final verba = RegExp(r"Request\(\s*'(\w+)'").allMatches(isi);
+    expect(verba.map((m) => m.group(1)).toSet(), {'GET'});
+    expect(
+      RegExp(r'_client\s*\.\s*(post|put|patch|delete|head)\b').hasMatch(isi),
+      isFalse,
+    );
   });
 
   test('every write request is on the allowlist', () {

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -11,6 +12,8 @@ import 'package:sidik_pelanggan/core/penyimpan_perangkat.dart';
 import 'package:sidik_pelanggan/core/penyimpan_sesi.dart';
 import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
+import 'package:sidik_pelanggan/models/rilis_aplikasi.dart';
+import 'package:sidik_pelanggan/providers/pembaruan_provider.dart';
 import 'package:sidik_pelanggan/providers/perangkat_provider.dart';
 import 'package:sidik_pelanggan/providers/push_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
@@ -18,6 +21,7 @@ import 'package:sidik_pelanggan/screens/alat/alat_detail_screen.dart';
 import 'package:sidik_pelanggan/screens/beranda/beranda_screen.dart';
 import 'package:sidik_pelanggan/screens/rangka.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_screen.dart';
+import 'package:sidik_pelanggan/services/klien_rilis.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
 import 'package:sidik_pelanggan/services/push_pelanggan.dart';
 
@@ -132,8 +136,24 @@ class _Palsu extends LayananPelanggan {
   Future<int> jumlahNotifikasiBelumDibaca() async => 3;
 }
 
-Widget _bungkus(Widget anak, _Palsu layanan) => ProviderScope(
+class _KlienRilisWajib extends KlienRilisMati {
+  @override
+  Future<RilisAplikasi?> ambilTerbaru() async => RilisAplikasi(
+    versi: '2.0.0',
+    build: 2,
+    url: Uri.parse('https://github.com/x/y/releases/download/v2/a.apk'),
+    sha256: 'a' * 64,
+    wajib: true,
+  );
+}
+
+Widget _bungkus(
+  Widget anak,
+  _Palsu layanan, {
+  List<Override> tambahan = const [],
+}) => ProviderScope(
   overrides: [
+    ...tambahan,
     penyimpanSesiProvider.overrideWithValue(_Sunyi()),
     penyimpanPerangkatProvider.overrideWithValue(_Perangkat()),
     layananProvider.overrideWithValue(layanan),
@@ -242,5 +262,29 @@ void main() {
       findsNothing,
     );
     expect(find.descendant(of: nav, matching: find.text('Alat')), findsNothing);
+  });
+
+  testWidgets('Rangka: rilis wajib membuka dialog yang tidak bisa ditutup', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _bungkus(
+        const Rangka(),
+        _Palsu(),
+        tambahan: [
+          pembaruanAktifProvider.overrideWithValue(true),
+          klienRilisProvider.overrideWithValue(_KlienRilisWajib()),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pembaruan wajib'), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Pembaruan wajib'), findsOneWidget);
+
+    // Lepas Rangka: penjadwal (timer per jam) ikut dibuang.
+    await tester.pumpWidget(const SizedBox());
   });
 }

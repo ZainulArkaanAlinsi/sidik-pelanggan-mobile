@@ -48,12 +48,28 @@ abstract final class Konfigurasi {
   /// Server gratis yang tidur butuh 30-90 detik untuk bangun.
   static const Duration batasBangun = Duration(seconds: 90);
 
-  /// ID paket di Play Store (`applicationId` di `android/app/build.gradle.kts`).
-  /// Permanen begitu diunggah ke Play — jangan diganti sesudah rilis pertama.
+  /// `applicationId` di `android/app/build.gradle.kts`. Pembaruan hanya bisa
+  /// dipasang di atas APK dengan ID dan kunci tanda tangan yang sama.
   static const String idPaket = 'com.ptsidik.pelanggan';
 
-  static Uri get tautanPlayStore =>
-      Uri.parse('https://play.google.com/store/apps/details?id=$idPaket');
+  /// Aplikasi ini TIDAK ada di Play Store: APK dibagikan lewat GitHub
+  /// Releases repo ini (`tool/rilis.ps1`). Tiap rilis membawa dua aset,
+  /// `sidik-pelanggan.apk` dan manifes `versi-pelanggan.json`.
+  static const String repoRilis = 'ZainulArkaanAlinsi/sidik-pelanggan-mobile';
 
-  static Uri get tautanPasar => Uri.parse('market://details?id=$idPaket');
+  /// Manifes rilis terbaru. `releases/latest/download/…` dialihkan GitHub ke
+  /// aset rilis terakhir — tanpa API, jadi tanpa batas 60 panggilan/jam per IP.
+  /// Bisa ditimpa `--dart-define=URL_MANIFES_RILIS=…` untuk uji coba.
+  static const String urlManifesRilis = String.fromEnvironment(
+    'URL_MANIFES_RILIS',
+    defaultValue:
+        'https://github.com/$repoRilis/releases/latest/download/versi-pelanggan.json',
+  );
+
+  /// Halaman rilis — jalan keluar manual kalau pemasangan di aplikasi gagal.
+  static Uri get halamanRilis =>
+      Uri.parse('https://github.com/$repoRilis/releases/latest');
+
+  /// Jeda minimum antar-pemeriksaan pembaruan (buka lagi / berkala).
+  static const Duration selangCekPembaruan = Duration(hours: 1);
 }
