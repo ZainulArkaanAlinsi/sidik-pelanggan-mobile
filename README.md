@@ -38,6 +38,25 @@ kebenaran. Untuk menyalakan push:
    didaftarkan lewat `POST /pelanggan/v1/perangkat` hanya menerima kabar akun
    pelanggan (dijaga `DataPelangganTest::test_push_pelanggan_tidak_mendarat_di_token_aplikasi_internal`).
 
+## Rilis & pembaruan di dalam aplikasi
+
+Aplikasi TIDAK ada di Play Store. APK dibagikan lewat GitHub Releases repo ini;
+aplikasi terpasang membaca `releases/latest/download/versi-pelanggan.json`
+(saat masuk, saat dibuka lagi, dan tiap jam — paling sering sekali per jam),
+menampilkan banner "Versi X tersedia" di atas navigasi bawah, mengunduh APK
+(otomatis hanya di Wi-Fi; kapan saja kalau diketuk), mencocokkan SHA-256, lalu
+membuka pemasang Android (`PackageInstaller`). Rilis `wajib` dan gerbang versi
+minimum server memakai dialog/layar yang tidak bisa ditutup.
+
+1. Naikkan `version:` di `pubspec.yaml` — angka build sesudah `+` WAJIB naik.
+2. Pastikan `android/key.properties` + keystore rilis ada (kunci yang sama
+   dengan APK yang sudah terpasang di HP pelanggan).
+3. `powershell -ExecutionPolicy Bypass -File tool/rilis.ps1 -Catatan "…"`
+   (tambah `-Wajib` untuk pembaruan wajib). Skrip membangun APK, menulis
+   `versi-pelanggan.json`, dan menjalankan `gh release create`.
+
+Uji ke manifes lain: `--dart-define=URL_MANIFES_RILIS=https://…/versi-pelanggan.json`.
+
 ## Peta layar → endpoint
 
 | Layar | Endpoint |
