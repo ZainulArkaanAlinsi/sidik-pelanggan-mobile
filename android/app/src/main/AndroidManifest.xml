@@ -9,6 +9,18 @@
          (saat alat pertama tampil di Beranda, REQ-NTF-08), bukan saat aplikasi dibuka. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
+    <!-- Pembaruan di dalam aplikasi. Aplikasi ini TIDAK ada di Play Store:
+         APK dibagikan lewat GitHub Releases dan dipasang lewat PackageInstaller
+         (`PemasangSesi.kt`, pola yang sama dengan aplikasi lab). Izin ini
+         sendiri tidak memberi hak memasang diam-diam; pelanggan tetap harus
+         mengizinkan "Instal aplikasi tidak dikenal" sekali. Kalau suatu hari
+         aplikasi ini masuk Play Store, baris ini yang pertama dicabut. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+
+    <!-- Membedakan Wi-Fi (tak berbayar) dari data seluler: unduhan pembaruan
+         OTOMATIS hanya di jaringan tak berbayar. Izin normal, tanpa dialog. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
     <!-- Cadangan otomatis dimatikan: token sesi terkunci ke Keystore HP ini
          dan cache berisi data perusahaan pelanggan. Lihat
          res/xml/aturan_ekstraksi_data.xml. -->
@@ -41,6 +53,11 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Hasil sesi PackageInstaller dari `PemasangSesi`. Tidak diekspor:
+             yang mengirim cuma PendingIntent milik aplikasi ini sendiri. -->
+        <receiver
+            android:name=".PenerimaHasilPasang"
+            android:exported="false"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

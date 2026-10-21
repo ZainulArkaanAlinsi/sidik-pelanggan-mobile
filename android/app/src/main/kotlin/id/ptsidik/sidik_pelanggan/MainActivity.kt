@@ -23,6 +23,30 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // Pembaruan di dalam aplikasi — lihat `PemasangSesi.kt` dan
+        // `lib/services/pemasang_apk.dart`.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "sidik_pelanggan/pembaruan")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "pasang" -> {
+                        val jalur = call.argument<String>("jalur")
+                        if (jalur == null) {
+                            result.success("gagal: jalur kosong")
+                            return@setMethodCallHandler
+                        }
+                        // Menyalin APK puluhan MB ke sesi di thread utama = ANR.
+                        Thread {
+                            val hasil = PemasangSesi.pasang(applicationContext, jalur)
+                            runOnUiThread { result.success(hasil) }
+                        }.start()
+                    }
+                    "bukaIzinPasang" -> result.success(PemasangSesi.bukaIzinPasang(this))
+                    "jaringanTakBerbayar" ->
+                        result.success(PemasangSesi.jaringanTakBerbayar(applicationContext))
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     private fun bukaSetelanNotifikasi(): Boolean =
