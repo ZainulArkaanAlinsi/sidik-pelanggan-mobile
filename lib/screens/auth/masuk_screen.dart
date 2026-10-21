@@ -70,9 +70,26 @@ class _MasukScreenState extends ConsumerState<MasukScreen> {
                 Text('Masuk', style: t.headlineMedium),
                 const SizedBox(height: 4),
                 Text(
-                  'Lihat status kalibrasi alat, unduh sertifikat, dan lacak paket Anda di laboratorium PT Sidik.',
+                  'Lihat status kalibrasi alat, unduh sertifikat, dan lihat riwayat kalibrasi alat Anda di PT Sidik.',
                   style: t.bodyMedium,
                 ),
+                if (ref.watch(sesiBerakhirProvider)) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: m.awasTipis,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Sesi Anda berakhir. Silakan masuk lagi. Draf Anda '
+                      'tetap tersimpan.',
+                      style: t.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 TextField(
                   controller: _email,

@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/sidik_material.dart';
 import '../../providers/perangkat_provider.dart';
+import '../../providers/sesi_provider.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
+import '../akun/bantuan_screen.dart';
 import 'terima_undangan_screen.dart';
 
 /// Sambutan peluncuran pertama di HP ini (PL_Sambutan). Dua pintu saja, sama
@@ -18,6 +20,8 @@ class SambutanScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final m = SidikMaterial.of(context);
     final t = Theme.of(context).textTheme;
+    // "Hubungi PT Sidik" hanya kalau lab mengisi kontaknya (GET /app/info).
+    final adaKontak = ref.watch(infoAplikasiProvider).value?.adaKontak ?? false;
 
     return Scaffold(
       body: SafeArea(
@@ -33,7 +37,7 @@ class SambutanScreen extends ConsumerWidget {
                 Text('Selamat datang', style: t.headlineMedium),
                 const SizedBox(height: 8),
                 Text(
-                  'Jadwal kalibrasi ulang, status permintaan, dan sertifikat '
+                  'Jadwal kalibrasi ulang, riwayat kalibrasi, dan sertifikat '
                   'semua alat perusahaan Anda, di satu tempat.',
                   style: t.bodyMedium,
                 ),
@@ -67,6 +71,20 @@ class SambutanScreen extends ConsumerWidget {
                   'perusahaan Anda. Belum dapat undangan? Hubungi PT Sidik.',
                   style: t.bodySmall,
                 ),
+                if (adaKontak)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: SidikTombol(
+                      label: 'Hubungi PT Sidik',
+                      ikon: Icons.support_agent,
+                      ragam: RagamTombol.teks,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const BantuanScreen(),
+                        ),
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 24),
                 Text(
                   'PT Sistem Dirgantara Inovasi Teknologi · KAN LK-285-IDN',

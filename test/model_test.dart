@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/models/akun.dart';
-import 'package:sidik_pelanggan/models/anggota.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
+import 'package:sidik_pelanggan/screens/tautan.dart';
 
 /// Model dibaca dari bentuk respons yang SAMA dengan resource di API
 /// (`App\Http\Resources\Pelanggan\*`, fixture `tests/Fixtures/pelanggan/`).
@@ -98,85 +98,75 @@ void main() {
     expect(s.penandaTangan, 'Dr. Contoh, Manajer Teknis');
   });
 
-  test('paket dari /paket/{id} — kemajuan & garis waktu', () {
-    final p = Paket.dariJson(
-      {
-        'id': 1,
-        'nomor': 'ORD/2026/09/0001',
-        'tanggal_masuk': '2026-09-01',
-        'tanggal_janji_selesai': '2026-09-10',
-        'terlambat': true,
-        'tahap': 'menunggu_pemeriksaan',
-        'tahap_label': 'Hasil sedang diperiksa',
-        'jumlah_alat': 4,
-        'jumlah_selesai': 1,
-        'alat': [
-          {
-            'id': 1,
-            'nama': 'Termometer',
-            'tahap': 'sertifikat_terbit',
-            'tahap_label': 'Sertifikat sudah terbit',
-            'sertifikat_id': 3,
-          },
-        ],
-      },
-      [
+  test('alat detail: riwayat kalibrasi terbaca, urutan dari server', () {
+    final a = Alat.dariJson({
+      'id': 11,
+      'nama': 'Jangka Sorong',
+      'hari_ke_jatuh_tempo': 12,
+      'status_alat': 'mendekati_jadwal',
+      'riwayat_sertifikat': [
         {
-          'kode': 'diterima',
-          'label': 'Alat diterima lab',
-          'lewat': true,
-          'sekarang': false,
+          'id': 9,
+          'nomor': 'CAL/2026/09/0002',
+          'alat': {'id': 11, 'nama': 'Jangka Sorong'},
+          'bisa_diunduh': true,
         },
         {
-          'kode': 'menunggu_pemeriksaan',
-          'label': 'Hasil sedang diperiksa',
-          'lewat': false,
-          'sekarang': true,
+          'id': 5,
+          'nomor': 'CAL/2025/10/0001',
+          'alat': {'id': 11, 'nama': 'Jangka Sorong'},
+          'bisa_diunduh': true,
         },
       ],
-    );
-    expect(p.kemajuan, 0.25);
-    expect(p.alat.single.sertifikatId, 3);
-    expect(
-      p.garisWaktu.where((l) => l.sekarang).single.label,
-      'Hasil sedang diperiksa',
-    );
+    });
+    expect(a.status, StatusKalibrasi.mendekati);
+    expect(a.labelStatus, 'Kalibrasi ulang dalam 12 hari');
+    expect(a.riwayat.map((s) => s.nomor), [
+      'CAL/2026/09/0002',
+      'CAL/2025/10/0001',
+    ]);
   });
 
-  test('anggota dari /anggota', () {
-    final d = DaftarAnggota.dariJson({
+  test('beranda: aman = sisa setelah lewat & segera, tidak pernah negatif', () {
+    final b = Beranda.dariJson({
       'data': {
-        'anggota': [
-          {
-            'id': 1,
-            'peran': 'pic_utama',
-            'status': 'aktif',
-            'bergabung_pada': '2026-09-01T00:00:00Z',
-            'dinonaktifkan_pada': null,
-            'orang': {
-              'id': 7,
-              'nama': 'Budi PIC',
-              'email': 'budi@contoh.test',
-              'telepon': null,
-              'jabatan': null,
-            },
-            'saya': true,
-          },
-        ],
-        'undangan_menunggu': [
-          {
-            'id': 4,
-            'email': 'sari@contoh.test',
-            'peran': 'staf',
-            'kedaluwarsa_pada': '2026-10-01T00:00:00Z',
-          },
-        ],
-        'maks_anggota': 50,
-        'saya': {'customer_id': 3, 'member_id': 1, 'peran': 'pic_utama'},
+        'perusahaan': {'nama': 'PT Contoh'},
+        'ringkasan': {
+          'jumlah_alat': 10,
+          'lewat_jatuh_tempo': 2,
+          'segera_jatuh_tempo': 3,
+          'notifikasi_belum_dibaca': 1,
+        },
+      },
+      'meta': {'jendela_segera_hari': 30},
+    });
+    expect(b.aman, 5);
+    expect(b.jendelaHari, 30);
+    final aneh = Beranda.dariJson({
+      'data': {
+        'ringkasan': {
+          'jumlah_alat': 1,
+          'lewat_jatuh_tempo': 2,
+          'segera_jatuh_tempo': 3,
+        },
       },
     });
-    expect(d.sayaPicUtama, isTrue);
-    expect(d.anggota.single.saya, isTrue);
-    expect(d.undanganMenunggu.single.email, 'sari@contoh.test');
+    expect(aneh.aman, 0);
   });
+
+  test(
+    'notifikasi: tautan terbaca; tipe lama (permintaan) tak punya layar',
+    () {
+      final n = Notifikasi.dariJson({
+        'id': 'x',
+        'judul': 'Sertifikat terbit',
+        'dibaca': false,
+        'tautan': {'tipe': 'pelanggan_sertifikat', 'id': 9},
+      });
+      expect(n.tautanTipe, 'pelanggan_sertifikat');
+      expect(n.tautanId, 9);
+      expect(layarUntukTautan('pelanggan_permintaan', 3), isNull);
+      expect(layarUntukTautan('pelanggan_sertifikat', 9), isNotNull);
+    },
+  );
 }

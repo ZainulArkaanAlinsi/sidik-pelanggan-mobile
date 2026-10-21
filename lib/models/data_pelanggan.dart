@@ -1,7 +1,6 @@
 import '../core/format.dart';
 
-/// Bentuk data slice F (`/beranda`, `/alat`, `/sertifikat`, `/paket`,
-/// `/notifikasi`) — cermin resource `App\Http\Resources\Pelanggan\*` di API.
+/// Bentuk data (`/beranda`, `/alat`, `/sertifikat`, `/notifikasi`) — cermin resource `App\Http\Resources\Pelanggan\*` di API.
 
 int? _int(Object? v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}');
 
@@ -26,49 +25,58 @@ String? _teksBersih(Object? v) {
   return s == null || s.isEmpty ? null : s;
 }
 
-/// Foto pelat nama. [url] absolut ke `GET /foto/{id}` — BUKAN URL publik;
-/// gambarnya diunduh dengan header Bearer + `X-Perusahaan-Id`.
-class FotoPelanggan {
-  const FotoPelanggan({required this.id, this.url});
-
-  final int id;
-  final String? url;
-
-  static FotoPelanggan? dariJson(Object? j) {
-    if (j is! Map) return null;
-    final id = _int(j['id']);
-    if (id == null) return null;
-    return FotoPelanggan(id: id, url: j['url'] as String?);
-  }
-
-  static List<FotoPelanggan> daftar(Object? j) => [
-    for (final x in (j as List? ?? const [])) ?FotoPelanggan.dariJson(x),
-  ];
-}
-
 // ── Alat ─────────────────────────────────────────────────────────────────
 
+/// Status kalibrasi alat menurut REQ-ALT-05 / 04-UI-UX §5. DIHITUNG SERVER
+/// (`status_alat`); aplikasi hanya menerjemahkan kode jadi tampilan.
 enum StatusKalibrasi {
-  aman,
-  segera,
+  terkalibrasi,
+  mendekati,
   lewat,
-  nonaktif,
-  belumAda;
+  belumPernah,
+  dalamProses,
+  nonaktif;
 
-  static StatusKalibrasi dariApi(String? kode) => switch (kode) {
-    'aman' => aman,
-    'segera_jatuh_tempo' => segera,
-    'lewat_jatuh_tempo' => lewat,
+  /// [statusAlat] = `status_alat` (kontrak §4.1, kode REQ-ALT-05).
+  /// [statusLama] = `status_kalibrasi` (`aman`, `segera_jatuh_tempo`,
+  /// `lewat_jatuh_tempo`, `nonaktif`, `belum_ada_jadwal`) — dipakai hanya
+  /// kalau server belum mengirim [statusAlat]. `belum_ada_jadwal` lama tidak
+  /// membedakan "belum pernah dikalibrasi" dari "bersertifikat tanpa tanggal
+  /// ulang"; [adaSertifikat] yang memilah.
+  static StatusKalibrasi dariApi(
+    String? statusAlat, {
+    String? statusLama,
+    bool adaSertifikat = false,
+  }) => switch (statusAlat) {
+    'terkalibrasi' => terkalibrasi,
+    'mendekati_jadwal' => mendekati,
+    'lewat_jadwal' => lewat,
+    'belum_pernah' => belumPernah,
+    'dalam_proses' => dalamProses,
     'nonaktif' => nonaktif,
-    _ => belumAda,
+    _ => switch (statusLama) {
+      'aman' => terkalibrasi,
+      'segera_jatuh_tempo' => mendekati,
+      'lewat_jatuh_tempo' => lewat,
+      'nonaktif' => nonaktif,
+      _ => adaSertifikat ? terkalibrasi : belumPernah,
+    },
   };
 
-  String get label => switch (this) {
-    aman => 'Aman',
-    segera => 'Segera jatuh tempo',
-    lewat => 'Lewat jatuh tempo',
+  /// Label 04-UI-UX §5. [hari] = `hari_ke_jatuh_tempo` (negatif = lewat).
+  String label([int? hari]) => switch (this) {
+    terkalibrasi => 'Terkalibrasi',
+    mendekati =>
+      hari == null
+          ? 'Mendekati jadwal'
+          : hari <= 0
+          ? 'Kalibrasi ulang hari ini'
+          : 'Kalibrasi ulang dalam $hari hari',
+    lewat =>
+      hari == null || hari >= 0 ? 'Lewat jadwal' : 'Lewat jadwal ${-hari} hari',
+    belumPernah => 'Belum pernah dikalibrasi',
+    dalamProses => 'Sedang diproses',
     nonaktif => 'Tidak aktif',
-    belumAda => 'Belum ada jadwal',
   };
 }
 
@@ -112,15 +120,7 @@ class Alat {
     required this.status,
     this.sertifikatTerakhir,
     this.riwayat = const [],
-    this.rentangMin,
-    this.rentangMaks,
-    this.satuan,
-    this.resolusi,
     this.catatan,
-    this.terkunci = false,
-    this.fieldTerkunci = const [],
-    this.foto = const [],
-    this.koreksiMenungguId,
   });
 
   final int id;
@@ -136,22 +136,13 @@ class Alat {
   final int? hariKeJatuhTempo;
   final StatusKalibrasi status;
   final RingkasSertifikat? sertifikatTerakhir;
-  final List<Sertifikat> riwayat;
 
-  /// Nilai mentah untuk formulir ubah (teks rapi, koma desimal).
-  final String? rentangMin;
-  final String? rentangMaks;
-  final String? satuan;
-  final String? resolusi;
+  /// Riwayat kalibrasi alat ini (sertifikat, terbaru di atas) — hanya di detail.
+  final List<Sertifikat> riwayat;
   final String? catatan;
 
-  /// Sudah punya sertifikat terbit → identitas cuma bisa dikoreksi lewat lab.
-  final bool terkunci;
-  final List<String> fieldTerkunci;
-  final List<FotoPelanggan> foto;
-
-  /// Id koreksi alat ini yang sedang ditinjau lab, kalau ada.
-  final int? koreksiMenungguId;
+  /// Label status lengkap dengan sisa hari ("Kalibrasi ulang dalam 12 hari").
+  String get labelStatus => status.label(hariKeJatuhTempo);
 
   String get merkModel =>
       [merk, model].where((s) => s != null && s.isNotEmpty).join(' · ');
@@ -164,7 +155,21 @@ class Alat {
           '${angkaRapi(r['min']) ?? '?'} – ${angkaRapi(r['max']) ?? '?'} ${r['satuan'] ?? ''}'
               .trim();
     }
-    final kunci = j['koreksi_menunggu'];
+    final sertifikatTerakhir = RingkasSertifikat.dariJson(
+      j['sertifikat_terakhir'],
+    );
+    final riwayat = [
+      for (final s in (j['riwayat_sertifikat'] as List? ?? const []))
+        Sertifikat.dariJson(s as Map<String, dynamic>),
+    ];
+    final status = StatusKalibrasi.dariApi(
+      j['status_alat'] as String?,
+      statusLama: j['status_kalibrasi'] as String?,
+      adaSertifikat:
+          sertifikatTerakhir != null ||
+          riwayat.isNotEmpty ||
+          j['tanggal_kalibrasi_terakhir'] != null,
+    );
     return Alat(
       id: _int(j['id']) ?? 0,
       nama: '${j['nama'] ?? '-'}',
@@ -179,23 +184,10 @@ class Alat {
       ),
       jatuhTempo: Format.baca(j['tanggal_jatuh_tempo'] as String?),
       hariKeJatuhTempo: _int(j['hari_ke_jatuh_tempo']),
-      status: StatusKalibrasi.dariApi(j['status_kalibrasi'] as String?),
-      sertifikatTerakhir: RingkasSertifikat.dariJson(j['sertifikat_terakhir']),
-      riwayat: [
-        for (final s in (j['riwayat_sertifikat'] as List? ?? const []))
-          Sertifikat.dariJson(s as Map<String, dynamic>),
-      ],
-      rentangMin: r is Map ? angkaRapi(r['min']) : null,
-      rentangMaks: r is Map ? angkaRapi(r['max']) : null,
-      satuan: r is Map ? _teksBersih(r['satuan']) : null,
-      resolusi: angkaRapi(j['resolusi']),
+      status: status,
+      sertifikatTerakhir: sertifikatTerakhir,
+      riwayat: riwayat,
       catatan: _teksBersih(j['catatan']),
-      terkunci: j['terkunci'] == true,
-      fieldTerkunci: [
-        for (final f in (j['field_terkunci'] as List? ?? const [])) '$f',
-      ],
-      foto: FotoPelanggan.daftar(j['foto']),
-      koreksiMenungguId: kunci is Map ? _int(kunci['id']) : null,
     );
   }
 }
@@ -244,9 +236,6 @@ class Sertifikat {
     this.status = StatusDokumen.berlaku,
     this.dibatalkanPada,
     this.catatanPelanggan,
-    this.bisaMintaKoreksi = false,
-    this.koreksiMenungguId,
-    this.dataCetak,
   });
 
   final int id;
@@ -273,11 +262,6 @@ class Sertifikat {
   /// Catatan lab untuk pelanggan (pada `digantikan`: catatan revisinya; pada
   /// `dibatalkan`: catatan pembatalan).
   final String? catatanPelanggan;
-  final bool bisaMintaKoreksi;
-  final int? koreksiMenungguId;
-
-  /// Nilai yang TERCETAK — isian awal formulir minta koreksi. Hanya di detail.
-  final Map<String, String>? dataCetak;
 
   bool get digantikan => status == StatusDokumen.digantikan;
   bool get dibatalkan => status == StatusDokumen.dibatalkan;
@@ -301,8 +285,6 @@ class Sertifikat {
       }
     }
     final ttd = j['penanda_tangan'];
-    final cetak = j['data_cetak'];
-    final kunci = j['koreksi_menunggu'];
     final pengganti = RingkasSertifikat.dariJson(j['digantikan_oleh']);
     return Sertifikat(
       id: _int(j['id']) ?? 0,
@@ -325,14 +307,6 @@ class Sertifikat {
               : StatusDokumen.berlaku),
       dibatalkanPada: Format.baca(j['dibatalkan_pada'] as String?),
       catatanPelanggan: _teksBersih(j['catatan_pelanggan']),
-      bisaMintaKoreksi: j['bisa_minta_koreksi'] == true,
-      koreksiMenungguId: kunci is Map ? _int(kunci['id']) : null,
-      dataCetak: cetak is Map
-          ? {
-              for (final e in cetak.entries)
-                if (e.value != null) '${e.key}': '${e.value}',
-            }
-          : null,
       bisaDiunduh: j['bisa_diunduh'] == true,
       tautanVerifikasi: j['tautan_verifikasi'] as String?,
       rincian: rincian,
@@ -343,106 +317,6 @@ class Sertifikat {
   }
 }
 
-// ── Paket ────────────────────────────────────────────────────────────────
-
-class AlatPaket {
-  const AlatPaket({
-    required this.nama,
-    this.merk,
-    this.serial,
-    required this.tahap,
-    required this.tahapLabel,
-    this.diserahkanKepada,
-    this.sertifikatId,
-  });
-
-  final String nama;
-  final String? merk;
-  final String? serial;
-  final String tahap;
-  final String tahapLabel;
-  final String? diserahkanKepada;
-  final int? sertifikatId;
-
-  factory AlatPaket.dariJson(Map<String, dynamic> j) => AlatPaket(
-    nama: '${j['nama'] ?? '-'}',
-    merk: j['merk'] as String?,
-    serial: j['serial'] as String?,
-    tahap: '${j['tahap'] ?? ''}',
-    tahapLabel: '${j['tahap_label'] ?? ''}',
-    diserahkanKepada: j['diserahkan_kepada'] as String?,
-    sertifikatId: _int(j['sertifikat_id']),
-  );
-}
-
-class LangkahWaktu {
-  const LangkahWaktu({
-    required this.label,
-    required this.lewat,
-    required this.sekarang,
-  });
-
-  final String label;
-  final bool lewat;
-  final bool sekarang;
-
-  factory LangkahWaktu.dariJson(Map<String, dynamic> j) => LangkahWaktu(
-    label: '${j['label'] ?? ''}',
-    lewat: j['lewat'] == true,
-    sekarang: j['sekarang'] == true,
-  );
-}
-
-class Paket {
-  const Paket({
-    required this.id,
-    required this.nomor,
-    this.masuk,
-    this.janjiSelesai,
-    required this.terlambat,
-    required this.tahap,
-    required this.tahapLabel,
-    required this.jumlahAlat,
-    required this.jumlahSelesai,
-    required this.alat,
-    this.garisWaktu = const [],
-  });
-
-  final int id;
-  final String nomor;
-  final DateTime? masuk;
-  final DateTime? janjiSelesai;
-  final bool terlambat;
-  final String tahap;
-  final String tahapLabel;
-  final int jumlahAlat;
-  final int jumlahSelesai;
-  final List<AlatPaket> alat;
-  final List<LangkahWaktu> garisWaktu;
-
-  double get kemajuan => jumlahAlat == 0 ? 0 : jumlahSelesai / jumlahAlat;
-
-  factory Paket.dariJson(Map<String, dynamic> j, [List? garisWaktu]) => Paket(
-    id: _int(j['id']) ?? 0,
-    nomor: '${j['nomor'] ?? ''}',
-    masuk: Format.baca(j['tanggal_masuk'] as String?),
-    janjiSelesai: Format.baca(j['tanggal_janji_selesai'] as String?),
-    terlambat: j['terlambat'] == true,
-    tahap: '${j['tahap'] ?? ''}',
-    tahapLabel: '${j['tahap_label'] ?? ''}',
-    jumlahAlat: _int(j['jumlah_alat']) ?? 0,
-    jumlahSelesai: _int(j['jumlah_selesai']) ?? 0,
-    alat: [
-      for (final a in (j['alat'] as List? ?? const []))
-        AlatPaket.dariJson(a as Map<String, dynamic>),
-    ],
-    garisWaktu: [
-      for (final l in (garisWaktu ?? const []))
-        LangkahWaktu.dariJson(l as Map<String, dynamic>),
-    ],
-  );
-}
-
 // ── Beranda ──────────────────────────────────────────────────────────────
 
 class Beranda {
@@ -451,11 +325,7 @@ class Beranda {
     required this.jumlahAlat,
     required this.lewatJatuhTempo,
     required this.segeraJatuhTempo,
-    required this.paketBerjalan,
     required this.notifikasiBelumDibaca,
-    required this.perluPerhatian,
-    required this.sertifikatTerbaru,
-    required this.daftarPaket,
     required this.jendelaHari,
   });
 
@@ -463,12 +333,14 @@ class Beranda {
   final int jumlahAlat;
   final int lewatJatuhTempo;
   final int segeraJatuhTempo;
-  final int paketBerjalan;
   final int notifikasiBelumDibaca;
-  final List<Alat> perluPerhatian;
-  final List<Sertifikat> sertifikatTerbaru;
-  final List<Paket> daftarPaket;
   final int jendelaHari;
+
+  /// Alat yang jadwalnya aman = sisanya (server tidak punya saringan `aman`).
+  int get aman {
+    final n = jumlahAlat - lewatJatuhTempo - segeraJatuhTempo;
+    return n < 0 ? 0 : n;
+  }
 
   factory Beranda.dariJson(Map<String, dynamic> badan) {
     final d = badan['data'] as Map<String, dynamic>;
@@ -478,20 +350,7 @@ class Beranda {
       jumlahAlat: _int(r['jumlah_alat']) ?? 0,
       lewatJatuhTempo: _int(r['lewat_jatuh_tempo']) ?? 0,
       segeraJatuhTempo: _int(r['segera_jatuh_tempo']) ?? 0,
-      paketBerjalan: _int(r['paket_berjalan']) ?? 0,
       notifikasiBelumDibaca: _int(r['notifikasi_belum_dibaca']) ?? 0,
-      perluPerhatian: [
-        for (final a in (d['perlu_perhatian'] as List? ?? const []))
-          Alat.dariJson(a as Map<String, dynamic>),
-      ],
-      sertifikatTerbaru: [
-        for (final s in (d['sertifikat_terbaru'] as List? ?? const []))
-          Sertifikat.dariJson(s as Map<String, dynamic>),
-      ],
-      daftarPaket: [
-        for (final p in (d['paket_berjalan'] as List? ?? const []))
-          Paket.dariJson(p as Map<String, dynamic>),
-      ],
       jendelaHari: _int((badan['meta'] as Map?)?['jendela_segera_hari']) ?? 30,
     );
   }
@@ -518,7 +377,7 @@ class Notifikasi {
   final bool dibaca;
   final DateTime? dibuat;
 
-  /// Tujuan ketukan (`{"tipe":"pelanggan_permintaan","id":12}`). Kosong untuk
+  /// Tujuan ketukan (`{"tipe":"pelanggan_sertifikat","id":12}`). Kosong untuk
   /// notifikasi yang tidak punya layar tujuan.
   final String? tautanTipe;
   final int? tautanId;
@@ -555,12 +414,17 @@ class Halaman<T> {
     required this.halaman,
     required this.halamanTerakhir,
     required this.total,
+    this.jumlah = const {},
   });
 
   final List<T> isi;
   final int halaman;
   final int halamanTerakhir;
   final int total;
+
+  /// Angka dari `meta` yang tidak bergantung halaman: `jumlah.*` (tab
+  /// dan `belum_dibaca` (notifikasi).
+  final Map<String, int> jumlah;
 
   bool get adaLagi => halaman < halamanTerakhir;
 
@@ -569,14 +433,31 @@ class Halaman<T> {
     T Function(Map<String, dynamic>) ubah,
   ) {
     final meta = (badan['meta'] as Map?) ?? const {};
+    final isi = [
+      for (final x in (badan['data'] as List? ?? const []))
+        ubah(x as Map<String, dynamic>),
+    ];
     return Halaman<T>(
-      isi: [
-        for (final x in (badan['data'] as List? ?? const []))
-          ubah(x as Map<String, dynamic>),
-      ],
+      isi: isi,
       halaman: _int(meta['current_page']) ?? 1,
       halamanTerakhir: _int(meta['last_page']) ?? 1,
-      total: _int(meta['total']) ?? 0,
+      total: _int(meta['total']) ?? isi.length,
+      jumlah: angkaMeta(meta),
     );
   }
+}
+
+/// `meta.jumlah.*` dan `meta.belum_dibaca` jadi satu peta angka.
+Map<String, int> angkaMeta(Map meta) {
+  final hasil = <String, int>{};
+  final jumlah = meta['jumlah'];
+  if (jumlah is Map) {
+    for (final e in jumlah.entries) {
+      final v = _int(e.value);
+      if (v != null) hasil['${e.key}'] = v;
+    }
+  }
+  final belum = _int(meta['belum_dibaca']);
+  if (belum != null) hasil['belum_dibaca'] = belum;
+  return hasil;
 }

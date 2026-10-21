@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'core/theme/sidik_theme.dart';
 import 'providers/perangkat_provider.dart';
 import 'screens/gerbang.dart';
+import 'widgets/banner.dart';
 
 /// Aplikasi pelanggan memakai tema "Meja Kerja Lab" yang SAMA dengan aplikasi
 /// lab (berkas `core/theme/*` disalin apa adanya dari `sidik-calibration-mobile`).
@@ -28,6 +29,10 @@ class SidikPelangganApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // Banner offline menempel di atas semua layar, termasuk yang didorong
+      // di atas Rangka (detail, formulir).
+      builder: (context, child) =>
+          BingkaiAplikasi(child: child ?? const SizedBox.shrink()),
       home: const Gerbang(),
     );
   }

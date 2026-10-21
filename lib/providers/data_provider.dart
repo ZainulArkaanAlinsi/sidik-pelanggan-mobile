@@ -1,17 +1,48 @@
-import 'dart:typed_data';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/anggota.dart';
 import '../models/data_pelanggan.dart';
-import '../models/koreksi.dart';
-import '../models/permintaan.dart';
+import '../services/layanan_pelanggan.dart';
+import 'paginasi.dart';
 import 'sesi_provider.dart';
+
+export 'paginasi.dart' show DataBerhalaman, PaginasiController;
 
 /// Semua data diikat ke PERUSAHAAN AKTIF: begitu pengguna berganti perusahaan
 /// (akun anggota dua PT), seluruh provider di bawah ini dibangun ulang dan
 /// tidak ada angka PT lama yang tertinggal di layar.
 int? _perusahaan(Ref ref) => ref.watch(sesiProvider).value?.perusahaanId;
+
+/// Daftar berhalaman yang diambil lewat [LayananPelanggan]. Satu kelas untuk
+/// semua daftar; yang berbeda cuma cara mengambil satu halaman.
+class DaftarController<T> extends PaginasiController<T> {
+  DaftarController(this._ambil, this._kunci, {this.perPengguna = false});
+
+  final Future<Halaman<T>> Function(LayananPelanggan layanan, int halaman)
+  _ambil;
+  final Object Function(T butir) _kunci;
+
+  /// Notifikasi milik PENGGUNA, bukan perusahaan — dibangun ulang saat sesi
+  /// berganti, tidak saat perusahaan aktif berganti.
+  final bool perPengguna;
+
+  @override
+  Future<DataBerhalaman<T>> build() {
+    if (perPengguna) {
+      ref.watch(sesiProvider);
+    } else {
+      _perusahaan(ref);
+    }
+    ref.watch(layananProvider);
+    return super.build();
+  }
+
+  @override
+  Future<Halaman<T>> ambil(int halaman) =>
+      _ambil(ref.read(layananProvider), halaman);
+
+  @override
+  Object kunciButir(T butir) => _kunci(butir);
+}
 
 final berandaProvider = FutureProvider.autoDispose<Beranda>((ref) {
   _perusahaan(ref);
@@ -21,13 +52,13 @@ final berandaProvider = FutureProvider.autoDispose<Beranda>((ref) {
 /// Kunci daftar alat: kata cari + saringan (`segera`, `lewat`, atau null).
 typedef KunciAlat = ({String cari, String? saring});
 
-final daftarAlatProvider = FutureProvider.autoDispose
-    .family<Halaman<Alat>, KunciAlat>((ref, k) {
-      _perusahaan(ref);
-      return ref
-          .watch(layananProvider)
-          .daftarAlat(cari: k.cari, saring: k.saring);
-    });
+final daftarAlatProvider = AsyncNotifierProvider.autoDispose
+    .family<DaftarController<Alat>, DataBerhalaman<Alat>, KunciAlat>(
+      (k) => DaftarController(
+        (l, h) => l.daftarAlat(cari: k.cari, saring: k.saring, halaman: h),
+        (a) => a.id,
+      ),
+    );
 
 final detailAlatProvider = FutureProvider.autoDispose.family<Alat, int>((
   ref,
@@ -39,16 +70,21 @@ final detailAlatProvider = FutureProvider.autoDispose.family<Alat, int>((
 
 typedef KunciSertifikat = ({String cari, bool termasukDigantikan});
 
-final daftarSertifikatProvider = FutureProvider.autoDispose
-    .family<Halaman<Sertifikat>, KunciSertifikat>((ref, k) {
-      _perusahaan(ref);
-      return ref
-          .watch(layananProvider)
-          .daftarSertifikat(
-            cari: k.cari,
-            termasukDigantikan: k.termasukDigantikan,
-          );
-    });
+final daftarSertifikatProvider = AsyncNotifierProvider.autoDispose
+    .family<
+      DaftarController<Sertifikat>,
+      DataBerhalaman<Sertifikat>,
+      KunciSertifikat
+    >(
+      (k) => DaftarController(
+        (l, h) => l.daftarSertifikat(
+          cari: k.cari,
+          termasukDigantikan: k.termasukDigantikan,
+          halaman: h,
+        ),
+        (s) => s.id,
+      ),
+    );
 
 final detailSertifikatProvider = FutureProvider.autoDispose
     .family<Sertifikat, int>((ref, id) {
@@ -56,110 +92,19 @@ final detailSertifikatProvider = FutureProvider.autoDispose
       return ref.watch(layananProvider).sertifikat(id);
     });
 
-/// Kunci: `menunggu` | `diterima` | `ditolak` | `semua`.
-final daftarKoreksiProvider = FutureProvider.autoDispose
-    .family<Halaman<Koreksi>, String>((ref, status) {
-      _perusahaan(ref);
-      return ref.watch(layananProvider).daftarKoreksi(status: status);
-    });
-
-final detailKoreksiProvider = FutureProvider.autoDispose.family<Koreksi, int>((
-  ref,
-  id,
-) {
-  _perusahaan(ref);
-  return ref.watch(layananProvider).koreksi(id);
-});
-
-/// Byte satu foto pelat nama. Isi foto tidak berubah untuk id yang sama, jadi
-/// tidak di-`autoDispose` dan tidak ikut disegarkan [segarkanSemua] — tapi
-/// tetap diikat ke perusahaan aktif supaya tidak ada foto PT lama tertinggal.
-final fotoByteProvider = FutureProvider.family<Uint8List, int>((ref, id) {
-  _perusahaan(ref);
-  return ref.watch(layananProvider).byteFoto(id);
-});
-
-/// `true` = paket yang sudah selesai; `false` = yang masih berjalan.
-final daftarPaketProvider = FutureProvider.autoDispose
-    .family<Halaman<Paket>, bool>((ref, selesai) {
-      _perusahaan(ref);
-      return ref.watch(layananProvider).daftarPaket(selesai: selesai);
-    });
-
-final detailPaketProvider = FutureProvider.autoDispose.family<Paket, int>((
-  ref,
-  id,
-) {
-  _perusahaan(ref);
-  return ref.watch(layananProvider).paket(id);
-});
-
-final notifikasiProvider = FutureProvider.autoDispose<Halaman<Notifikasi>>((
-  ref,
-) {
-  ref.watch(sesiProvider);
-  return ref.watch(layananProvider).daftarNotifikasi();
-});
+final notifikasiProvider =
+    AsyncNotifierProvider.autoDispose<
+      DaftarController<Notifikasi>,
+      DataBerhalaman<Notifikasi>
+    >(
+      () => DaftarController(
+        (l, h) => l.daftarNotifikasi(halaman: h),
+        (n) => n.id,
+        perPengguna: true,
+      ),
+    );
 
 final jumlahBelumDibacaProvider = FutureProvider.autoDispose<int>((ref) {
   ref.watch(sesiProvider);
   return ref.watch(layananProvider).jumlahNotifikasiBelumDibaca();
 });
-
-final anggotaProvider = FutureProvider.autoDispose<DaftarAnggota>((ref) {
-  _perusahaan(ref);
-  return ref.watch(layananProvider).anggota();
-});
-
-/// Kunci: `aktif` | `selesai` | `semua`.
-final daftarPermintaanProvider = FutureProvider.autoDispose
-    .family<DaftarPermintaan, String>((ref, saring) {
-      _perusahaan(ref);
-      return ref.watch(layananProvider).daftarPermintaan(saring: saring);
-    });
-
-final detailPermintaanProvider = FutureProvider.autoDispose
-    .family<Permintaan, int>((ref, id) {
-      _perusahaan(ref);
-      return ref.watch(layananProvider).permintaan(id);
-    });
-
-final pesanPermintaanProvider = FutureProvider.autoDispose
-    .family<UtasPesan, int>((ref, id) {
-      _perusahaan(ref);
-      return ref.watch(layananProvider).pesanPermintaan(id);
-    });
-
-/// Saklar notifikasi milik anggota INI di perusahaan aktif — tinggal di
-/// server, jadi sama di semua HP. Mengubahnya memperbarui tampilan dulu
-/// (satu ketukan harus terasa langsung), lalu menyamakan dengan jawaban
-/// server; kalau gagal, nilai lama dikembalikan dan galatnya dilempar ke
-/// layar supaya sakelar tidak berbohong soal apa yang tersimpan.
-class PreferensiController extends AsyncNotifier<PreferensiNotifikasi> {
-  @override
-  Future<PreferensiNotifikasi> build() {
-    _perusahaan(ref);
-    return ref.watch(layananProvider).preferensiNotifikasi();
-  }
-
-  Future<void> ubah(String kunci, bool nilai) async {
-    final lama = state.value;
-    if (lama == null) return;
-    state = AsyncData(lama.salinDengan(kunci, nilai));
-    try {
-      final baru = await ref.read(layananProvider).simpanPreferensi({
-        kunci: nilai,
-      });
-      state = AsyncData(baru);
-    } catch (_) {
-      state = AsyncData(lama);
-      rethrow;
-    }
-  }
-}
-
-final preferensiProvider =
-    AsyncNotifierProvider.autoDispose<
-      PreferensiController,
-      PreferensiNotifikasi
-    >(PreferensiController.new);

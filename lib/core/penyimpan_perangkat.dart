@@ -16,6 +16,7 @@ class PenyimpanPerangkat {
 
   static const _kunciSambutan = 'perangkat.sudah_lihat_sambutan';
   static const _kunciTema = 'perangkat.tema';
+  static const _kunciIzinNotif = 'perangkat.izin_notif_ditawarkan';
 
   Future<bool> sudahLihatSambutan() async =>
       await _s.read(key: _kunciSambutan) == '1';
@@ -27,4 +28,12 @@ class PenyimpanPerangkat {
 
   Future<void> simpanTema(String nilai) =>
       _s.write(key: _kunciTema, value: nilai);
+
+  /// Tawaran notifikasi kontekstual (REQ-NTF-08) sudah pernah tampil di HP
+  /// ini — tidak ditawarkan otomatis lagi; sesudahnya lewat banner beranda.
+  Future<bool> izinNotifDitawarkan() async =>
+      await _s.read(key: _kunciIzinNotif) == '1';
+
+  Future<void> tandaiIzinNotifDitawarkan() =>
+      _s.write(key: _kunciIzinNotif, value: '1');
 }

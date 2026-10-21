@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
-import '../../core/theme/sidik_material.dart';
 import '../../providers/data_provider.dart';
-import '../../widgets/foto_pelat.dart';
 import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_status.dart';
 import '../../widgets/umum.dart';
-import '../koreksi/koreksi_detail_screen.dart';
 import '../sertifikat/sertifikat_detail_screen.dart';
-import 'ubah_alat_screen.dart';
 
-/// Detail satu alat: identitas, jadwal, lalu riwayat sertifikatnya.
+/// Detail satu alat (S09): identitas, status & jadwal kalibrasi ulang
+/// (hitung mundur), dan riwayat kalibrasi (sertifikat terbaru di atas).
 class AlatDetailScreen extends ConsumerWidget {
   const AlatDetailScreen({super.key, required this.id});
 
@@ -24,21 +21,9 @@ class AlatDetailScreen extends ConsumerWidget {
     final t = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(async.value?.nama ?? 'Alat'),
-        actions: [
-          if (async.value != null)
-            IconButton(
-              tooltip: 'Ubah alat',
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => UbahAlatScreen(id: id)),
-              ),
-            ),
-        ],
-      ),
+      appBar: AppBar(title: Text(async.value?.nama ?? 'Alat')),
       body: async.when(
-        loading: () => const Memuat(),
+        loading: () => const Memuat.detail(),
         error: (e, _) => KeadaanGalat(
           galat: e,
           cobaLagi: () => ref.invalidate(detailAlatProvider(id)),
@@ -52,9 +37,15 @@ class AlatDetailScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(child: Text(a.nama, style: t.titleMedium)),
-                      SidikLencana(statusAlat(a.status)),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: SidikLencana(
+                          statusAlat(a.status, a.hariKeJatuhTempo),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -65,7 +56,9 @@ class AlatDetailScreen extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    'Jatuh tempo ${Format.tanggal(a.jatuhTempo)}',
+                    a.jatuhTempo == null
+                        ? 'Belum ada jadwal kalibrasi ulang'
+                        : 'Jadwal kalibrasi ulang ${Format.tanggal(a.jatuhTempo)}',
                     style: t.bodySmall,
                   ),
                   const Divider(height: 24),
@@ -82,53 +75,10 @@ class AlatDetailScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            if (a.terkunci) ...[
-              const SizedBox(height: 10),
-              Kertas(
-                warna: SidikMaterial.of(context).awasTipis,
-                padding: const EdgeInsets.all(12),
-                onTap: a.koreksiMenungguId == null
-                    ? null
-                    : () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              KoreksiDetailScreen(id: a.koreksiMenungguId!),
-                        ),
-                      ),
-                child: Row(
-                  children: [
-                    Icon(
-                      a.koreksiMenungguId == null
-                          ? Icons.lock_outline
-                          : Icons.hourglass_empty,
-                      color: SidikMaterial.of(context).awas,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        a.koreksiMenungguId == null
-                            ? 'Identitas terkunci karena sudah tercetak di '
-                                  'sertifikat. Koreksi lewat tombol ubah.'
-                            : 'Koreksi sedang ditinjau lab',
-                        style: t.bodyMedium,
-                      ),
-                    ),
-                    if (a.koreksiMenungguId != null)
-                      const Icon(Icons.chevron_right),
-                  ],
-                ),
-              ),
-            ],
-            if (a.foto.isNotEmpty) ...[
-              const JudulSeksi('Foto pelat nama'),
-              DeretanFoto(foto: a.foto),
-            ],
-            const JudulSeksi('Riwayat sertifikat'),
+            const SizedBox(height: 12),
+            const JudulSeksi('Riwayat kalibrasi'),
             if (a.riwayat.isEmpty)
-              Text(
-                'Belum ada sertifikat terbit untuk alat ini.',
-                style: t.bodyMedium,
-              )
+              Text('Belum pernah dikalibrasi di PT Sidik', style: t.bodyMedium)
             else
               for (final s in a.riwayat)
                 Padding(

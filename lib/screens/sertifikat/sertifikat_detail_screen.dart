@@ -7,20 +7,18 @@ import '../../core/format.dart';
 import '../../core/theme/sidik_material.dart';
 import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
+import '../../providers/koneksi_provider.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/koreksi.dart';
-import '../../widgets/minta_koreksi.dart';
 import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_status.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
-import '../koreksi/koreksi_detail_screen.dart';
 
 /// Detail sertifikat — isinya CERMIN dari yang tercetak di PDF (dibaca dari
 /// snapshot di server), jadi layar ini tidak pernah berbeda dengan kertasnya.
 ///
 /// Tiga keadaan dokumen, semuanya keputusan server (`status`):
-/// - `berlaku`    — normal; bisa diunduh dan bisa dimintakan koreksi.
+/// - `berlaku`    — normal; bisa diunduh.
 /// - `digantikan` — kartu kuning di atas menunjuk revisinya; PDF lama tetap
 ///   bisa diunduh sebagai riwayat.
 /// - `dibatalkan` — kartu merah; unduh dimatikan (server juga menjawab 410).
@@ -59,48 +57,6 @@ class _SertifikatDetailScreenState
     } finally {
       if (mounted) setState(() => _mengunduh = false);
     }
-  }
-
-  /// Isian yang tercetak (kontrak §B1). Nilai sekarang diambil dari
-  /// `data_cetak`, jadi pelanggan melihat persis apa yang ada di kertas.
-  static const _isianCetak = [
-    ('pemilik', 'Nama pemilik'),
-    ('alamat', 'Alamat'),
-    ('merk', 'Merk'),
-    ('tipe', 'Tipe'),
-    ('nomor_seri', 'Nomor seri'),
-    ('lokasi_kalibrasi', 'Lokasi kalibrasi'),
-    ('tanggal_kalibrasi', 'Tanggal kalibrasi (YYYY-MM-DD)'),
-  ];
-
-  Future<void> _mintaKoreksi(Sertifikat s) async {
-    final hasil = await tampilkanMintaKoreksi(
-      context,
-      judul: 'Minta koreksi sertifikat',
-      keterangan:
-          'Pilih isian yang tercetak salah dan tulis nilai yang benar. Lab '
-          'akan memeriksanya; kalau diterima, sertifikat diterbitkan ulang '
-          'sebagai revisi.',
-      field: [
-        for (final (kunci, label) in _isianCetak)
-          FieldKoreksi(kunci: kunci, label: label, nilai: s.dataCetak?[kunci]),
-      ],
-      kirim: (perubahan, catatan) => ref
-          .read(layananProvider)
-          .mintaKoreksiSertifikat(s.id, perubahan, catatan: catatan),
-    );
-    if (hasil == null || !mounted) return;
-    ref.invalidate(detailSertifikatProvider(s.id));
-    ref.invalidate(daftarSertifikatProvider);
-    ref.invalidate(daftarKoreksiProvider);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Koreksi terkirim ke lab.')));
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => KoreksiDetailScreen(id: hasil.id),
-      ),
-    );
   }
 
   Widget _kartuPeringatan(
@@ -162,11 +118,12 @@ class _SertifikatDetailScreenState
     final async = ref.watch(detailSertifikatProvider(widget.id));
     final t = Theme.of(context).textTheme;
     final m = SidikMaterial.of(context);
+    final offline = ref.watch(koneksiProvider).offline;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Sertifikat')),
       body: async.when(
-        loading: () => const Memuat(),
+        loading: () => const Memuat.detail(),
         error: (e, _) => KeadaanGalat(
           galat: e,
           cobaLagi: () => ref.invalidate(detailSertifikatProvider(widget.id)),
@@ -262,6 +219,21 @@ class _SertifikatDetailScreenState
                   ],
                 ),
               ),
+              // REQ-SRT-04: FAIL tidak disembunyikan dan tidak dilunakkan.
+              if (s.keputusan == 'FAIL' && !s.dibatalkan) ...[
+                const SizedBox(height: 12),
+                _kartuPeringatan(
+                  context,
+                  warna: m.gagalTipis,
+                  ikon: Icons.cancel_outlined,
+                  warnaIkon: m.gagal,
+                  judul: 'Tidak memenuhi toleransi.',
+                  isi:
+                      'Alat ini berada di luar batas toleransi pada saat '
+                      'dikalibrasi. Lihat sertifikat untuk detail atau '
+                      'tanyakan ke Tim PT Sidik.',
+                ),
+              ],
               const SizedBox(height: jarak),
               SidikTombol(
                 label: 'Unduh PDF',
@@ -269,11 +241,19 @@ class _SertifikatDetailScreenState
                 ragam: RagamTombol.utama,
                 penuh: true,
                 sibuk: _mengunduh,
-                onPressed: s.bisaDiunduh && !s.dibatalkan
+                onPressed: s.bisaDiunduh && !s.dibatalkan && !offline
                     ? () => _unduh(s)
                     : null,
               ),
-              if (s.dibatalkan)
+              if (offline && s.bisaDiunduh && !s.dibatalkan)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    'Sambungkan internet untuk mengunduh PDF.',
+                    style: t.bodySmall,
+                  ),
+                )
+              else if (s.dibatalkan)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
@@ -312,42 +292,6 @@ class _SertifikatDetailScreenState
                 Text(
                   'Halaman yang sama dengan QR di PDF — boleh dibagikan ke auditor untuk memeriksa keaslian.',
                   style: t.bodySmall,
-                ),
-              ],
-              if (s.koreksiMenungguId != null) ...[
-                const SizedBox(height: 12),
-                Kertas(
-                  warna: m.awasTipis,
-                  padding: const EdgeInsets.all(12),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          KoreksiDetailScreen(id: s.koreksiMenungguId!),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.hourglass_empty, color: m.awas),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Koreksi sedang ditinjau lab',
-                          style: t.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const Icon(Icons.chevron_right),
-                    ],
-                  ),
-                ),
-              ] else if (s.bisaMintaKoreksi) ...[
-                const SizedBox(height: 8),
-                SidikTombol(
-                  label: 'Minta koreksi sertifikat',
-                  ikon: Icons.edit_note_outlined,
-                  penuh: true,
-                  onPressed: () => _mintaKoreksi(s),
                 ),
               ],
             ],

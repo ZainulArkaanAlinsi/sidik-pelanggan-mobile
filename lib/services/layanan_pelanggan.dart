@@ -1,15 +1,11 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../core/api_pelanggan.dart';
 import '../models/akun.dart';
-import '../models/anggota.dart';
 import '../models/data_pelanggan.dart';
-import '../models/koreksi.dart';
-import '../models/permintaan.dart';
 
 /// Hasil masuk / terima undangan: token + akunnya.
 class SesiBaru {
@@ -21,7 +17,7 @@ class SesiBaru {
 
 /// Semua panggilan ke `/api/pelanggan/v1`, dalam satu kelas yang tipis.
 ///
-/// Tidak ada logika bisnis di sini — status jatuh tempo, tahap paket, dan
+/// Tidak ada logika bisnis di sini — status jatuh tempo dan
 /// kepemilikan dihitung SERVER. Aplikasi yang menghitung ulang sendiri pasti
 /// suatu hari berbeda pendapat dengan layar lab.
 class LayananPelanggan {
@@ -34,6 +30,14 @@ class LayananPelanggan {
   Future<StatusAplikasi> statusAplikasi() async => StatusAplikasi.dariJson(
     (await api.get('/app/status'))['data'] as Map<String, dynamic>,
   );
+
+  /// Kontak, dokumen, alamat lab (kontrak lengkap §6). Tanpa token.
+  Future<InfoAplikasi> infoAplikasi() async {
+    final d = (await api.get('/app/info'))['data'];
+    return d is Map<String, dynamic>
+        ? InfoAplikasi.dariJson(d)
+        : InfoAplikasi.kosong;
+  }
 
   Future<SesiBaru> masuk(
     String email,
@@ -98,34 +102,13 @@ class LayananPelanggan {
 
   Future<void> keluar() => api.post('/auth/keluar');
 
-  Future<Akun> perbaruiProfil({
-    required String nama,
-    required String telepon,
-    String? jabatan,
-  }) async {
-    final b = await api.patch('/saya', {
-      'nama': nama.trim(),
-      'telepon': telepon.trim(),
-      'jabatan': jabatan?.trim(),
-    });
-    return Akun.dariJson(b['data'] as Map<String, dynamic>);
+  /// Cabut SEMUA token akun ini, termasuk HP ini (F03). Jawaban: jumlah sesi
+  /// yang dicabut.
+  Future<int> keluarSemua() async {
+    final b = await api.post('/auth/keluar-semua');
+    final n = (b['data'] as Map?)?['sesi_dicabut'];
+    return n is num ? n.toInt() : 0;
   }
-
-  /// Hapus akun (REQ-AUTH-11). Server mengembalikan apa yang dihapus dan apa
-  /// yang TETAP disimpan lab — kalimatnya ditampilkan apa adanya.
-  Future<({List<String> dihapus, List<String> tetap})> hapusAkun(
-    String sandi,
-  ) async {
-    final b = await api.delete('/saya', {'sandi': sandi, 'konfirmasi': true});
-    final d = (b['data'] as Map?) ?? const {};
-    List<String> daftar(Object? x) => [
-      for (final v in (x as List? ?? const [])) '$v',
-    ];
-    return (dihapus: daftar(d['dihapus']), tetap: daftar(d['tetap_tersimpan']));
-  }
-
-  Future<void> gantiSandi(String lama, String baru) =>
-      api.post('/saya/ganti-sandi', {'sandi_lama': lama, 'sandi': baru});
 
   Future<void> daftarPerangkat(String token, String platform, String? versi) =>
       api.post('/perangkat', {
@@ -156,84 +139,6 @@ class LayananPelanggan {
 
   Future<Alat> alat(int id) async => Alat.dariJson(
     (await api.get('/alat/$id'))['data'] as Map<String, dynamic>,
-  );
-
-  /// Ubah alat. Kirim HANYA kolom yang berubah: `lokasi`, `catatan`, dan —
-  /// selama alat belum terkunci — kolom identitas. Kolom terkunci dijawab
-  /// 422 `kode: field_terkunci`.
-  Future<Alat> ubahAlat(int id, Map<String, Object?> badan) async =>
-      Alat.dariJson(
-        (await api.patch('/alat/$id', badan))['data'] as Map<String, dynamic>,
-      );
-
-  /// Minta lab mengoreksi identitas alat yang sudah terkunci.
-  Future<Koreksi> mintaKoreksiAlat(
-    int id,
-    Map<String, Object?> perubahan, {
-    String? catatan,
-  }) async => Koreksi.dariJson(
-    (await api.post('/alat/$id/minta-koreksi', {
-          'perubahan': perubahan,
-          if (catatan != null && catatan.trim().isNotEmpty)
-            'catatan': catatan.trim(),
-        }))['data']
-        as Map<String, dynamic>,
-  );
-
-  Future<Koreksi> mintaKoreksiSertifikat(
-    int id,
-    Map<String, Object?> perubahan, {
-    String? catatan,
-  }) async => Koreksi.dariJson(
-    (await api.post('/sertifikat/$id/minta-koreksi', {
-          'perubahan': perubahan,
-          if (catatan != null && catatan.trim().isNotEmpty)
-            'catatan': catatan.trim(),
-        }))['data']
-        as Map<String, dynamic>,
-  );
-
-  // ── Foto pelat nama ───────────────────────────────────────────────────
-
-  FotoPelanggan _foto(Map<String, dynamic> b) =>
-      FotoPelanggan.dariJson(b['data'])!;
-
-  Future<FotoPelanggan> unggahFotoAlat(int alatId, Uint8List byte) async =>
-      _foto(await api.unggah('/alat/$alatId/foto', byte));
-
-  Future<FotoPelanggan> unggahFotoItem(
-    int permintaanId,
-    int itemId,
-    Uint8List byte,
-  ) async => _foto(
-    await api.unggah('/permintaan/$permintaanId/item/$itemId/foto', byte),
-  );
-
-  Future<FotoPelanggan> unggahFotoKoreksi(
-    int koreksiId,
-    Uint8List byte,
-  ) async => _foto(await api.unggah('/koreksi/$koreksiId/foto', byte));
-
-  Future<void> hapusFoto(int id) => api.delete('/foto/$id');
-
-  /// Byte gambar. Lewat header Bearer + `X-Perusahaan-Id` yang sama dengan
-  /// panggilan API lain — `url` di respons BUKAN alamat publik.
-  Future<Uint8List> byteFoto(int id) =>
-      api.unduh('/foto/$id', terima: 'image/*');
-
-  // ── Koreksi ───────────────────────────────────────────────────────────
-
-  /// [status]: `menunggu` | `diterima` | `ditolak` | `semua` (bawaan server).
-  Future<Halaman<Koreksi>> daftarKoreksi({
-    String status = 'semua',
-    int halaman = 1,
-  }) async => Halaman.dariJson(
-    await api.get('/koreksi', query: {'status': status, 'page': '$halaman'}),
-    Koreksi.dariJson,
-  );
-
-  Future<Koreksi> koreksi(int id) async => Koreksi.dariJson(
-    (await api.get('/koreksi/$id'))['data'] as Map<String, dynamic>,
   );
 
   Future<Halaman<Sertifikat>> daftarSertifikat({
@@ -269,25 +174,6 @@ class LayananPelanggan {
     return berkas.path;
   }
 
-  Future<Halaman<Paket>> daftarPaket({
-    bool selesai = false,
-    int halaman = 1,
-  }) async => Halaman.dariJson(
-    await api.get(
-      '/paket',
-      query: {'selesai': selesai ? '1' : null, 'page': '$halaman'},
-    ),
-    Paket.dariJson,
-  );
-
-  Future<Paket> paket(int id) async {
-    final b = await api.get('/paket/$id');
-    return Paket.dariJson(
-      b['data'] as Map<String, dynamic>,
-      b['garis_waktu'] as List?,
-    );
-  }
-
   Future<Halaman<Notifikasi>> daftarNotifikasi({int halaman = 1}) async =>
       Halaman.dariJson(
         await api.get('/notifikasi', query: {'page': '$halaman'}),
@@ -301,76 +187,4 @@ class LayananPelanggan {
   Future<void> tandaiDibaca(String id) => api.post('/notifikasi/$id/dibaca');
 
   Future<void> tandaiSemuaDibaca() => api.post('/notifikasi/dibaca-semua');
-
-  // ── Anggota ──────────────────────────────────────────────────────────
-
-  Future<DaftarAnggota> anggota() async =>
-      DaftarAnggota.dariJson(await api.get('/anggota'));
-
-  Future<void> undangAnggota(String email, String peran) =>
-      api.post('/anggota/undangan', {'email': email.trim(), 'peran': peran});
-
-  Future<void> batalkanUndangan(int id) => api.delete('/anggota/undangan/$id');
-
-  Future<void> nonaktifkanAnggota(int id) =>
-      api.post('/anggota/$id/nonaktifkan');
-
-  // ── Permintaan kalibrasi ──────────────────────────────────────────────
-
-  /// [saring]: `aktif` | `selesai` | `semua`. Angka tab datang di
-  /// `meta.jumlah` dan tidak bergantung pada saringan.
-  Future<DaftarPermintaan> daftarPermintaan({String saring = 'aktif'}) async =>
-      DaftarPermintaan.dariJson(
-        await api.get('/permintaan', query: {'saring': saring}),
-      );
-
-  Future<Permintaan> permintaan(int id) async => Permintaan.dariJson(
-    (await api.get('/permintaan/$id'))['data'] as Map<String, dynamic>,
-  );
-
-  /// Badannya `draft.toJson()` — tidak pernah memuat `customer_id`.
-  Future<Permintaan> ajukanPermintaan(DraftPermintaan draft) async =>
-      Permintaan.dariJson(
-        (await api.post('/permintaan', draft.toJson()))['data']
-            as Map<String, dynamic>,
-      );
-
-  /// Isi / ganti nomor resi (boleh diulang selama alat belum ditandai tiba).
-  Future<Permintaan> isiResi(int id, String kurir, String nomorResi) async =>
-      Permintaan.dariJson(
-        (await api.post('/permintaan/$id/resi', {
-              'kurir': kurir.trim(),
-              'nomor_resi': nomorResi.trim(),
-            }))['data']
-            as Map<String, dynamic>,
-      );
-
-  Future<Permintaan> batalkanPermintaan(int id) async => Permintaan.dariJson(
-    (await api.post('/permintaan/$id/batal'))['data'] as Map<String, dynamic>,
-  );
-
-  Future<UtasPesan> pesanPermintaan(int id) async =>
-      UtasPesan.dariJson(await api.get('/permintaan/$id/pesan'));
-
-  Future<PesanPermintaan> kirimPesan(int id, String isi) async =>
-      PesanPermintaan.dariJson(
-        (await api.post('/permintaan/$id/pesan', {'isi': isi.trim()}))['data']
-            as Map<String, dynamic>,
-      );
-
-  // ── Preferensi notifikasi (per anggota per perusahaan, di server) ─────
-
-  Future<PreferensiNotifikasi> preferensiNotifikasi() async =>
-      PreferensiNotifikasi.dariJson(
-        (await api.get('/preferensi-notifikasi'))['data']
-            as Map<String, dynamic>,
-      );
-
-  /// Kirim SEBAGIAN (satu ketukan = satu kunci); jawabannya seluruh set.
-  Future<PreferensiNotifikasi> simpanPreferensi(
-    Map<String, bool> perubahan,
-  ) async => PreferensiNotifikasi.dariJson(
-    (await api.put('/preferensi-notifikasi', perubahan))['data']
-        as Map<String, dynamic>,
-  );
 }

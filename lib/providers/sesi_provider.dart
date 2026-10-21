@@ -2,34 +2,91 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/api_pelanggan.dart';
+import '../core/penyimpan_cache.dart';
 import '../core/penyimpan_sesi.dart';
 import '../models/akun.dart';
 import '../services/layanan_pelanggan.dart';
 import '../services/push_pelanggan.dart';
+import 'koneksi_provider.dart';
 
 final penyimpanSesiProvider = Provider<PenyimpanSesi>((ref) => PenyimpanSesi());
+
+/// Cache jawaban `GET` (NFR-06) — folder cache aplikasi.
+final penyimpanCacheProvider = Provider<PenyimpanCache>(
+  (ref) => PenyimpanCacheBerkas.cache(),
+);
 
 /// Satu `ApiPelanggan` untuk seluruh aplikasi. Token & perusahaan aktif
 /// dipasang ke objek ini oleh [SesiController] — layar tidak pernah
 /// menyentuh header sendiri.
-final apiProvider = Provider<ApiPelanggan>((ref) => ApiPelanggan());
+final apiProvider = Provider<ApiPelanggan>((ref) {
+  final koneksi = ref.read(koneksiProvider.notifier);
+  return ApiPelanggan(
+    cache: ref.watch(penyimpanCacheProvider),
+    saatOffline: koneksi.offline,
+    saatOnline: koneksi.online,
+  );
+});
 
 final layananProvider = Provider<LayananPelanggan>(
   (ref) => LayananPelanggan(ref.watch(apiProvider)),
 );
 
-final versiAplikasiProvider = FutureProvider<String>((ref) async {
+/// Versi & nomor build terpasang (`package_info_plus`).
+typedef InfoPaket = ({String versi, String build});
+
+final infoPaketProvider = FutureProvider<InfoPaket>((ref) async {
   try {
-    return (await PackageInfo.fromPlatform()).version;
+    final p = await PackageInfo.fromPlatform();
+    return (versi: p.version, build: p.buildNumber);
   } catch (_) {
-    return '0.0.0';
+    return (versi: '0.0.0', build: '0');
   }
 });
 
-/// `GET /app/status` — pemeliharaan & versi minimum. Dibaca SEBELUM masuk.
-final statusAplikasiProvider = FutureProvider<StatusAplikasi>(
-  (ref) => ref.watch(layananProvider).statusAplikasi(),
+/// Versi untuk gerbang versi minimum (`1.2.0`, tanpa build).
+final versiAplikasiProvider = FutureProvider<String>(
+  (ref) async => (await ref.watch(infoPaketProvider.future)).versi,
 );
+
+/// Pasang `X-App-Versi` sekali, sebelum panggilan pertama.
+Future<void> _pastikanVersi(Ref ref) async {
+  final api = ref.read(apiProvider);
+  if (api.versiApp != null) return;
+  final p = await ref.read(infoPaketProvider.future);
+  api.versiApp = p.build.isEmpty || p.build == '0'
+      ? p.versi
+      : '${p.versi}+${p.build}';
+}
+
+/// `GET /app/status` — pemeliharaan & versi minimum. Dibaca SEBELUM masuk.
+final statusAplikasiProvider = FutureProvider<StatusAplikasi>((ref) async {
+  await _pastikanVersi(ref);
+  return ref.watch(layananProvider).statusAplikasi();
+});
+
+/// `GET /app/info` — kontak, dokumen, alamat lab. Publik; disimpan selama
+/// aplikasi hidup dan dimuat ulang saat layar bantuan dibuka.
+final infoAplikasiProvider = FutureProvider<InfoAplikasi>((ref) async {
+  await _pastikanVersi(ref);
+  return ref.watch(layananProvider).infoAplikasi();
+});
+
+/// `true` sesudah sesi berakhir karena server menolak token (401) — layar
+/// Masuk menampilkan "Sesi Anda berakhir…" (04-UI-UX §6). Dihapus begitu
+/// pengguna masuk lagi.
+final sesiBerakhirProvider = NotifierProvider<SesiBerakhir, bool>(
+  SesiBerakhir.new,
+);
+
+class SesiBerakhir extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void atur(bool v) {
+    if (state != v) state = v;
+  }
+}
 
 /// Keadaan sesi: `null` = belum masuk.
 class Sesi {
@@ -64,19 +121,29 @@ class SesiController extends AsyncNotifier<Sesi?> {
   @override
   Future<Sesi?> build() async {
     // 401 dari rute mana pun = token dicabut (ganti sandi di HP lain, keluar
-    // semua perangkat, akun dinonaktifkan PIC). Sesi lokal ikut dibuang.
+    // semua perangkat, akun dinonaktifkan PIC). Sesi lokal ikut dibuang;
+    // cache & DRAF tetap (REQ-AUTH-08: "tanpa kehilangan draf lokal").
     _api.saatTokenDitolak = () {
-      if (state.value != null) _bersihkanLokal();
+      if (state.value != null) {
+        ref.read(sesiBerakhirProvider.notifier).atur(true);
+        _bersihkanLokal();
+      }
     };
 
+    await _pastikanVersi(ref);
     final token = await _penyimpan.token();
     if (token == null) return null;
 
     _api.token = token;
     _api.perusahaanId = await _penyimpan.perusahaanId();
+    final pengguna = await _penyimpan.penggunaId();
+    _api.lingkupCache = pengguna == null ? null : 'u$pengguna';
 
     try {
+      // Tanpa sinyal, `/saya` terakhir datang dari cache — aplikasi tetap
+      // terbuka dengan data terakhir alih-alih layar galat.
       final akun = await _layanan.saya();
+      await _pasangPemilik(akun.id);
       final sesi = _sesiUntuk(akun, _api.perusahaanId);
       _pasangPerusahaan(sesi.perusahaanId);
       _daftarkanPush();
@@ -86,9 +153,20 @@ class SesiController extends AsyncNotifier<Sesi?> {
         await _penyimpan.hapus();
         _api.token = null;
         _api.perusahaanId = null;
+        _api.lingkupCache = null;
         return null;
       }
       rethrow;
+    }
+  }
+
+  Future<void> _pasangPemilik(int id) async {
+    _api.lingkupCache = 'u$id';
+    try {
+      await _penyimpan.simpanPengguna(id);
+    } catch (_) {
+      // Tanpa ID tersimpan, cache offline tidak terbaca di peluncuran
+      // berikut — bukan alasan menggagalkan masuk.
     }
   }
 
@@ -107,16 +185,22 @@ class SesiController extends AsyncNotifier<Sesi?> {
     _penyimpan.simpanPerusahaan(id);
   }
 
+  /// Token push didaftarkan TANPA meminta izin notifikasi: izin diminta
+  /// kontekstual (saat alat pertama tampil di Beranda, REQ-NTF-08), bukan saat
+  /// masuk. Token yang sudah terdaftar langsung terpakai begitu izin
+  /// diberikan.
   Future<void> _daftarkanPush() async {
-    final versi = await ref.read(versiAplikasiProvider.future);
-    await PushPelanggan.daftarkan(_layanan, versiApp: versi);
+    final p = await ref.read(infoPaketProvider.future);
+    await PushPelanggan.daftarkan(_layanan, versiApp: p.versi);
   }
 
   Future<void> _mulai(SesiBaru baru) async {
     await _penyimpan.simpanToken(baru.token);
     _api.token = baru.token;
+    await _pasangPemilik(baru.akun.id);
     final sesi = _sesiUntuk(baru.akun, null);
     _pasangPerusahaan(sesi.perusahaanId);
+    ref.read(sesiBerakhirProvider.notifier).atur(false);
     state = AsyncData(sesi);
     _daftarkanPush();
   }
@@ -159,33 +243,6 @@ class SesiController extends AsyncNotifier<Sesi?> {
     state = AsyncData(_sesiUntuk(akun, s.perusahaanId));
   }
 
-  Future<void> perbaruiProfil({
-    required String nama,
-    required String telepon,
-    String? jabatan,
-  }) async {
-    final s = state.value;
-    if (s == null) return;
-    final akun = await _layanan.perbaruiProfil(
-      nama: nama,
-      telepon: telepon,
-      jabatan: jabatan,
-    );
-    state = AsyncData(_sesiUntuk(akun, s.perusahaanId));
-  }
-
-  /// Hapus akun. Push dicabut DULU (token sesi masih berlaku), lalu akun
-  /// dihapus; sesudahnya server sudah mencabut semua token, jadi sesi lokal
-  /// cukup dibuang tanpa memanggil `/auth/keluar`.
-  Future<({List<String> dihapus, List<String> tetap})> hapusAkun(
-    String sandi,
-  ) async {
-    await PushPelanggan.cabut(_layanan);
-    final hasil = await _layanan.hapusAkun(sandi);
-    await _bersihkanLokal();
-    return hasil;
-  }
-
   Future<void> keluar() async {
     // Urutan penting: cabut push SELAGI token masih berlaku, baru keluar.
     await PushPelanggan.cabut(_layanan);
@@ -196,13 +253,29 @@ class SesiController extends AsyncNotifier<Sesi?> {
       // kedaluwarsa sendiri; menahan orang di aplikasi karena sinyal jelek
       // lebih buruk.
     }
-    await _bersihkanLokal();
+    await _bersihkanLokal(hapusData: true);
   }
 
-  Future<void> _bersihkanLokal() async {
+  /// Keluar dari SEMUA perangkat (F03). Berbeda dari [keluar]: kalau server
+  /// tidak terjangkau, galatnya DILEMPAR dan sesi lokal TIDAK dibuang —
+  /// pengguna yang menekan tombol ini mau token di HP lain dicabut, dan
+  /// "sudah keluar" yang ternyata cuma di HP ini adalah kebohongan.
+  Future<int> keluarSemua() async {
+    await PushPelanggan.cabut(_layanan);
+    final jumlah = await _layanan.keluarSemua();
+    await _bersihkanLokal(hapusData: true);
+    return jumlah;
+  }
+
+  /// [hapusData]: buang juga cache di HP ini (keluar sengaja). Sesi yang berakhir sendiri (401) TIDAK menghapusnya.
+  Future<void> _bersihkanLokal({bool hapusData = false}) async {
     await _penyimpan.hapus();
     _api.token = null;
     _api.perusahaanId = null;
+    _api.lingkupCache = null;
+    if (hapusData) {
+      await ref.read(penyimpanCacheProvider).hapusSemua();
+    }
     state = const AsyncData(null);
   }
 }

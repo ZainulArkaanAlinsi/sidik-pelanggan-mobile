@@ -6,6 +6,7 @@ import '../../core/theme/sidik_material.dart';
 import '../../providers/sesi_provider.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
+import '../akun/bantuan_screen.dart';
 
 /// Tukar kode undangan jadi akun. Satu layar, urutan kolom sama dengan yang
 /// diminta server (`TerimaUndanganRequest`), galat ditampilkan DI BAWAH
@@ -99,6 +100,8 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
   @override
   Widget build(BuildContext context) {
     final m = SidikMaterial.of(context);
+    final info = ref.watch(infoAplikasiProvider).value;
+    final galatKode = _galatIsian['kode'] != null || _galat != null;
     return Scaffold(
       appBar: AppBar(title: const Text('Pakai kode undangan')),
       body: ListView(
@@ -152,10 +155,43 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
                     style: TextStyle(color: m.gagal),
                   ),
           ),
+          // REQ-PRV-01: dokumen yang disetujui harus bisa dibaca dulu.
+          if (info?.kebijakanPrivasiUrl != null || info?.syaratUrl != null)
+            Wrap(
+              spacing: 8,
+              children: [
+                if (info?.kebijakanPrivasiUrl != null)
+                  TextButton(
+                    onPressed: () =>
+                        bukaTautanLuar(Uri.parse(info!.kebijakanPrivasiUrl!)),
+                    child: const Text('Baca kebijakan privasi'),
+                  ),
+                if (info?.syaratUrl != null)
+                  TextButton(
+                    onPressed: () =>
+                        bukaTautanLuar(Uri.parse(info!.syaratUrl!)),
+                    child: const Text('Baca syarat & ketentuan'),
+                  ),
+              ],
+            ),
           if (_galat != null) ...[
             const SizedBox(height: 8),
             Text(_galat!, style: TextStyle(color: m.gagal)),
           ],
+          // Flow A: kode salah / kedaluwarsa → minta kode baru ke lab.
+          if (galatKode && (info?.adaKontak ?? false))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.support_agent),
+                label: const Text('Minta kode baru ke PT Sidik'),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const BantuanScreen(),
+                  ),
+                ),
+              ),
+            ),
           const SizedBox(height: 20),
           SidikTombol(
             label: 'Buat akun & masuk',
