@@ -63,9 +63,11 @@ class GalatApi implements Exception {
 ///   gagal" bisa dicari di log server. Percobaan ulang memakai ID yang sama.
 ///
 /// Jaringan (NFR-06):
-/// - `GET` diulang otomatis 2× kalau koneksi gagal CEPAT (soket/klien). Batas
-///   waktu 20 detik tidak diulang — tiga kali 20 detik adalah satu menit
-///   menatap layar kosong.
+/// - `GET` diulang otomatis 2× kalau koneksi gagal CEPAT (soket/klien).
+/// - Server gratis (Render) tidur sesudah 15 menit sepi; bangunnya 30-90
+///   detik. `GET` yang kena batas waktu 20 detik, atau 502/504 dari proxy
+///   saat server bangun, diulang SEKALI dengan [batasBangun]. `POST` tidak
+///   pernah diulang (bisa terkirim dua kali).
 /// - Jawaban `GET` yang berhasil disimpan ke [cache]; kalau jaringan putus,
 ///   jawaban terakhir itu yang dikembalikan dan [saatOffline] dipanggil
 ///   dengan waktunya (banner "Anda sedang offline…"). Galat server (4xx/5xx)
@@ -87,6 +89,8 @@ class ApiPelanggan {
       Duration(milliseconds: 1500),
     ],
     this.batasWaktu = Konfigurasi.batasWaktu,
+    this.batasBangun = Konfigurasi.batasBangun,
+    this.jedaBangun = const Duration(seconds: 2),
   }) : _klien = klien ?? http.Client();
 
   final http.Client _klien;
@@ -118,6 +122,12 @@ class ApiPelanggan {
 
   /// Batas waktu satu panggilan JSON (NFR-06: 20 detik).
   final Duration batasWaktu;
+
+  /// Batas waktu percobaan ulang GET waktu server sedang bangun.
+  final Duration batasBangun;
+
+  /// Jeda sebelum mengulang GET yang dijawab 502/504.
+  final Duration jedaBangun;
 
   Uri _uri(String jalur, [Map<String, String?>? query]) {
     final bersih = <String, String>{
@@ -251,10 +261,26 @@ class ApiPelanggan {
     String? simpanKe,
   }) async {
     http.Response? r;
+    var menungguBangun = false;
     for (var percobaan = 0; r == null; percobaan++) {
       try {
-        r = await aksi().timeout(batas ?? batasWaktu);
+        r = await aksi().timeout(
+          menungguBangun ? batasBangun : (batas ?? batasWaktu),
+        );
+        // 502/504 = proxy Render belum tersambung ke server yang sedang bangun.
+        if (ulang &&
+            !menungguBangun &&
+            (r.statusCode == 502 || r.statusCode == 504)) {
+          r = null;
+          menungguBangun = true;
+          await Future<void>.delayed(jedaBangun);
+          continue;
+        }
       } on TimeoutException {
+        if (ulang && !menungguBangun) {
+          menungguBangun = true;
+          continue;
+        }
         if (simpanKe == null) saatOffline?.call(null);
         throw GalatApi.jaringan();
       } on Exception catch (e) {
@@ -330,6 +356,8 @@ class ApiPelanggan {
     404 => pesan404,
     429 => 'Terlalu banyak percobaan. Tunggu sebentar, lalu coba lagi.',
     503 => 'Layanan sedang dalam perbaikan. Coba lagi sebentar lagi.',
-    _ => 'Terjadi kesalahan di server ($status). Coba lagi.',
+    502 || 504 =>
+      'Server sedang dinyalakan dan belum siap. Tunggu sebentar, lalu coba lagi.',
+    _ => 'Terjadi kendala di server. Coba lagi sebentar lagi. (kode $status)',
   };
 }

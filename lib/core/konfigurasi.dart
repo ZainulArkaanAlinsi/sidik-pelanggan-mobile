@@ -45,6 +45,9 @@ abstract final class Konfigurasi {
 
   static const Duration batasWaktu = Duration(seconds: 20);
 
+  /// Server gratis yang tidur butuh 30-90 detik untuk bangun.
+  static const Duration batasBangun = Duration(seconds: 90);
+
   /// ID paket di Play Store (`applicationId` di `android/app/build.gradle.kts`).
   /// Permanen begitu diunggah ke Play — jangan diganti sesudah rilis pertama.
   static const String idPaket = 'com.ptsidik.pelanggan';

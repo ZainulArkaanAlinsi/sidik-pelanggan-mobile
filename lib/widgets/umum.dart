@@ -165,19 +165,34 @@ class BarisInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final isi = Text(
+      (nilai == null || nilai!.isEmpty) ? '—' : nilai!,
+      style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 130, child: Text(label, style: t.bodySmall)),
-          Expanded(
-            child: Text(
-              (nilai == null || nilai!.isEmpty) ? '—' : nilai!,
-              style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
+      child: LayoutBuilder(
+        builder: (context, batas) {
+          // HP sempit / huruf diperbesar: label di atas nilai, supaya nilai
+          // panjang (alamat, nomor sertifikat) tidak terjepit kolom 130 dp.
+          if (batas.maxWidth < 300) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: t.bodySmall),
+                const SizedBox(height: 2),
+                isi,
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: 130, child: Text(label, style: t.bodySmall)),
+              Expanded(child: isi),
+            ],
+          );
+        },
       ),
     );
   }
