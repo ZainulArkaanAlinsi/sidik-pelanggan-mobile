@@ -17,6 +17,9 @@ dependencies:
   flutter_riverpod: ^3.3.2
   flutter_secure_storage: ^10.3.1
   http: ^1.6.0
+  # SHA-256 APK pembaruan sebelum dipasang. Sudah ada di pubspec.lock sebagai
+  # dependensi transitif (3.0.7); dijadikan langsung karena diimpor sendiri.
+  crypto: ^3.0.7
   intl: any
   path_provider: ^2.1.6
   open_filex: ^4.7.0

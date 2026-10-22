@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/data_provider.dart';
+import '../providers/pembaruan_provider.dart';
 import '../providers/push_provider.dart';
 import '../providers/sinkron_provider.dart';
 import '../services/push_pelanggan.dart';
+import '../widgets/pembaruan.dart';
 import 'akun/akun_screen.dart';
 import 'beranda/beranda_screen.dart';
 import 'notifikasi/notifikasi_screen.dart';
@@ -67,12 +69,47 @@ class _RangkaState extends ConsumerState<Rangka> {
     AkunScreen(),
   ];
 
+  /// Dialog wajib yang sedang tampil, dipegang supaya bisa DITUTUP sendiri
+  /// waktu rilisnya tidak lagi wajib (manifes baru) atau menghilang.
+  DialogRoute<void>? _dialogWajib;
+
   @override
   void initState() {
     super.initState();
     // Push yang membuka aplikasi dari keadaan mati, atau yang diketuk
     // sebelum sesi selesai dipulihkan.
     WidgetsBinding.instance.addPostFrameCallback((_) => _bukaTautan());
+    // Rilis `wajib` → dialog yang tidak bisa ditutup, di atas tab mana pun.
+    // Tidak wajib lagi / rilisnya hilang → dialog ditutup otomatis.
+    ref.listenManual<bool>(
+      pembaruanProvider.select((k) => k.wajib),
+      (_, _) => WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _selaraskanDialogWajib(),
+      ),
+      fireImmediately: true,
+    );
+  }
+
+  void _selaraskanDialogWajib() {
+    if (!mounted) return;
+    final wajib = ref.read(pembaruanProvider).wajib;
+    final terbuka = _dialogWajib;
+    if (wajib && terbuka == null) {
+      final rute = DialogRoute<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const DialogPembaruanWajib(),
+      );
+      _dialogWajib = rute;
+      Navigator.of(context, rootNavigator: true).push(rute).whenComplete(() {
+        if (identical(_dialogWajib, rute)) _dialogWajib = null;
+      });
+    } else if (!wajib && terbuka != null) {
+      _dialogWajib = null;
+      // removeRoute, bukan pop: dialognya menolak pop (PopScope), dan pop
+      // bisa salah sasaran kalau ada rute lain di atasnya.
+      if (terbuka.isActive) terbuka.navigator?.removeRoute(terbuka);
+    }
   }
 
   void _bukaTautan() {
@@ -86,6 +123,8 @@ class _RangkaState extends ConsumerState<Rangka> {
     // Hidup selama pengguna masuk: tarik ulang data waktu aplikasi dibuka lagi
     // atau push masuk, supaya HP ini menyusul perubahan dari HP lain.
     ref.watch(sinkronProvider);
+    // Periksa pembaruan aplikasi: saat masuk, saat dibuka lagi, tiap jam.
+    ref.watch(penjadwalPembaruanProvider);
     ref.listen(tautanTertundaProvider, (_, t) {
       if (t != null) _bukaTautan();
     });
@@ -93,36 +132,44 @@ class _RangkaState extends ConsumerState<Rangka> {
     final belum = ref.watch(jumlahBelumDibacaProvider).value ?? 0;
     return Scaffold(
       body: IndexedStack(index: aktif, children: _tab),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: aktif,
-        onDestinationSelected: ref.read(tabProvider.notifier).pilih,
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.space_dashboard_outlined),
-            selectedIcon: Icon(Icons.space_dashboard),
-            label: 'Beranda',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.description_outlined),
-            selectedIcon: Icon(Icons.description),
-            label: 'Sertifikat',
-          ),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: belum > 0,
-              label: Text(belum > 99 ? '99+' : '$belum'),
-              child: const Icon(Icons.notifications_none),
-            ),
-            selectedIcon: const Icon(Icons.notifications),
-            label: 'Notifikasi',
-            tooltip: belum == 0
-                ? 'Notifikasi'
-                : 'Notifikasi, $belum belum dibaca',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Akun',
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Di atas navigasi bawah, bukan di atas layar: AppBar tiap tab
+          // sudah memegang jarak status bar.
+          const BannerPembaruan(),
+          NavigationBar(
+            selectedIndex: aktif,
+            onDestinationSelected: ref.read(tabProvider.notifier).pilih,
+            destinations: [
+              const NavigationDestination(
+                icon: Icon(Icons.space_dashboard_outlined),
+                selectedIcon: Icon(Icons.space_dashboard),
+                label: 'Beranda',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.description_outlined),
+                selectedIcon: Icon(Icons.description),
+                label: 'Sertifikat',
+              ),
+              NavigationDestination(
+                icon: Badge(
+                  isLabelVisible: belum > 0,
+                  label: Text(belum > 99 ? '99+' : '$belum'),
+                  child: const Icon(Icons.notifications_none),
+                ),
+                selectedIcon: const Icon(Icons.notifications),
+                label: 'Notifikasi',
+                tooltip: belum == 0
+                    ? 'Notifikasi'
+                    : 'Notifikasi, $belum belum dibaca',
+              ),
+              const NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Akun',
+              ),
+            ],
           ),
         ],
       ),

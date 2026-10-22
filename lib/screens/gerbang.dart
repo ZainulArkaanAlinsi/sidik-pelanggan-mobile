@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../core/konfigurasi.dart';
 import '../core/theme/sidik_material.dart';
+import '../providers/pembaruan_provider.dart';
 import '../providers/perangkat_provider.dart';
 import '../providers/sesi_provider.dart';
 import '../widgets/sidik/sidik_permukaan.dart';
 import '../widgets/sidik/sidik_tombol.dart';
+import '../widgets/pembaruan.dart';
 import '../widgets/umum.dart';
 import 'akun/bantuan_screen.dart';
 import 'auth/masuk_screen.dart';
@@ -271,8 +271,10 @@ class _LayarPemeliharaanState extends ConsumerState<LayarPemeliharaan> {
 }
 
 /// S21 — versi terpasang di bawah versi minimum. Tidak bisa ditutup: satu-
-/// satunya jalan keluar adalah memperbarui lewat Play Store.
-class LayarWajibPerbarui extends StatelessWidget {
+/// satunya jalan keluar adalah memasang versi baru. Aplikasi ini tidak ada di
+/// Play Store; APK diunduh dari GitHub Releases, diverifikasi SHA-256-nya,
+/// lalu diserahkan ke pemasang Android ([PanelPerbarui]).
+class LayarWajibPerbarui extends ConsumerStatefulWidget {
   const LayarWajibPerbarui({
     super.key,
     required this.terpasang,
@@ -282,19 +284,18 @@ class LayarWajibPerbarui extends StatelessWidget {
   final String terpasang;
   final String terbaru;
 
-  static Future<void> bukaPlayStore() async {
-    // Aplikasi Play Store kalau ada; peramban kalau tidak.
-    try {
-      if (await launchUrl(
-        Konfigurasi.tautanPasar,
-        mode: LaunchMode.externalApplication,
-      )) {
-        return;
-      }
-    } catch (_) {}
-    await launchUrl(
-      Konfigurasi.tautanPlayStore,
-      mode: LaunchMode.externalApplication,
+  @override
+  ConsumerState<LayarWajibPerbarui> createState() => _LayarWajibPerbaruiState();
+}
+
+class _LayarWajibPerbaruiState extends ConsumerState<LayarWajibPerbarui> {
+  @override
+  void initState() {
+    super.initState();
+    // Gerbang ini muncul sebelum sesi; manifes rilis dibaca langsung supaya
+    // tombolnya sudah tahu ukuran unduhan.
+    Future.microtask(
+      () => ref.read(pembaruanProvider.notifier).periksa(paksa: true),
     );
   }
 
@@ -305,10 +306,9 @@ class LayarWajibPerbarui extends StatelessWidget {
       ikon: Icons.system_update_outlined,
       judul: 'Perbarui aplikasi',
       isi:
-          'Versi $terpasang sudah tidak didukung. Perbarui SIDIK Pelanggan '
-          'ke versi $terbaru untuk melanjutkan.',
-      aksi: 'Perbarui di Play Store',
-      onAksi: bukaPlayStore,
+          'Versi ${widget.terpasang} sudah tidak didukung. Perbarui SIDIK '
+          'Pelanggan ke versi ${widget.terbaru} untuk melanjutkan.',
+      isiBawah: const PanelPerbarui(),
     ),
   );
 }
@@ -325,6 +325,7 @@ class _LayarInfo extends StatelessWidget {
     this.onAksiTengah,
     this.aksiKedua,
     this.onAksiKedua,
+    this.isiBawah,
   });
 
   final IconData ikon;
@@ -337,6 +338,9 @@ class _LayarInfo extends StatelessWidget {
   final VoidCallback? onAksiTengah;
   final String? aksiKedua;
   final VoidCallback? onAksiKedua;
+
+  /// Pengganti tombol aksi utama (mis. panel unduh pembaruan).
+  final Widget? isiBawah;
 
   @override
   Widget build(BuildContext context) {
@@ -370,6 +374,7 @@ class _LayarInfo extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 24),
+                  ?isiBawah,
                   if (aksi != null)
                     SidikTombol(
                       label: aksi!,
