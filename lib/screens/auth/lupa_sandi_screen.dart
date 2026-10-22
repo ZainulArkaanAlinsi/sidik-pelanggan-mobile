@@ -65,7 +65,7 @@ class _LupaSandiScreenState extends ConsumerState<LupaSandiScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Atur ulang sandi')),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: denganTepiBawah(context, const EdgeInsets.all(24)),
         children: [
           Text(
             _kodeTerkirim

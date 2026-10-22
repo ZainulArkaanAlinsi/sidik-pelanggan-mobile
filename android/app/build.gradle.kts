@@ -22,6 +22,9 @@ val berkasGoogleServices = file("google-services.json")
 
 if (berkasGoogleServices.exists()) {
     apply(plugin = "com.google.gms.google-services")
+    // Crashlytics ikut syarat yang sama: tanpa google-services.json Firebase
+    // memang mati (dan pelapor Crashlytics di sisi Dart tidak dipasang).
+    apply(plugin = "com.google.firebase.crashlytics")
 } else {
     logger.warn(
         "[sidik-pelanggan] PERINGATAN: android/app/google-services.json tidak ada — " +

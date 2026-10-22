@@ -226,13 +226,21 @@ class SidikLencana extends StatelessWidget {
           children: [
             Icon(status.ikon, size: 14, color: tinta),
             const SizedBox(width: 5),
-            Text(
-              status.label,
-              style: TextStyle(
-                color: tinta,
-                fontSize: 12,
-                height: 16 / 12,
-                fontWeight: FontWeight.w700,
+            // Flexible + elipsis: di layar 320 dp dengan huruf 1,3× lencana
+            // di sebelah nama alat panjang bisa lebih sempit dari labelnya.
+            // Label utuh tetap dibacakan pembaca layar (Semantics di atas).
+            Flexible(
+              child: Text(
+                status.label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: tinta,
+                  fontSize: 12,
+                  height: 16 / 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],

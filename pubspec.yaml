@@ -27,6 +27,11 @@ dependencies:
   package_info_plus: ^8.1.1
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0
+  # Laporan crash dari HP pelanggan (HP murah/lama yang tidak bisa kami
+  # pegang). 5.4.0 = versi yang resolve dengan firebase_core 4.15.0 di
+  # pubspec.lock (butuh core ^4.14). Yang dikirim CUMA jejak tumpukan + jenis
+  # galat — tanpa nama, email, token, atau data alat (lib/core/pelapor_galat.dart).
+  firebase_crashlytics: ^5.4.0
 
 dev_dependencies:
   flutter_test:

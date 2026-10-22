@@ -24,6 +24,11 @@ plugins {
     // Membaca `android/app/google-services.json`. Dipasang di `app/` HANYA
     // kalau berkas itu ada — lihat komentar `berkasGoogleServices` di sana.
     id("com.google.gms.google-services") version "4.4.4" apply false
+    // Crashlytics: menyuntikkan build ID (WAJIB — tanpa itu SDK Crashlytics
+    // menolak jalan) dan mengunggah mapping R8. Diterapkan bersyarat di
+    // app/build.gradle.kts, sama seperti google-services. Versi sama dengan
+    // aplikasi lab.
+    id("com.google.firebase.crashlytics") version "3.0.8" apply false
 }
 
 include(":app")

@@ -105,7 +105,7 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Pakai kode undangan')),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: denganTepiBawah(context, const EdgeInsets.all(24)),
         children: [
           Text(
             'Masukkan email yang menerima undangan dan kodenya, lalu lengkapi data Anda.',

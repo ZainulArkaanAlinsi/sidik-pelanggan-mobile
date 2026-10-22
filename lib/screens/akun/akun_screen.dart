@@ -96,14 +96,19 @@ class AkunScreen extends ConsumerWidget {
           if (sesi.akun.lebihDariSatuPerusahaan) ...[
             const SizedBox(height: jarak),
             Kertas(
-              child: ListTile(
-                leading: const Icon(Icons.swap_horiz),
-                title: const Text('Ganti perusahaan'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) =>
-                        const PilihPerusahaanScreen(bisaKembali: true),
+              // Material transparan: percikan tinta ListTile digambar di
+              // Material terdekat, yang tanpa ini tertutup warna Kertas.
+              child: Material(
+                type: MaterialType.transparency,
+                child: ListTile(
+                  leading: const Icon(Icons.swap_horiz),
+                  title: const Text('Ganti perusahaan'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          const PilihPerusahaanScreen(bisaKembali: true),
+                    ),
                   ),
                 ),
               ),
@@ -111,30 +116,33 @@ class AkunScreen extends ConsumerWidget {
           ],
           const SizedBox(height: jarak),
           Kertas(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.support_agent),
-                  title: const Text('Bantuan & kontak'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const BantuanScreen(),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.support_agent),
+                    title: const Text('Bantuan & kontak'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const BantuanScreen(),
+                      ),
                     ),
                   ),
-                ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.privacy_tip_outlined),
-                  title: const Text('Privasi & ketentuan'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const PrivasiScreen(),
+                  const Divider(height: 1, indent: 56),
+                  ListTile(
+                    leading: const Icon(Icons.privacy_tip_outlined),
+                    title: const Text('Privasi & ketentuan'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PrivasiScreen(),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),

@@ -136,7 +136,11 @@ if (git status --porcelain) {
 }
 
 # --- Build ---------------------------------------------------------------------
-flutter build apk --release
+# Hanya ARM 32 + 64 bit: HP pelanggan memang ARM, dan x86_64 cuma untuk
+# emulator; membuangnya memangkas ukuran APK (unduhan pembaruan lewat data
+# seluler) tanpa kehilangan satu HP pun. `android-arm` WAJIB tetap ada: HP
+# murah/lama banyak yang ROM-nya 32-bit walau prosesornya 64-bit.
+flutter build apk --release --target-platform android-arm,android-arm64
 if ($LASTEXITCODE -ne 0) { Gagal 'flutter build apk gagal.' }
 
 $keluaran = 'build/app/outputs/flutter-apk/app-release.apk'

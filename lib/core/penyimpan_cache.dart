@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'dekode_json.dart';
+
 /// Satu isian tersimpan + kapan disimpan.
 @immutable
 class EntriCache {
@@ -136,7 +138,7 @@ class PenyimpanCacheBerkas implements PenyimpanCache {
       final dir = await _dir();
       final f = File('${dir.path}/${namaBerkas(kunci)}');
       if (!await f.exists()) return null;
-      final j = jsonDecode(await f.readAsString());
+      final j = await dekodeJson(await f.readAsString());
       if (j is! Map || j['k'] != kunci || j['b'] is! String) return null;
       final waktu = DateTime.tryParse('${j['t']}')?.toLocal();
       if (waktu == null) return null;
