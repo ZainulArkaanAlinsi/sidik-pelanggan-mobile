@@ -23,6 +23,7 @@ import 'package:sidik_pelanggan/screens/rangka.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_screen.dart';
 import 'package:sidik_pelanggan/services/klien_rilis.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
+import 'package:sidik_pelanggan/services/pemasang_apk.dart';
 import 'package:sidik_pelanggan/services/push_pelanggan.dart';
 
 class _Sunyi extends PenyimpanSesi {
@@ -137,13 +138,15 @@ class _Palsu extends LayananPelanggan {
 }
 
 class _KlienRilisWajib extends KlienRilisMati {
+  bool wajib = true;
+
   @override
   Future<RilisAplikasi?> ambilTerbaru() async => RilisAplikasi(
     versi: '2.0.0',
     build: 2,
     url: Uri.parse('https://github.com/x/y/releases/download/v2/a.apk'),
     sha256: 'a' * 64,
-    wajib: true,
+    wajib: wajib,
   );
 }
 
@@ -153,6 +156,7 @@ Widget _bungkus(
   List<Override> tambahan = const [],
 }) => ProviderScope(
   overrides: [
+    pemasangApkProvider.overrideWithValue(const PemasangApkMati()),
     ...tambahan,
     penyimpanSesiProvider.overrideWithValue(_Sunyi()),
     penyimpanPerangkatProvider.overrideWithValue(_Perangkat()),
@@ -285,6 +289,65 @@ void main() {
     expect(find.text('Pembaruan wajib'), findsOneWidget);
 
     // Lepas Rangka: penjadwal (timer per jam) ikut dibuang.
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Rangka: dialog wajib tertutup sendiri bila tidak wajib lagi', (
+    tester,
+  ) async {
+    final klien = _KlienRilisWajib();
+    await tester.pumpWidget(
+      _bungkus(
+        const Rangka(),
+        _Palsu(),
+        tambahan: [
+          pembaruanAktifProvider.overrideWithValue(true),
+          klienRilisProvider.overrideWithValue(klien),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Pembaruan wajib'), findsOneWidget);
+
+    final c = ProviderScope.containerOf(tester.element(find.byType(Rangka)));
+    klien.wajib = false;
+    var selesai = false;
+    c
+        .read(pembaruanProvider.notifier)
+        .periksa(paksa: true)
+        .whenComplete(() => selesai = true);
+    for (var i = 0; i < 20 && !selesai; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    expect(selesai, isTrue);
+    await tester.pumpAndSettle();
+    expect(find.text('Pembaruan wajib'), findsNothing);
+    // Bukan wajib lagi: banner biasa yang muncul.
+    expect(find.text('Versi 2.0.0 tersedia'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('penjadwal pembaruan dibuang begitu Rangka dilepas (keluar)', (
+    tester,
+  ) async {
+    final tambahan = [
+      pembaruanAktifProvider.overrideWithValue(true),
+      klienRilisProvider.overrideWithValue(const KlienRilisMati()),
+    ];
+    await tester.pumpWidget(
+      _bungkus(const Rangka(), _Palsu(), tambahan: tambahan),
+    );
+    await tester.pumpAndSettle();
+    final c = ProviderScope.containerOf(tester.element(find.byType(Rangka)));
+    expect(c.exists(penjadwalPembaruanProvider), isTrue);
+
+    await tester.pumpWidget(
+      _bungkus(const SizedBox(), _Palsu(), tambahan: tambahan),
+    );
+    await tester.pumpAndSettle();
+    expect(c.exists(penjadwalPembaruanProvider), isFalse);
+
     await tester.pumpWidget(const SizedBox());
   });
 }

@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
 import 'package:sidik_pelanggan/models/rilis_aplikasi.dart';
 import 'package:sidik_pelanggan/providers/pembaruan_provider.dart';
@@ -42,6 +41,28 @@ RilisAplikasi _rilis({int build = 45, bool wajib = false}) =>
       _manifes(build: build, wajib: wajib),
       hostDiizinkan: _host,
     )!;
+
+/// Respons dengan URL akhir (sesudah redirect), seperti `IOClient`.
+class _ResponsUrl extends http.StreamedResponse
+    implements http.BaseResponseWithUrl {
+  _ResponsUrl(List<int> isi, this.url)
+    : super(Stream.value(isi), 200, contentLength: isi.length);
+
+  @override
+  final Uri url;
+}
+
+class _KlienUji extends http.BaseClient {
+  _KlienUji(this.jawab);
+
+  final (List<int>, Uri) Function(http.BaseRequest) jawab;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final (isi, url) = jawab(request);
+    return _ResponsUrl(isi, url);
+  }
+}
 
 class _KlienPalsu implements KlienRilis {
   _KlienPalsu(this.rilis);
@@ -145,13 +166,14 @@ void main() {
     KlienRilisGithub klien(
       List<http.BaseRequest> catat, {
       String? manifes,
+      String akhir = 'https://release-assets.githubusercontent.com/a/b',
     }) => KlienRilisGithub(
-      client: MockClient((req) async {
+      client: _KlienUji((req) {
         catat.add(req);
         if (req.url.path.endsWith('.json')) {
-          return http.Response.bytes(utf8.encode(manifes ?? ''), 200);
+          return (utf8.encode(manifes ?? ''), req.url);
         }
-        return http.Response.bytes(isiApk, 200);
+        return (isiApk, Uri.parse(akhir));
       }),
       urlManifes: Uri.parse(
         'https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/releases/latest/download/versi-pelanggan.json',
@@ -163,7 +185,7 @@ void main() {
       final catat = <http.BaseRequest>[];
       final r = await klien(
         catat,
-        manifes: '﻿${jsonEncode(_manifes())}',
+        manifes: '${String.fromCharCode(0xFEFF)}${jsonEncode(_manifes())}',
       ).ambilTerbaru();
       expect(r?.build, 45);
       expect(catat.single.method, 'GET');
@@ -196,6 +218,25 @@ void main() {
       final apk = await k.unduh(r);
       expect(apk.readAsBytesSync(), isiApk);
       expect((await k.apkSiap(r))?.path, apk.path);
+    });
+
+    test('redirect ke host selain GitHub → ditolak sebelum menulis', () async {
+      final r = RilisAplikasi.dariJson(
+        _manifes(sha: shaBenar, ukuran: isiApk.length),
+        hostDiizinkan: _host,
+      )!;
+      for (final akhir in [
+        'https://contoh.com/sidik-pelanggan.apk',
+        'https://githubusercontent.com.jahat.net/a.apk',
+        'http://objects.githubusercontent.com/a.apk',
+      ]) {
+        await expectLater(
+          klien([], akhir: akhir).unduh(r),
+          throwsA(isA<UnduhGagal>()),
+          reason: akhir,
+        );
+      }
+      expect(dir.listSync(), isEmpty);
     });
 
     test('ukuran tidak sesuai manifes → ditolak', () async {
@@ -269,6 +310,24 @@ void main() {
       expect(wifi.unduhan, 1);
       expect(c2.read(pembaruanProvider).tahap, TahapPembaruan.siap);
       expect(pemasang.dipasang, isEmpty);
+    });
+
+    test('build sama, wajib berubah → rilis diperbarui, APK tetap', () async {
+      final klien = _KlienPalsu(_rilis(wajib: true));
+      final c = ProviderContainer(
+        overrides: _override(klien, _PemasangPalsu(wifi: true)),
+      );
+      addTearDown(c.dispose);
+      final p = c.read(pembaruanProvider.notifier);
+      await p.periksa();
+      expect(c.read(pembaruanProvider).wajib, isTrue);
+      expect(c.read(pembaruanProvider).tahap, TahapPembaruan.siap);
+
+      klien.rilis = _rilis(wajib: false);
+      await p.periksa(paksa: true);
+      expect(c.read(pembaruanProvider).wajib, isFalse);
+      expect(c.read(pembaruanProvider).tahap, TahapPembaruan.siap);
+      expect(klien.unduhan, 1);
     });
 
     test('Perbarui di seluler: unduh lalu buka pemasang', () async {

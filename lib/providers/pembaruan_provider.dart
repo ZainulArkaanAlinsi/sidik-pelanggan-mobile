@@ -66,6 +66,7 @@ class KeadaanPembaruan {
       tahap == TahapPembaruan.mengunduh || tahap == TahapPembaruan.memasang;
 
   KeadaanPembaruan salin({
+    RilisAplikasi? rilis,
     TahapPembaruan? tahap,
     double? progres,
     File? apk,
@@ -73,7 +74,7 @@ class KeadaanPembaruan {
     bool hapusPesan = false,
     bool? disembunyikan,
   }) => KeadaanPembaruan(
-    rilis: rilis,
+    rilis: rilis ?? this.rilis,
     tahap: tahap ?? this.tahap,
     progres: progres,
     apk: apk ?? this.apk,
@@ -137,9 +138,17 @@ class PembaruanController extends Notifier<KeadaanPembaruan> {
       return;
     }
 
-    if (state.rilis?.build != rilis.build) {
+    final lama = state.rilis;
+    if (lama == null ||
+        lama.build != rilis.build ||
+        lama.sha256 != rilis.sha256) {
+      // Rilis lain (atau APK build yang sama diunggah ulang): mulai dari nol.
       if (state.sibuk) return; // unduhan rilis lama sedang jalan
       state = KeadaanPembaruan(rilis: rilis);
+    } else if (lama.wajib != rilis.wajib || lama.catatan != rilis.catatan) {
+      // APK sama, sifatnya berubah (mis. tidak wajib lagi): progres & APK
+      // yang sudah terunduh tetap dipakai.
+      state = state.salin(rilis: rilis, progres: state.progres);
     }
     if (state.tahap != TahapPembaruan.diam) return;
 
@@ -255,7 +264,12 @@ class PembaruanController extends Notifier<KeadaanPembaruan> {
 /// sesi): sekali saat masuk, tiap kembali ke layar depan, dan tiap jam selagi
 /// terbuka. Jeda 1 jam dijaga [PembaruanController.periksa], jadi resume yang
 /// sering tidak memukul GitHub berkali-kali. Tidak memblokir layar apa pun.
-final penjadwalPembaruanProvider = Provider<void>((ref) {
+///
+/// `autoDispose`: hidup HANYA selama Rangka (satu-satunya pendengarnya) ada di
+/// pohon. Begitu pelanggan keluar dan Gerbang kembali ke layar Masuk, Rangka
+/// dilepas, provider ini dibuang, dan timer per jam serta pendengar resume
+/// ikut berhenti. Keadaan [pembaruanProvider] sendiri tetap disimpan.
+final penjadwalPembaruanProvider = Provider.autoDispose<void>((ref) {
   if (!ref.watch(pembaruanAktifProvider)) return;
   final pengendali = ref.read(pembaruanProvider.notifier);
   Future.microtask(pengendali.periksa);

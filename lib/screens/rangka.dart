@@ -69,7 +69,9 @@ class _RangkaState extends ConsumerState<Rangka> {
     AkunScreen(),
   ];
 
-  bool _dialogWajibTerbuka = false;
+  /// Dialog wajib yang sedang tampil, dipegang supaya bisa DITUTUP sendiri
+  /// waktu rilisnya tidak lagi wajib (manifes baru) atau menghilang.
+  DialogRoute<void>? _dialogWajib;
 
   @override
   void initState() {
@@ -78,25 +80,36 @@ class _RangkaState extends ConsumerState<Rangka> {
     // sebelum sesi selesai dipulihkan.
     WidgetsBinding.instance.addPostFrameCallback((_) => _bukaTautan());
     // Rilis `wajib` → dialog yang tidak bisa ditutup, di atas tab mana pun.
-    ref.listenManual<bool>(pembaruanProvider.select((k) => k.wajib), (
-      _,
-      wajib,
-    ) {
-      if (wajib) {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _bukaDialogWajib());
-      }
-    }, fireImmediately: true);
+    // Tidak wajib lagi / rilisnya hilang → dialog ditutup otomatis.
+    ref.listenManual<bool>(
+      pembaruanProvider.select((k) => k.wajib),
+      (_, _) => WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _selaraskanDialogWajib(),
+      ),
+      fireImmediately: true,
+    );
   }
 
-  void _bukaDialogWajib() {
-    if (!mounted || _dialogWajibTerbuka) return;
-    _dialogWajibTerbuka = true;
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      useRootNavigator: true,
-      builder: (_) => const DialogPembaruanWajib(),
-    ).whenComplete(() => _dialogWajibTerbuka = false);
+  void _selaraskanDialogWajib() {
+    if (!mounted) return;
+    final wajib = ref.read(pembaruanProvider).wajib;
+    final terbuka = _dialogWajib;
+    if (wajib && terbuka == null) {
+      final rute = DialogRoute<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const DialogPembaruanWajib(),
+      );
+      _dialogWajib = rute;
+      Navigator.of(context, rootNavigator: true).push(rute).whenComplete(() {
+        if (identical(_dialogWajib, rute)) _dialogWajib = null;
+      });
+    } else if (!wajib && terbuka != null) {
+      _dialogWajib = null;
+      // removeRoute, bukan pop: dialognya menolak pop (PopScope), dan pop
+      // bisa salah sasaran kalau ada rute lain di atasnya.
+      if (terbuka.isActive) terbuka.navigator?.removeRoute(terbuka);
+    }
   }
 
   void _bukaTautan() {

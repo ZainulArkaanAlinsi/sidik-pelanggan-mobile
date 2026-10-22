@@ -92,6 +92,14 @@ class KlienRilisGithub implements KlienRilis {
   /// sendiri (supaya `URL_MANIFES_RILIS` ke server uji tetap bisa dipakai).
   Set<String> get hostDiizinkan => {'github.com', _urlManifes.host};
 
+  /// Host TUJUAN AKHIR unduhan (sesudah redirect) yang diterima: GitHub,
+  /// CDN aset GitHub (`*.githubusercontent.com`), atau host manifes itu
+  /// sendiri. Redirect ke tempat lain ditolak sebelum satu byte pun ditulis.
+  bool hostAkhirSah(String host) =>
+      host == 'github.com' ||
+      host.endsWith('.githubusercontent.com') ||
+      host == _urlManifes.host;
+
   static String namaBerkas(RilisAplikasi r) => 'sidik-pelanggan-${r.build}.apk';
 
   @override
@@ -103,7 +111,9 @@ class KlienRilisGithub implements KlienRilis {
       if (respons.statusCode != 200) return null;
       var teks = utf8.decode(respons.bodyBytes, allowMalformed: true);
       // PowerShell lama menulis BOM di depan JSON; jsonDecode menolaknya.
-      if (teks.startsWith('﻿')) teks = teks.substring(1);
+      if (teks.isNotEmpty && teks.codeUnitAt(0) == 0xFEFF) {
+        teks = teks.substring(1);
+      }
       final j = jsonDecode(teks);
       if (j is! Map<String, dynamic>) return null;
       return RilisAplikasi.dariJson(j, hostDiizinkan: hostDiizinkan);
@@ -162,6 +172,21 @@ class KlienRilisGithub implements KlienRilis {
     if (respons.statusCode != 200) {
       hentikan();
       throw UnduhGagal('Server unduhan menjawab ${respons.statusCode}.');
+    }
+
+    // URL akhir sesudah redirect. Klien bawaan (IOClient) selalu
+    // melaporkannya; respons tanpa URL akhir tidak bisa diperiksa → ditolak.
+    final akhirUrl = switch (respons) {
+      http.BaseResponseWithUrl(:final url) => url,
+      _ => null,
+    };
+    if (akhirUrl == null ||
+        akhirUrl.scheme != 'https' ||
+        !hostAkhirSah(akhirUrl.host)) {
+      hentikan();
+      throw const UnduhGagal(
+        'Unduhan dialihkan ke alamat yang tidak dikenal. Pembaruan dibatalkan.',
+      );
     }
 
     final total = respons.contentLength ?? rilis.ukuran;

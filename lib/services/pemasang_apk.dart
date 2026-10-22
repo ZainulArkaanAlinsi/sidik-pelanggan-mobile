@@ -73,7 +73,12 @@ class PemasangApkAndroid implements PemasangApk {
   @override
   Future<bool> jaringanTakBerbayar() async {
     try {
-      return await _kanal.invokeMethod<bool>('jaringanTakBerbayar') ?? false;
+      // Dibatasi waktu: jawaban yang tidak pernah datang tidak boleh
+      // menahan pemeriksaan pembaruan berikutnya selamanya.
+      return await _kanal
+              .invokeMethod<bool>('jaringanTakBerbayar')
+              .timeout(const Duration(seconds: 5)) ??
+          false;
     } catch (_) {
       return false;
     }
