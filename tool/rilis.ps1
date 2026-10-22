@@ -21,7 +21,11 @@
 param(
   [Parameter(Mandatory = $true)][string]$Catatan,
   [switch]$Wajib,
-  [string]$Repo = 'ZainulArkaanAlinsi/sidik-pelanggan-mobile'
+  [string]$Repo = 'ZainulArkaanAlinsi/sidik-pelanggan-mobile',
+  # Potongan DN sertifikat RILIS yang wajib ada di APK. APK bertanda tangan
+  # sertifikat lain (mis. "CN=Android Debug") tidak bisa dipasang di atas APK
+  # yang sudah dipegang pelanggan.
+  [string]$DnRilis = 'CN=SIDIK Pelanggan'
 )
 
 # 'Continue', bukan 'Stop': di PowerShell 5.1 stderr perintah native (gh,
@@ -36,6 +40,69 @@ function Gagal([string]$pesan) {
   exit 1
 }
 
+# `gh release view` membedakan "belum ada rilis" (pesan 'release not found')
+# dari galat lain (jaringan, auth, repo salah). Yang kedua MENGGAGALKAN skrip:
+# menganggapnya "belum ada" bisa melewatkan pemeriksaan build/tag.
+function Lihat-Rilis([string[]]$argumen) {
+  $keluaran = & gh release view @argumen --repo $Repo 2>&1
+  $kode = $LASTEXITCODE
+  $teks = ($keluaran | ForEach-Object { "$_" }) -join "`n"
+  if ($kode -eq 0) { return @{ Ada = $true; Teks = $teks } }
+  if ($teks -match 'release not found') { return @{ Ada = $false; Teks = '' } }
+  Gagal "gh release view $($argumen -join ' ') gagal: $teks"
+}
+
+# Baca android/key.properties tanpa pernah mencetak nilainya.
+function Periksa-KunciRilis {
+  $berkas = 'android/key.properties'
+  if (-not (Test-Path $berkas)) {
+    Gagal "$berkas tidak ada: APK akan bertanda tangan kunci debug."
+  }
+  $nilai = @{}
+  foreach ($b in Get-Content $berkas -ErrorAction Stop) {
+    if ($b -match '^\s*([A-Za-z]+)\s*=\s*(.*?)\s*$') { $nilai[$Matches[1]] = $Matches[2] }
+  }
+  foreach ($k in 'storeFile', 'storePassword', 'keyAlias', 'keyPassword') {
+    if ([string]::IsNullOrWhiteSpace($nilai[$k])) { Gagal "$berkas`: '$k' kosong atau tidak ada." }
+  }
+  # Gradle membaca storeFile relatif ke folder android/ (rootProject).
+  $toko = $nilai['storeFile']
+  if (-not [System.IO.Path]::IsPathRooted($toko)) { $toko = Join-Path 'android' $toko }
+  if (-not (Test-Path -LiteralPath $toko)) { Gagal "$berkas`: berkas keystore (storeFile) tidak ditemukan." }
+  Write-Host 'key.properties lengkap, keystore ada.' -ForegroundColor Green
+}
+
+function Cari-Apksigner {
+  $akarSdk = @($env:ANDROID_HOME, $env:ANDROID_SDK_ROOT, (Join-Path $env:LOCALAPPDATA 'Android\Sdk')) |
+    Where-Object { $_ -and (Test-Path (Join-Path $_ 'build-tools')) } | Select-Object -First 1
+  if (-not $akarSdk) { Gagal 'Android SDK build-tools tidak ditemukan (ANDROID_HOME / %LOCALAPPDATA%\Android\Sdk).' }
+  # Versi stabil terbaru dulu (folder -rc dilewati).
+  $alat = Get-ChildItem (Join-Path $akarSdk 'build-tools') -Directory |
+    Where-Object { $_.Name -match '^\d+\.\d+\.\d+$' } |
+    Sort-Object { [version]$_.Name } -Descending |
+    ForEach-Object { Join-Path $_.FullName 'apksigner.bat' } |
+    Where-Object { Test-Path $_ } | Select-Object -First 1
+  if (-not $alat) { Gagal "apksigner.bat tidak ditemukan di $akarSdkuild-tools." }
+  return $alat
+}
+
+# APK harus lolos `apksigner verify` DAN bertanda tangan sertifikat rilis.
+function Periksa-TandaTangan([string]$jalurApk) {
+  $apksigner = Cari-Apksigner
+  $keluaran = & $apksigner verify --print-certs $jalurApk 2>&1
+  $kode = $LASTEXITCODE
+  $teks = ($keluaran | ForEach-Object { "$_" }) -join "`n"
+  if ($kode -ne 0) { Gagal "apksigner verify gagal:`n$teks" }
+  $dn = @($teks -split "`n" | Where-Object { $_ -match 'certificate DN:' })
+  if ($dn.Count -eq 0) { Gagal 'apksigner tidak menampilkan DN sertifikat.' }
+  Write-Host ($dn -join "`n")
+  if ($teks -match 'Android Debug') { Gagal 'APK bertanda tangan sertifikat DEBUG. Periksa android/key.properties.' }
+  if (-not ($dn -join "`n").Contains($DnRilis)) {
+    Gagal "DN sertifikat APK tidak memuat '$DnRilis'. Bukan kunci rilis SIDIK Pelanggan?"
+  }
+  Write-Host 'Tanda tangan rilis OK.' -ForegroundColor Green
+}
+
 # --- Versi dari pubspec.yaml -------------------------------------------------
 $baris = Select-String -Path 'pubspec.yaml' -Pattern '^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+)\s*$' |
   Select-Object -First 1
@@ -46,18 +113,19 @@ $tag = "v$versi+$build"
 Write-Host "Rilis $tag ($Repo)" -ForegroundColor Cyan
 
 # --- Pemeriksaan awal ---------------------------------------------------------
-if (-not (Test-Path 'android/key.properties')) {
-  Gagal 'android/key.properties tidak ada: APK akan bertanda tangan kunci debug.'
-}
+Periksa-KunciRilis
 gh auth status 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) { Gagal "gh belum login (jalankan 'gh auth login')." }
 
-gh release view $tag --repo $Repo 2>$null | Out-Null
-if ($LASTEXITCODE -eq 0) { Gagal "Rilis $tag sudah ada." }
+if ((Lihat-Rilis @($tag)).Ada) { Gagal "Rilis $tag sudah ada." }
 
 # Build harus lebih besar dari rilis terakhir, kalau tidak HP tidak ditawari.
-$terakhir = gh release view --repo $Repo --json tagName -q .tagName 2>$null
-if ($LASTEXITCODE -eq 0 -and $terakhir -match '\+([0-9]+)$') {
+$latest = Lihat-Rilis @('--json', 'tagName', '-q', '.tagName')
+if (-not $latest.Ada) {
+  Write-Host 'Belum ada rilis di repo ini: ini rilis pertama.' -ForegroundColor Yellow
+} else {
+  $terakhir = $latest.Teks.Trim()
+  if ($terakhir -notmatch '\+([0-9]+)$') { Gagal "Tag rilis terakhir '$terakhir' tidak berformat v<versi>+<build>." }
   if ([int]$Matches[1] -ge $build) {
     Gagal "Build $build tidak lebih besar dari rilis terakhir $terakhir. Naikkan angka sesudah '+' di pubspec.yaml."
   }
@@ -79,6 +147,9 @@ New-Item -ItemType Directory -Force -Path $folder -ErrorAction Stop | Out-Null
 $apk = Join-Path $folder 'sidik-pelanggan.apk'
 $manifes = Join-Path $folder 'versi-pelanggan.json'
 Copy-Item $keluaran $apk -Force -ErrorAction Stop
+
+# --- Tanda tangan: harus sertifikat rilis, bukan debug ---------------------------
+Periksa-TandaTangan $apk
 
 # --- Manifes -------------------------------------------------------------------
 $sha = (Get-FileHash -Algorithm SHA256 $apk -ErrorAction Stop).Hash.ToLowerInvariant()
@@ -117,12 +188,19 @@ if ($LASTEXITCODE -ne 0) { Gagal 'gh release create gagal.' }
 $aset = (gh release view $tag --repo $Repo --json assets | ConvertFrom-Json).assets |
   Where-Object { $_.name -eq 'sidik-pelanggan.apk' } | ForEach-Object { $_.url }
 Write-Host "Aset APK di GitHub: $aset"
+$terjangkau = $false
 try {
   $r = Invoke-WebRequest -Uri $url -Method Head -MaximumRedirection 5 -UseBasicParsing
-  Write-Host "URL manifes terjangkau (HTTP $($r.StatusCode))." -ForegroundColor Green
+  $terjangkau = ($r.StatusCode -eq 200)
+  $status = $r.StatusCode
 } catch {
-  Write-Host "PERINGATAN: URL di manifes tidak terjangkau: $url" -ForegroundColor Yellow
-  Write-Host 'HP pelanggan akan gagal mengunduh. Periksa aset rilis sebelum mengumumkan.' -ForegroundColor Yellow
+  $status = $_.Exception.Message
 }
+if (-not $terjangkau) {
+  Gagal ("URL APK di versi-pelanggan.json TIDAK terjangkau ($status): $url`n" +
+    "Rilis $tag SUDAH terbit dan sekarang 'latest': HP pelanggan akan melihat pembaruan tapi gagal mengunduh.`n" +
+    "Perbaiki segera: gh release delete '$tag' --repo $Repo --cleanup-tag, lalu jalankan ulang skrip ini.")
+}
+Write-Host "URL manifes terjangkau (HTTP $status)." -ForegroundColor Green
 
 Write-Host "Selesai: https://github.com/$Repo/releases/tag/$tagUrl" -ForegroundColor Green
