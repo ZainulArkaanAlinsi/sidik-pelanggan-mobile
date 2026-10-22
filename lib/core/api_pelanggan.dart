@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 
+import 'dekode_json.dart';
 import 'id_unik.dart';
 import 'konfigurasi.dart';
 import 'penyimpan_cache.dart';
@@ -176,7 +177,7 @@ class ApiPelanggan {
       final simpanan = await cache!.baca(kunci);
       saatOffline?.call(simpanan?.waktu);
       if (simpanan == null) rethrow;
-      final isi = jsonDecode(simpanan.isi);
+      final isi = await dekodeJson(simpanan.isi);
       return isi is Map<String, dynamic> ? isi : {'data': isi};
     }
   }
@@ -251,7 +252,7 @@ class ApiPelanggan {
     }
     saatOnline?.call();
     if (r.statusCode >= 200 && r.statusCode < 300) return r.bodyBytes;
-    throw _galatDari(r);
+    throw await _galatDari(r);
   }
 
   Future<Map<String, dynamic>> _kirim(
@@ -299,7 +300,8 @@ class ApiPelanggan {
 
     if (r.statusCode >= 200 && r.statusCode < 300) {
       if (r.body.isEmpty) return const {};
-      final isi = jsonDecode(r.body);
+      // Diurai di isolate lain kalau besar (daftar alat/sertifikat panjang).
+      final isi = await dekodeJson(r.body);
       if (simpanKe != null) {
         // Tidak ditunggu: menulis cache tidak boleh memperlambat layar.
         unawaited(cache?.simpan(simpanKe, r.body));
@@ -307,15 +309,15 @@ class ApiPelanggan {
       return isi is Map<String, dynamic> ? isi : {'data': isi};
     }
 
-    throw _galatDari(r);
+    throw await _galatDari(r);
   }
 
-  GalatApi _galatDari(http.Response r) {
+  Future<GalatApi> _galatDari(http.Response r) async {
     if (r.statusCode == 401) saatTokenDitolak?.call();
 
     Map<String, dynamic> isi = const {};
     try {
-      final d = jsonDecode(r.body);
+      final d = await dekodeJson(r.body);
       if (d is Map<String, dynamic>) isi = d;
     } catch (_) {
       // Badan bukan JSON (mis. halaman galat proxy) — pakai pesan umum.

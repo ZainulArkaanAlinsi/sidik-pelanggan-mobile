@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:http/http.dart' as http;
@@ -268,8 +269,18 @@ class KlienRilisGithub implements KlienRilis {
 }
 
 /// SHA-256 isi [berkas], hex huruf kecil.
-Future<String> sha256Berkas(File berkas) async =>
-    (await crypto.sha256.bind(berkas.openRead()).first).toString();
+///
+/// Dihitung di isolate terpisah: APK puluhan MB yang di-hash di isolate UI
+/// membekukan layar beberapa detik di HP murah (Android bisa menampilkan
+/// "aplikasi tidak merespons"). Yang dikirim ke isolate CUMA path-nya, dan
+/// berkasnya dibaca bertahap di sana — isinya tidak pernah utuh di memori.
+Future<String> sha256Berkas(File berkas) {
+  final jalur = berkas.path;
+  return Isolate.run(() => _sha256Jalur(jalur), debugName: 'sha256Berkas');
+}
+
+Future<String> _sha256Jalur(String jalur) async =>
+    (await crypto.sha256.bind(File(jalur).openRead()).first).toString();
 
 /// Dipakai di luar Android dan di bawah `flutter test`: tidak pernah ada rilis.
 class KlienRilisMati implements KlienRilis {

@@ -15,6 +15,17 @@ import 'sidik/sidik_tombol.dart';
 
 const jarak = 16.0;
 
+/// [dasar] + tinggi navigasi sistem di bawah (gesture bar / tiga tombol).
+///
+/// Android 15+ (targetSdk 35+) memaksa edge-to-edge: layar penuh yang didorong
+/// di atas Rangka menggambar sampai ke bawah navigasi sistem, dan isi terakhir
+/// daftar (tombol kirim, baris terakhir sertifikat) tertutup tombol HP. Di tab
+/// Rangka nilainya 0 — `Scaffold` induk sudah memakainya untuk NavigationBar.
+/// `paddingOf` (bukan `viewPaddingOf`): 0 saat keyboard terbuka, karena
+/// `adjustResize` sudah mengecilkan layarnya.
+EdgeInsets denganTepiBawah(BuildContext context, EdgeInsets dasar) =>
+    dasar + EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom);
+
 /// Keadaan memuat: KERANGKA, bukan pemutar kosong (04-UI-UX §1.2).
 /// [Memuat.new] untuk daftar, [Memuat.detail] untuk layar detail.
 class Memuat extends StatelessWidget {

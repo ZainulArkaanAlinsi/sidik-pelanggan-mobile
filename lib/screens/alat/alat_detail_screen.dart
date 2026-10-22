@@ -29,7 +29,10 @@ class AlatDetailScreen extends ConsumerWidget {
           cobaLagi: () => ref.invalidate(detailAlatProvider(id)),
         ),
         data: (a) => ListView(
-          padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
+          padding: denganTepiBawah(
+            context,
+            const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
+          ),
           children: [
             Kertas(
               padding: const EdgeInsets.all(jarak),

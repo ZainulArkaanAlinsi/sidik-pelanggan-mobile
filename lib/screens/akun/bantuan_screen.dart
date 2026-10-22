@@ -65,7 +65,10 @@ class _LayarInfoState extends ConsumerState<_LayarInfo> {
             cobaLagi: () => ref.invalidate(infoAplikasiProvider),
           ),
           data: (info) => ListView(
-            padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
+            padding: denganTepiBawah(
+              context,
+              const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
+            ),
             children: widget.isi(context, info),
           ),
         ),

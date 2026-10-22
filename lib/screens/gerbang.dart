@@ -109,7 +109,7 @@ class PilihPerusahaanScreen extends ConsumerWidget {
         automaticallyImplyLeading: bisaKembali,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(jarak),
+        padding: denganTepiBawah(context, const EdgeInsets.all(jarak)),
         children: [
           Text(
             'Akun Anda terdaftar di beberapa perusahaan. Data yang tampil selalu milik perusahaan yang dipilih.',

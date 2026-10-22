@@ -132,7 +132,10 @@ class _SertifikatDetailScreenState
           final vonis = statusKeputusan(s.keputusan);
           final pengganti = s.digantikanOleh;
           return ListView(
-            padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
+            padding: denganTepiBawah(
+              context,
+              const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
+            ),
             children: [
               if (s.digantikan && pengganti != null)
                 _kartuPeringatan(
