@@ -12,6 +12,48 @@ rilis lewat update otomatis di aplikasi. Bahasa ke pemilik: Indonesia santai, si
 
 ---
 
+## Pembaruan 23 Okt 2026 — mendahului status historis di bawah
+
+Bagian berikut memperbarui status yang sudah diperiksa. Snapshot 22 Okt dan
+daftar pekerjaannya dipertahankan sebagai riwayat, bukan daftar tugas terkini
+yang boleh dijalankan tanpa memeriksa status repo dan bukti terbaru.
+
+- **App pelanggan sudah terbit `v0.2.1+3`** pada 23 Okt 2026 05:04 WIB,
+  commit `21a3b4d`. [Rilis publik](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/releases/tag/v0.2.1%2B3)
+  memuat APK dan `versi-pelanggan.json`; versi/build, ukuran `36.845.501` byte
+  dan SHA-256 manifest cocok dengan metadata aset APK.
+  [CI analyze + test](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/actions/runs/39861639145)
+  hijau pada SHA yang sama. Workflow pelanggan ini tidak membangun APK.
+- **HP murah/32-bit dan Crashlytics sudah merged** lewat
+  [PR pelanggan #11](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/pull/11).
+  `tool/rilis.ps1` menargetkan ARM32 + ARM64; hash APK dan JSON besar diproses
+  di isolate. `applicationId` yang benar adalah `com.ptsidik.pelanggan`.
+  Konfigurasi Firebase lokal ditemukan, tetapi push dan event Crashlytics
+  belum terbukti diterima. Crashlytics diaktifkan hanya di release setelah
+  Firebase hidup; pelapor Dart menyaring pesan galat dan identitas akun.
+  Checklist HP nyata ARM32/RAM 2 GB ada di README: update, login, beranda,
+  sertifikat/PDF, Akun, huruf maksimum, dan nonfatal tersaring di console.
+- **API gelombang 2 sudah live pada `8c85397`**.
+  [CI 39901457421](https://github.com/ZainulArkaanAlinsi/sidik-calibration-api/actions/runs/39901457421)
+  hijau untuk `8c8539718ed78896c13f5fc8ddf62a6c01150b02`.
+  Orkestrator memverifikasi `/api/health` pada 23 Okt 2026 05:21:40 UTC:
+  `deploy.versi` cocok dan `append_only_db: true`. Ini menggantikan status
+  deploy `51106b0` yang masih menunggu verifikasi pada snapshot 22 Okt.
+- **Mobile lab titik ukur per sesi sudah merged**, bukan lagi belum dimulai:
+  [PR #213](https://github.com/ZainulArkaanAlinsi/sidik-calibration-mobile/pull/213),
+  commit merge `d9dd17b`, 22 Okt 2026. Status merge belum membuktikan uji HP
+  atau alur update pada perangkat pemilik.
+- **Windows & Studio belum berhasil diperbarui di hosting.** Pada commit lab
+  `d84ce7a`, [run 39801903720](https://github.com/ZainulArkaanAlinsi/sidik-calibration-mobile/actions/runs/39801903720)
+  berhasil membangun Windows, Studio, web dan macOS, tetapi langkah Firebase
+  deploy gagal. [Run 39804904453](https://github.com/ZainulArkaanAlinsi/sidik-calibration-mobile/actions/runs/39804904453)
+  berstatus skipped. Pemeriksaan publik 23 Okt masih mendapatkan Windows
+  `1.0.743+743` di [manifest Windows](https://sidik-kalibrasi.web.app/versi-windows-v2.json)
+  (HTTP 200), sementara [manifest Studio](https://sidik-kalibrasi.web.app/versi-studio-windows.json)
+  menjawab HTTP 404. Perbaikan permission `serviceusage.services.get` pada
+  principal yang dipakai secret belum terverifikasi; jangan menganggap IAM
+  sudah diperbaiki atau publikasi sudah sukses.
+
 ## 1. Peta sistem
 
 | Bagian | Repo / lokasi | Teknologi | Jalan di |
@@ -25,7 +67,7 @@ rilis lewat update otomatis di aplikasi. Bahasa ke pemilik: Indonesia santai, si
 Peran: `super_admin`, `admin` (label "Master Data"), `teknisi`, `viewer` (lama), `pelanggan`.
 Jangan ubah nilai kolom `role`.
 
-## 2. Keadaan produksi saat ini (22 Okt 2026 sore)
+## 2. Snapshot produksi historis (22 Okt 2026 sore)
 
 - **API live**: `main` = `51106b0` (pin PHP 8.4.27; deploy sedang diverifikasi — cek
   `/api/health`: `deploy.versi`, `php_versi` harus `8.4.27`, `append_only_db` harus `true`).
@@ -84,7 +126,12 @@ Jangan ubah nilai kolom `role`.
   (pin 8.3.36). Laragon lokal: PHP 8.4.27 & 8.3.36 terpasang di `C:\laragon\bin\php\`, PATH User
   sudah dialihkan; PATH Machine + pilihan versi Laragon menunggu pemilik (perlu Admin).
 
-## 5. Pekerjaan BELUM selesai (urutan prioritas untuk Jumat)
+## 5. Catatan pekerjaan 22 Okt (status historis)
+
+Status dan langkah di bagian ini berasal dari handoff awal. Pembaruan 23 Okt
+di atas mendahuluinya, termasuk API live terbaru dan mobile titik sesi yang
+sudah merged. Jangan mengulang rebase, gate, deploy, atau implementasi hanya
+berdasarkan daftar lama ini; verifikasi sisa pekerjaan di checkout terkait.
 
 ### 5.1 API branch `feat/studio-peta-profil` — worktree `C:\Users\USER\sidik-api-profil` (26 commit, belum push)
 Isi: peta sel + paritas untuk dial_indicator, height_gauge, jangka_sorong, volumetric, flowmeter,
