@@ -1,15 +1,18 @@
 # SIDIK Pelanggan (Flutter)
 
-Aplikasi pemilik alat untuk laboratorium kalibrasi PT Sidik: status kalibrasi
-alat, sertifikat (unduh PDF + tautan verifikasi), pelacakan paket, notifikasi
-jatuh tempo, dan anggota tim perusahaan. Pasangan API-nya
+Aplikasi pemilik alat untuk laboratorium kalibrasi PT Sidik: lihat data alat
+dan jatuh tempo, sertifikat (unduh PDF + tautan verifikasi), notifikasi,
+serta profil akun dan pilihan perusahaan. Pasangan API-nya
 `routes/api_pelanggan.php` di `sidik-calibration-api` (prefix `/api/pelanggan/v1`).
 
-> **Status (30 Sep 2026): terkompilasi & teruji, belum dicoba di HP.**
-> `flutter analyze` bersih dan `flutter test` hijau (Flutter 3.44), dijaga CI
-> `.github/workflows/periksa.yml` di tiap push & PR. Folder `android/` & `ios/`
-> sudah ada (`flutter create --org id.ptsidik`). Belum: build & uji di HP
-> sungguhan, dan konfigurasi Firebase untuk push.
+> **Status (23 Okt 2026): rilis Android `v0.2.1+3` sudah publik.**
+> [Rilis](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/releases/tag/v0.2.1%2B3)
+> dan [CI analyze + test](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/actions/runs/39861639145)
+> menunjuk commit `21a3b4d`. Metadata manifest cocok dengan aset APK: versi
+> `0.2.1`, build `3`, ukuran `36.845.501` byte, dan SHA-256. Target skrip rilis
+> adalah ARM32 + ARM64. Konfigurasi Firebase lokal tersedia saat pemeriksaan,
+> tetapi push, event Crashlytics, dan alur aplikasi di HP sungguhan belum
+> terverifikasi. CI tersebut menjalankan analyze + test, bukan build APK.
 
 ## Menjalankan
 
@@ -30,10 +33,11 @@ Aplikasi berjalan penuh TANPA push — kotak masuk di aplikasi tetap sumber
 kebenaran. Untuk menyalakan push:
 
 1. Di Firebase project yang SAMA dengan aplikasi lab (server hanya punya satu
-   `FCM_PROJECT_ID`), tambahkan aplikasi Android `id.ptsidik.sidik_pelanggan`
+   `FCM_PROJECT_ID`), tambahkan aplikasi Android `com.ptsidik.pelanggan`
    (dan iOS bila perlu).
-2. Taruh `google-services.json` di `android/app/` dan ikuti langkah plugin
-   `firebase_core` untuk Gradle.
+2. Taruh `google-services.json` di `android/app/`. Gradle memasang plugin Google
+   Services dan Crashlytics hanya ketika berkas ini ada. Berkas konfigurasi
+   tidak masuk repo; keberadaannya belum membuktikan push berhasil diterima.
 3. Server memisahkan tujuan lewat `device_tokens.aplikasi`: token yang
    didaftarkan lewat `POST /pelanggan/v1/perangkat` hanya menerima kabar akun
    pelanggan (dijaga `DataPelangganTest::test_push_pelanggan_tidak_mendarat_di_token_aplikasi_internal`).
@@ -57,32 +61,54 @@ minimum server memakai dialog/layar yang tidak bisa ditutup.
 
 Uji ke manifes lain: `--dart-define=URL_MANIFES_RILIS=https://…/versi-pelanggan.json`.
 
+## Verifikasi yang masih perlu HP sungguhan
+
+Perbaikan HP murah sudah merged melalui
+[PR #11](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/pull/11):
+hash APK dan penguraian JSON besar dipindah ke isolate, tampilan diuji pada
+320 dp, serta pelaporan galat Crashlytics tersedia. Crashlytics baru dinyalakan
+di build release setelah Firebase berhasil diinisialisasi; laporan Dart
+mengirim jenis galat dan stack tanpa pesan galat atau identitas akun.
+
+Checklist berikut masih menunggu bukti dari HP ARM32 dengan RAM 2 GB:
+
+- Pembaruan dari versi lama lewat aplikasi: unduh, verifikasi hash, lalu pasang.
+- Login, beranda, detail sertifikat dan unduh/buka PDF, serta layar Akun.
+- Ukuran huruf sistem maksimum tanpa teks atau tombol terpotong.
+- Nonfatal uji diterima di Firebase Crashlytics; periksa bahwa pesan galat dan
+  data pelanggan tidak ikut terkirim. Akses console harus dilakukan pemilik
+  yang berwenang.
+
+Catat model HP, versi Android, versi aplikasi, hasil tiap langkah dan bukti
+tanpa data pelanggan. Uji widget/CI belum menggantikan bukti ini.
+
 ## Peta layar → endpoint
+
+Peta ini mengikuti fitur aktif rilis `0.2.1+3` di
+`lib/services/layanan_pelanggan.dart` dan `lib/screens/`. Jalur di bawah
+relatif terhadap `/api/pelanggan/v1`.
 
 | Layar | Endpoint |
 |---|---|
 | Gerbang (pemeliharaan / versi wajib) | `GET /app/status` |
-| Masuk | `POST /auth/masuk` |
-| Pakai kode undangan | `POST /auth/terima-undangan` |
-| Lupa sandi (OTP 6 digit, 10 menit) | `POST /auth/lupa-sandi`, `POST /auth/atur-ulang-sandi` |
-| Akun belum aktif / pilih perusahaan | `GET /saya` |
-| Beranda | `GET /beranda` |
-| Alat, Detail alat | `GET /alat`, `GET /alat/{id}` |
+| Akun / akun belum aktif / pilih perusahaan | `GET /saya` |
+| Beranda: ringkasan jatuh tempo dan daftar alat dengan pencarian/saringan | `GET /beranda`, `GET /alat` |
+| Detail alat dan riwayat sertifikatnya | `GET /alat/{id}` |
 | Sertifikat, Detail, Unduh PDF | `GET /sertifikat`, `GET /sertifikat/{id}`, `GET /sertifikat/{id}/unduh` |
-| Status sertifikat (berlaku / digantikan / dibatalkan), minta koreksi | `POST /sertifikat/{id}/minta-koreksi` (unduh yang dibatalkan dijawab 410) |
-| Ubah alat (identitas terkunci sesudah sertifikat terbit), minta koreksi alat | `PATCH /alat/{id}`, `POST /alat/{id}/minta-koreksi` |
-| Foto pelat nama (maks 3, dikompres di HP, EXIF/GPS dibuang) | `POST /alat/{id}/foto`, `POST /permintaan/{id}/item/{item}/foto`, `POST /koreksi/{id}/foto`, `GET/DELETE /foto/{id}` |
-| Koreksi (Akun → Koreksi) | `GET /koreksi`, `GET /koreksi/{id}` |
-| Isi nomor resi | `POST /permintaan/{id}/resi` |
-| Paket, Detail paket (dari ikon truk di Permintaan / kartu Beranda) | `GET /paket`, `GET /paket/{id}` |
-| Permintaan (tab Aktif/Selesai/Semua) | `GET /permintaan?saring=` |
-| Ajukan kalibrasi + Tambah alat | `POST /permintaan` (alat terdaftar dari `GET /alat`) |
-| Detail permintaan, batal, pesan ke lab | `GET /permintaan/{id}`, `POST /permintaan/{id}/batal`, `GET/POST /permintaan/{id}/pesan` |
-| Preferensi notifikasi (per perusahaan, di server) | `GET/PUT /preferensi-notifikasi` |
-| Notifikasi | `GET /notifikasi`, `POST /notifikasi/{id}/dibaca`, `POST /notifikasi/dibaca-semua` |
-| Anggota tim (undang/batal/nonaktifkan: PIC utama) | `GET /anggota`, `POST /anggota/undangan`, `DELETE /anggota/undangan/{id}`, `POST /anggota/{id}/nonaktifkan` |
-| Profil saya / Ganti sandi / Hapus akun | `PATCH /saya`, `POST /saya/ganti-sandi`, `DELETE /saya` |
-| Keluar | `DELETE /perangkat` lalu `POST /auth/keluar` |
+| Notifikasi dan jumlah belum dibaca | `GET /notifikasi`, `GET /notifikasi/jumlah` |
+| Bantuan & kontak / privasi & ketentuan | `GET /app/info` (tautan dibuka di aplikasi luar/peramban) |
+
+Data bisnis di aplikasi bersifat **hanya lihat**. Pengecualian teknis untuk
+autentikasi, registrasi perangkat push, dan penandaan notifikasi dibaca dibatasi
+oleh `test/guard_tulis_test.dart`:
+
+| Alur teknis yang didukung | Endpoint tulis yang diizinkan |
+|---|---|
+| Masuk / pakai kode undangan | `POST /auth/masuk`, `POST /auth/terima-undangan` |
+| Pemulihan sandi | `POST /auth/lupa-sandi`, `POST /auth/atur-ulang-sandi` |
+| Keluar / keluar dari semua perangkat | `POST /auth/keluar`, `POST /auth/keluar-semua` |
+| Daftar / cabut token perangkat push | `POST /perangkat`, `DELETE /perangkat` |
+| Tandai notifikasi dibaca / semua dibaca | `POST /notifikasi/{id}/dibaca`, `POST /notifikasi/dibaca-semua` |
 
 ## Aturan yang dipegang kode ini
 
