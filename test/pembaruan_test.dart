@@ -452,6 +452,33 @@ void main() {
       expect(find.text('Pembaruan wajib'), findsOneWidget);
     });
 
+    testWidgets('dialog wajib selalu punya jalan keluar: Buka halaman unduhan', (
+      tester,
+    ) async {
+      final c = ProviderContainer(
+        overrides: _override(
+          _KlienPalsu(_rilis(wajib: true)),
+          _PemasangPalsu(),
+        ),
+      );
+      addTearDown(c.dispose);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: c,
+          child: MaterialApp(
+            theme: SidikTheme.terang,
+            home: const Scaffold(body: DialogPembaruanWajib()),
+          ),
+        ),
+      );
+      await tester.runAsync(() => c.read(pembaruanProvider.notifier).periksa());
+      await tester.pumpAndSettle();
+
+      // Belum ada pemasangan yang gagal (tidak ada pesan galat), tombolnya ada.
+      expect(c.read(pembaruanProvider).pesan, isNull);
+      expect(find.text('Buka halaman unduhan'), findsOneWidget);
+    });
+
     testWidgets(
       'gerbang versi minimum memasang di aplikasi, bukan Play Store',
       (tester) async {
@@ -478,6 +505,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Play Store'), findsNothing);
+        expect(find.text('Buka halaman unduhan'), findsOneWidget);
         await tester.tap(find.text('Perbarui (25 MB)'));
         await tester.runAsync(() => Future<void>.delayed(Duration.zero));
         await tester.pumpAndSettle();

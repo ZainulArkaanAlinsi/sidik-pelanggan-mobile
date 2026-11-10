@@ -151,12 +151,14 @@ class PanelPerbarui extends ConsumerWidget {
             style: t.bodySmall?.copyWith(color: m.gagal),
             textAlign: TextAlign.center,
           ),
-          SidikTombol(
-            label: 'Buka halaman unduhan',
-            ragam: RagamTombol.teks,
-            onPressed: bukaHalamanRilis,
-          ),
         ],
+        // Selalu terlihat: kalau pemasangan di aplikasi gagal berulang,
+        // pelanggan tidak terkunci — APK bisa diunduh dan dipasang manual.
+        SidikTombol(
+          label: 'Buka halaman unduhan',
+          ragam: RagamTombol.teks,
+          onPressed: bukaHalamanRilis,
+        ),
       ],
     );
   }

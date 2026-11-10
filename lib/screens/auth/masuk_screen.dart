@@ -82,8 +82,7 @@ class _MasukScreenState extends ConsumerState<MasukScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Sesi Anda berakhir. Silakan masuk lagi. Draf Anda '
-                      'tetap tersimpan.',
+                      'Sesi Anda berakhir. Silakan masuk lagi.',
                       style: t.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),

@@ -145,10 +145,7 @@ class BantuanScreen extends StatelessWidget {
         ],
         const JudulSeksi('Hubungi Tim PT Sidik'),
         if (baris.isEmpty)
-          Text(
-            'Kontak PT Sidik belum tersedia di aplikasi.',
-            style: t.bodyMedium,
-          )
+          Text('Informasi kontak belum tersedia.', style: t.bodyMedium)
         else
           Kertas(
             child: Material(

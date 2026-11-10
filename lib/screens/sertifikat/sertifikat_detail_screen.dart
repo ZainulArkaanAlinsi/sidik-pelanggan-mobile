@@ -9,6 +9,7 @@ import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/koneksi_provider.dart';
 import '../../providers/sesi_provider.dart';
+import '../../services/layanan_pelanggan.dart';
 import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_status.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
@@ -46,12 +47,12 @@ class _SertifikatDetailScreenState
       // merah muncul dan tombolnya mati.
       if (e.status == 410) ref.invalidate(detailSertifikatProvider(widget.id));
       messenger.showSnackBar(SnackBar(content: Text(e.pesan)));
+    } on GalatBerkasPdf catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.pesan)));
     } catch (_) {
       messenger.showSnackBar(
         const SnackBar(
-          content: Text(
-            'PDF terunduh, tapi tidak ada aplikasi pembuka PDF di HP ini.',
-          ),
+          content: Text('PDF belum bisa dibuka. Coba lagi sebentar lagi.'),
         ),
       );
     } finally {
