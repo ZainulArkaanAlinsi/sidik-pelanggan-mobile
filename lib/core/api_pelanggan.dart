@@ -252,7 +252,7 @@ class ApiPelanggan {
     }
     saatOnline?.call();
     if (r.statusCode >= 200 && r.statusCode < 300) return r.bodyBytes;
-    throw await _galatDari(r);
+    throw await _galatDari(r, pesan404Server: true);
   }
 
   Future<Map<String, dynamic>> _kirim(
@@ -312,7 +312,16 @@ class ApiPelanggan {
     throw await _galatDari(r);
   }
 
-  Future<GalatApi> _galatDari(http.Response r) async {
+  /// [pesan404Server] hanya untuk rute unduh: di sana pesan 404 server yang
+  /// khusus ("PDF belum siap", "Berkas PDF tidak ditemukan") baru keluar
+  /// SESUDAH kepemilikan terbukti (`milikSendiri()` di server menjawab 404
+  /// bawaan Laravel untuk data yang tak ada maupun milik perusahaan lain,
+  /// identik). Pesan bawaan Laravel itu tetap diganti kalimat generik, jadi
+  /// perbedaan "tak ada" vs "bukan punyamu" tidak pernah sampai ke layar.
+  Future<GalatApi> _galatDari(
+    http.Response r, {
+    bool pesan404Server = false,
+  }) async {
     if (r.statusCode == 401) saatTokenDitolak?.call();
 
     Map<String, dynamic> isi = const {};
@@ -340,7 +349,7 @@ class ApiPelanggan {
       // "tidak ditemukan" saja membuat pelanggan mengira datanya hilang
       // padahal bisa jadi milik perusahaan lain (BR-02).
       pesan: r.statusCode == 404
-          ? pesan404
+          ? (pesan404Server ? _pesan404Unduh(isi['message']) : pesan404)
           : (isi['message'] as String?) ?? _pesanUmum(r.statusCode),
       isian: isian,
       data: isi['data'] is Map<String, dynamic>
@@ -351,6 +360,20 @@ class ApiPelanggan {
 
   static const pesan404 =
       'Data ini tidak ditemukan atau Anda tidak punya akses.';
+
+  /// Pesan 404 server untuk rute unduh, kecuali kosong atau pesan bawaan
+  /// framework (menyebut nama model / rute) — itu jadi [pesan404].
+  static String _pesan404Unduh(Object? dariServer) {
+    final p = dariServer is String ? dariServer.trim() : '';
+    if (p.isEmpty ||
+        RegExp(
+          r'^(no query results|not found|the route|404)',
+          caseSensitive: false,
+        ).hasMatch(p)) {
+      return pesan404;
+    }
+    return p;
+  }
 
   static String _pesanUmum(int status) => switch (status) {
     401 => 'Sesi Anda berakhir. Silakan masuk lagi.',

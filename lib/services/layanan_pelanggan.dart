@@ -15,15 +15,48 @@ class SesiBaru {
   final Akun akun;
 }
 
+/// Tahap yang gagal setelah PDF berhasil diunduh.
+enum JenisGagalPdf { simpan, tidakAdaPembuka, buka }
+
+/// Galat lokal sesudah unduhan selesai (bukan galat server/jaringan).
+class GalatBerkasPdf implements Exception {
+  const GalatBerkasPdf(this.jenis);
+
+  final JenisGagalPdf jenis;
+
+  String get pesan => switch (jenis) {
+    JenisGagalPdf.simpan =>
+      'PDF berhasil diunduh, tapi gagal disimpan di HP. Periksa ruang penyimpanan, lalu coba lagi.',
+    JenisGagalPdf.tidakAdaPembuka =>
+      'PDF terunduh, tapi tidak ada aplikasi pembuka PDF di HP ini.',
+    JenisGagalPdf.buka =>
+      'PDF terunduh, tapi gagal dibuka. Coba lagi, atau pasang aplikasi pembuka PDF lain.',
+  };
+
+  @override
+  String toString() => pesan;
+}
+
 /// Semua panggilan ke `/api/pelanggan/v1`, dalam satu kelas yang tipis.
 ///
 /// Tidak ada logika bisnis di sini — status jatuh tempo dan
 /// kepemilikan dihitung SERVER. Aplikasi yang menghitung ulang sendiri pasti
 /// suatu hari berbeda pendapat dengan layar lab.
 class LayananPelanggan {
-  LayananPelanggan(this.api);
+  /// [folderDokumen] dan [pembukaBerkas] hanya untuk tes; bawaannya folder
+  /// dokumen aplikasi dan penampil PDF HP.
+  LayananPelanggan(
+    this.api, {
+    Future<Directory> Function()? folderDokumen,
+    Future<OpenResult> Function(String path)? pembukaBerkas,
+  }) : _folderDokumen = folderDokumen ?? getApplicationDocumentsDirectory,
+       _bukaBerkas =
+           pembukaBerkas ??
+           ((path) => OpenFilex.open(path, type: 'application/pdf'));
 
   final ApiPelanggan api;
+  final Future<Directory> Function() _folderDokumen;
+  final Future<OpenResult> Function(String path) _bukaBerkas;
 
   // ── Tanpa token ──────────────────────────────────────────────────────
 
@@ -32,8 +65,18 @@ class LayananPelanggan {
   );
 
   /// Kontak, dokumen, alamat lab (kontrak lengkap §6). Tanpa token.
+  ///
+  /// 404 = server belum punya endpoint ini: dianggap "belum ada informasi"
+  /// (layar menyembunyikan tombol kontak/dokumen), bukan galat.
   Future<InfoAplikasi> infoAplikasi() async {
-    final d = (await api.get('/app/info'))['data'];
+    final Map<String, dynamic> badan;
+    try {
+      badan = await api.get('/app/info');
+    } on GalatApi catch (e) {
+      if (e.tidakDitemukan) return InfoAplikasi.kosong;
+      rethrow;
+    }
+    final d = badan['data'];
     return d is Map<String, dynamic>
         ? InfoAplikasi.dariJson(d)
         : InfoAplikasi.kosong;
@@ -163,15 +206,41 @@ class LayananPelanggan {
 
   /// Unduh PDF ke folder dokumen aplikasi, lalu buka dengan penampil PDF HP.
   /// Berkas yang sama ditimpa kalau diunduh ulang — tidak menumpuk salinan.
+  ///
+  /// Galat dipisah menurut tahapnya: gagal unduh/jaringan = [GalatApi] (dari
+  /// [ApiPelanggan.unduh]); gagal menulis berkas atau tak ada aplikasi
+  /// pembuka = [GalatBerkasPdf].
   Future<String> unduhDanBukaPdf(Sertifikat s) async {
     final byte = await api.unduh('/sertifikat/${s.id}/unduh');
-    final folder = await getApplicationDocumentsDirectory();
-    final nama =
-        'Sertifikat-${s.nomor.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '-')}.pdf';
-    final berkas = File('${folder.path}/$nama');
-    await berkas.writeAsBytes(byte, flush: true);
-    await OpenFilex.open(berkas.path, type: 'application/pdf');
-    return berkas.path;
+    final String path;
+    try {
+      final folder = await _folderDokumen();
+      final nama =
+          'Sertifikat-${s.nomor.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '-')}.pdf';
+      final berkas = File('${folder.path}/$nama');
+      await berkas.writeAsBytes(byte, flush: true);
+      path = berkas.path;
+    } on Object {
+      throw const GalatBerkasPdf(JenisGagalPdf.simpan);
+    }
+
+    final OpenResult hasil;
+    try {
+      hasil = await _bukaBerkas(path);
+    } on Object {
+      throw const GalatBerkasPdf(JenisGagalPdf.buka);
+    }
+    switch (hasil.type) {
+      case ResultType.done:
+        return path;
+      case ResultType.noAppToOpen:
+        throw const GalatBerkasPdf(JenisGagalPdf.tidakAdaPembuka);
+      case ResultType.fileNotFound:
+        throw const GalatBerkasPdf(JenisGagalPdf.simpan);
+      case ResultType.permissionDenied:
+      case ResultType.error:
+        throw const GalatBerkasPdf(JenisGagalPdf.buka);
+    }
   }
 
   Future<Halaman<Notifikasi>> daftarNotifikasi({int halaman = 1}) async =>
