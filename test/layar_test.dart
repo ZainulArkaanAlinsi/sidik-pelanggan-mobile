@@ -10,7 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
 import 'package:sidik_pelanggan/core/penyimpan_perangkat.dart';
 import 'package:sidik_pelanggan/core/penyimpan_sesi.dart';
-import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/models/rilis_aplikasi.dart';
 import 'package:sidik_pelanggan/providers/pembaruan_provider.dart';
@@ -26,6 +26,8 @@ import 'package:sidik_pelanggan/services/klien_rilis.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
 import 'package:sidik_pelanggan/services/pemasang_apk.dart';
 import 'package:sidik_pelanggan/services/push_pelanggan.dart';
+
+import 'dukungan/layar_uji.dart';
 
 class _Sunyi extends PenyimpanSesi {
   @override
@@ -179,7 +181,7 @@ Widget _bungkus(
       (ref) async => IzinNotifikasi.tidakTersedia,
     ),
   ],
-  child: MaterialApp(theme: SidikTheme.terang, home: anak),
+  child: MaterialApp(theme: TemaSidik.terang, home: anak),
 );
 
 void main() {
@@ -243,7 +245,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('12 hari lagi'), findsOneWidget);
-    expect(find.text('RIWAYAT KALIBRASI'), findsOneWidget);
+    expect(find.text('Riwayat kalibrasi'), findsOneWidget);
     expect(find.text('CAL/2026/09/0002'), findsOneWidget);
     expect(find.byIcon(Icons.edit_outlined), findsNothing);
     expect(find.textContaining('Ajukan'), findsNothing);
@@ -267,14 +269,21 @@ void main() {
     expect(find.text('CAL/2026/09/0002'), findsOneWidget);
   });
 
-  testWidgets('Rangka: empat tab Beranda, Sertifikat, Notifikasi, Akun', (
+  testWidgets('Rangka: lima tab Beranda, Alat, Sertifikat, Notifikasi, Akun', (
     tester,
   ) async {
+    layarHp(tester);
     await tester.pumpWidget(_bungkus(const Rangka(), _Palsu()));
     await tester.pumpAndSettle();
 
     final nav = find.byType(NavigationBar);
-    for (final label in ['Beranda', 'Sertifikat', 'Notifikasi', 'Akun']) {
+    for (final label in [
+      'Beranda',
+      'Alat',
+      'Sertifikat',
+      'Notifikasi',
+      'Akun',
+    ]) {
       expect(
         find.descendant(of: nav, matching: find.text(label)),
         findsOneWidget,
@@ -284,7 +293,6 @@ void main() {
       find.descendant(of: nav, matching: find.text('Permintaan')),
       findsNothing,
     );
-    expect(find.descendant(of: nav, matching: find.text('Alat')), findsNothing);
   });
 
   testWidgets('Rangka: rilis wajib membuka dialog yang tidak bisa ditutup', (

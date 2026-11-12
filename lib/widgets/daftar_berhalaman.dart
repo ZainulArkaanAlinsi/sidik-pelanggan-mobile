@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api_pelanggan.dart';
+import '../core/tema/spasi.dart';
+import '../core/tema/warna_sidik.dart';
 import '../providers/paginasi.dart';
+import 'keadaan_galat.dart';
 import 'kerangka.dart';
-import 'sidik/sidik_tombol.dart';
-import 'umum.dart';
+import 'tombol_sidik.dart';
 
 /// Daftar dengan infinite scroll di atas [DataBerhalaman].
 ///
@@ -26,8 +28,13 @@ class DaftarBerhalaman<T> extends StatelessWidget {
     required this.cobaLagi,
     required this.kosong,
     required this.butir,
-    this.jarakButir = 10,
-    this.padding = const EdgeInsets.fromLTRB(jarak, 4, jarak, 32),
+    this.jarakButir = Spasi.md,
+    this.padding = const EdgeInsets.fromLTRB(
+      Spasi.lg,
+      Spasi.sm,
+      Spasi.lg,
+      Spasi.xl,
+    ),
     this.pemisah,
     this.kepala = const [],
     this.kosongDiBawahKepala,
@@ -104,11 +111,11 @@ class _Ujung<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
     if (data.galatLagi != null) {
       final e = data.galatLagi;
       return Padding(
-        padding: const EdgeInsets.only(top: 16),
+        padding: const EdgeInsets.only(top: Spasi.lg),
         child: Column(
           children: [
             Text(
@@ -116,11 +123,11 @@ class _Ujung<T> extends StatelessWidget {
               textAlign: TextAlign.center,
               style: t.bodySmall,
             ),
-            const SizedBox(height: 8),
-            SidikTombol(
+            const SizedBox(height: Spasi.sm),
+            TombolSidik(
               label: 'Coba lagi',
               ikon: Icons.refresh,
-              kecil: true,
+              ragam: RagamTombol.teks,
               onPressed: () => muatLagi(ulangiGalat: true),
             ),
           ],
@@ -134,13 +141,13 @@ class _Ujung<T> extends StatelessWidget {
         WidgetsBinding.instance.addPostFrameCallback((_) => muatLagi());
       }
       return const Padding(
-        padding: EdgeInsets.only(top: 10),
+        padding: EdgeInsets.only(top: Spasi.md),
         child: KerangkaKartu(),
       );
     }
     if (data.halaman > 1) {
       return Padding(
-        padding: const EdgeInsets.only(top: 16),
+        padding: const EdgeInsets.only(top: Spasi.lg),
         child: Text(
           'Semua ${data.total} $namaButir sudah tampil.',
           textAlign: TextAlign.center,

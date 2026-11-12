@@ -1,12 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/tema/spasi.dart';
 import '../../models/paket.dart';
 import '../../providers/data_provider.dart';
 import '../../widgets/daftar_berhalaman.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_paket.dart';
+import '../../widgets/keadaan_kosong.dart';
+import '../../widgets/kolom_cari.dart';
 import 'paket_detail_screen.dart';
 
 /// Pelacakan paket (order): "alat saya sudah sampai mana?". Hanya membaca.
@@ -19,48 +21,31 @@ class PaketScreen extends ConsumerStatefulWidget {
 }
 
 class _PaketScreenState extends ConsumerState<PaketScreen> {
-  final _cari = TextEditingController();
   String _kata = '';
   bool _selesai = false;
-  Timer? _tunda;
-
-  @override
-  void dispose() {
-    _tunda?.cancel();
-    _cari.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final kunci = (cari: _kata, selesai: _selesai);
     final async = ref.watch(daftarPaketProvider(kunci));
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pelacakan paket')),
-      body: Column(
+    return HalamanSidik(
+      judul: 'Pelacakan paket',
+      isi: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 0),
-            child: TextField(
-              controller: _cari,
-              onChanged: (v) {
-                _tunda?.cancel();
-                _tunda = Timer(
-                  const Duration(milliseconds: 350),
-                  () => setState(() => _kata = v.trim()),
-                );
-              },
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Cari nomor order',
-              ),
-            ),
+          KolomCari(
+            petunjuk: 'Cari nomor order',
+            onCari: (kata) => setState(() => _kata = kata),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 0),
+            padding: const EdgeInsets.fromLTRB(
+              Spasi.lg,
+              Spasi.sm,
+              Spasi.lg,
+              Spasi.sm,
+            ),
             child: Wrap(
-              spacing: 8,
+              spacing: Spasi.sm,
               children: [
                 ChoiceChip(
                   label: const Text('Berjalan'),
@@ -84,6 +69,7 @@ class _PaketScreenState extends ConsumerState<PaketScreen> {
               child: DaftarBerhalaman<Paket>(
                 async: async,
                 namaButir: 'paket',
+                padding: Spasi.daftar(context),
                 muatLagi: ({ulangiGalat = false}) => ref
                     .read(daftarPaketProvider(kunci).notifier)
                     .muatLagi(ulangiGalat: ulangiGalat),

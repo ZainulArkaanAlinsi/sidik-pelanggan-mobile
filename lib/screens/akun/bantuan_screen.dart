@@ -2,10 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/tema/spasi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../models/akun.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/sidik/sidik_permukaan.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/bagian_sidik.dart';
+import '../../widgets/baris_menu.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_sidik.dart';
+import '../../widgets/keadaan_galat.dart';
+import '../../widgets/kerangka.dart';
 
 /// Buka tautan di aplikasi luar (WhatsApp, email, telepon, peramban).
 /// `false` kalau HP tidak punya aplikasi untuk membukanya.
@@ -51,9 +57,9 @@ class _LayarInfoState extends ConsumerState<_LayarInfo> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(infoAplikasiProvider);
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.judul)),
-      body: RefreshIndicator(
+    return HalamanSidik(
+      judul: widget.judul,
+      isi: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(infoAplikasiProvider);
           await ref.read(infoAplikasiProvider.future);
@@ -65,10 +71,7 @@ class _LayarInfoState extends ConsumerState<_LayarInfo> {
             cobaLagi: () => ref.invalidate(infoAplikasiProvider),
           ),
           data: (info) => ListView(
-            padding: denganTepiBawah(
-              context,
-              const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
-            ),
+            padding: Spasi.daftar(context),
             children: widget.isi(context, info),
           ),
         ),
@@ -86,31 +89,31 @@ class BantuanScreen extends StatelessWidget {
   Widget build(BuildContext context) => _LayarInfo(
     judul: 'Bantuan & kontak',
     isi: (context, info) {
-      final t = Theme.of(context).textTheme;
+      final t = context.teks;
       final baris = <Widget>[
         if (info.whatsappUrl != null)
-          ListTile(
-            leading: const Icon(Icons.chat_outlined),
-            title: const Text('WhatsApp'),
-            subtitle: info.whatsapp == null ? null : Text(info.whatsapp!),
-            trailing: const Icon(Icons.open_in_new),
+          BarisMenu(
+            ikon: Icons.chat_outlined,
+            judul: 'WhatsApp',
+            keterangan: info.whatsapp,
+            luar: true,
             onTap: () => _buka(context, Uri.parse(info.whatsappUrl!)),
           ),
         if (info.email != null)
-          ListTile(
-            leading: const Icon(Icons.mail_outline),
-            title: const Text('Email'),
-            subtitle: Text(info.email!),
-            trailing: const Icon(Icons.open_in_new),
+          BarisMenu(
+            ikon: Icons.mail_outline,
+            judul: 'Email',
+            keterangan: info.email,
+            luar: true,
             onTap: () =>
                 _buka(context, Uri(scheme: 'mailto', path: info.email)),
           ),
         if (info.teleponOrganisasi != null)
-          ListTile(
-            leading: const Icon(Icons.call_outlined),
-            title: const Text('Telepon'),
-            subtitle: Text(info.teleponOrganisasi!),
-            trailing: const Icon(Icons.open_in_new),
+          BarisMenu(
+            ikon: Icons.call_outlined,
+            judul: 'Telepon',
+            keterangan: info.teleponOrganisasi,
+            luar: true,
             onTap: () => _buka(
               context,
               Uri(
@@ -125,41 +128,28 @@ class BantuanScreen extends StatelessWidget {
       ];
       return [
         if (info.namaOrganisasi != null || info.alamatOrganisasi != null)
-          Kertas(
-            padding: const EdgeInsets.all(jarak),
+          KartuSidik(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (info.namaOrganisasi != null)
                   Text(info.namaOrganisasi!, style: t.titleMedium),
                 if (info.alamatOrganisasi != null) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: Spasi.xs),
                   SelectableText(info.alamatOrganisasi!, style: t.bodyMedium),
                 ],
               ],
             ),
           ),
         if (info.jamLayanan != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: Spasi.md),
           Text('Jam layanan: ${info.jamLayanan}', style: t.bodyMedium),
         ],
-        const JudulSeksi('Hubungi Tim PT Sidik'),
+        const BagianSidik('Hubungi Tim PT Sidik'),
         if (baris.isEmpty)
           Text('Informasi kontak belum tersedia.', style: t.bodyMedium)
         else
-          Kertas(
-            child: Material(
-              type: MaterialType.transparency,
-              child: Column(
-                children: [
-                  for (var i = 0; i < baris.length; i++) ...[
-                    if (i > 0) const Divider(height: 1, indent: 56),
-                    baris[i],
-                  ],
-                ],
-              ),
-            ),
-          ),
+          KelompokBaris(baris: baris),
       ];
     },
   );
@@ -173,37 +163,31 @@ class PrivasiScreen extends StatelessWidget {
   Widget build(BuildContext context) => _LayarInfo(
     judul: 'Privasi & ketentuan',
     isi: (context, info) {
-      final t = Theme.of(context).textTheme;
+      final t = context.teks;
       String? versi(String? v) => v == null ? null : 'Versi $v';
       final baris = <Widget>[
         if (info.kebijakanPrivasiUrl != null)
-          ListTile(
-            leading: const Icon(Icons.privacy_tip_outlined),
-            title: const Text('Kebijakan privasi'),
-            subtitle: versi(info.kebijakanPrivasiVersi) == null
-                ? null
-                : Text(versi(info.kebijakanPrivasiVersi)!),
-            trailing: const Icon(Icons.open_in_new),
+          BarisMenu(
+            ikon: Icons.privacy_tip_outlined,
+            judul: 'Kebijakan privasi',
+            keterangan: versi(info.kebijakanPrivasiVersi),
+            luar: true,
             onTap: () => _buka(context, Uri.parse(info.kebijakanPrivasiUrl!)),
           ),
         if (info.syaratUrl != null)
-          ListTile(
-            leading: const Icon(Icons.gavel_outlined),
-            title: const Text('Syarat & ketentuan'),
-            subtitle: versi(info.syaratVersi) == null
-                ? null
-                : Text(versi(info.syaratVersi)!),
-            trailing: const Icon(Icons.open_in_new),
+          BarisMenu(
+            ikon: Icons.gavel_outlined,
+            judul: 'Syarat & ketentuan',
+            keterangan: versi(info.syaratVersi),
+            luar: true,
             onTap: () => _buka(context, Uri.parse(info.syaratUrl!)),
           ),
         if (info.hapusAkunUrl != null)
-          ListTile(
-            leading: const Icon(Icons.person_remove_outlined),
-            title: const Text('Permintaan hapus akun (web)'),
-            subtitle: const Text(
-              'Untuk yang tidak bisa masuk ke aplikasi lagi',
-            ),
-            trailing: const Icon(Icons.open_in_new),
+          BarisMenu(
+            ikon: Icons.person_remove_outlined,
+            judul: 'Permintaan hapus akun (web)',
+            keterangan: 'Untuk yang tidak bisa masuk ke aplikasi lagi',
+            luar: true,
             onTap: () => _buka(context, Uri.parse(info.hapusAkunUrl!)),
           ),
       ];
@@ -214,20 +198,8 @@ class PrivasiScreen extends StatelessWidget {
             style: t.bodyMedium,
           )
         else
-          Kertas(
-            child: Material(
-              type: MaterialType.transparency,
-              child: Column(
-                children: [
-                  for (var i = 0; i < baris.length; i++) ...[
-                    if (i > 0) const Divider(height: 1, indent: 56),
-                    baris[i],
-                  ],
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: 16),
+          KelompokBaris(baris: baris),
+        const SizedBox(height: Spasi.lg),
         Text(
           'Data alat dan sertifikat perusahaan adalah rekaman '
           'laboratorium dan tetap disimpan walau akun Anda dihapus; data '

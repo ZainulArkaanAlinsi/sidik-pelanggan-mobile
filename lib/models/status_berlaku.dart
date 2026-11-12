@@ -4,7 +4,7 @@ import 'data_pelanggan.dart';
 /// sertifikat, supaya kata yang sama tidak punya dua arti di dua layar.
 ///
 /// [label] di sini adalah SATU-SATUNYA tempat kata-kata ini ditulis. Lencana
-/// (`statusBerlaku()` di `widgets/umum.dart`), chip dan kotak ringkasan
+/// (`statusBerlaku()` di `widgets/pemetaan_status.dart`), chip dan kotak ringkasan
 /// (`FilterAlat`), dan teks kosong semuanya membacanya dari sini; mengubah satu
 /// istilah berarti mengubah satu string.
 ///

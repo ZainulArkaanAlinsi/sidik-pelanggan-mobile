@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ikon adaptif (Android 8+): lencana resmi PT Sidik di atas latar putih.
+     Lapisan monokrom dipakai ikon bertema Android 13+. Ikon lawas (API 24-25)
+     ada di mipmap-*dpi/ic_launcher.png. Dibangkitkan dari logo Lab; lihat
+     tool/buat_aset_android.py. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
+</adaptive-icon>

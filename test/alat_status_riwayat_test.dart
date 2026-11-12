@@ -5,15 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/app.dart';
-import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/models/status_berlaku.dart';
 import 'package:sidik_pelanggan/screens/alat/alat_detail_screen.dart';
 import 'package:sidik_pelanggan/screens/alat/daftar_alat_screen.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_detail_screen.dart';
 import 'package:sidik_pelanggan/widgets/garis_waktu_sertifikat.dart';
-import 'package:sidik_pelanggan/widgets/sidik/sidik_permukaan.dart';
-import 'package:sidik_pelanggan/widgets/umum.dart';
+import 'package:sidik_pelanggan/widgets/kartu_sidik.dart';
+import 'package:sidik_pelanggan/widgets/kartu_alat.dart';
 
 import 'dukungan/fixture_fitur.dart';
 
@@ -133,7 +133,7 @@ Widget _app(
   key: UniqueKey(),
   overrides: overrideFitur(server, perusahaan: perusahaan, jamHp: jamHp),
   child: MaterialApp(
-    theme: SidikTheme.terang,
+    theme: TemaSidik.terang,
     builder: skalaHp
         ? (context, child) => MediaQuery.withClampedTextScaling(
             minScaleFactor: batasSkalaHuruf.max,
@@ -159,7 +159,7 @@ Finder _teksDi(Finder kartu, String teks) =>
 Finder _kartuAlat(String nama) => find.widgetWithText(KartuAlat, nama);
 
 Finder _simpul(String nomor) =>
-    find.ancestor(of: find.text(nomor), matching: find.byType(Kertas));
+    find.ancestor(of: find.text(nomor), matching: find.byType(KartuSidik));
 
 void main() {
   setUpAll(siapkanTesFitur);

@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/sidik/sidik_tombol.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/tombol_sidik.dart';
 import '../akun/bantuan_screen.dart';
 
 /// Pesan untuk email undangan yang SUDAH punya akun. Sengaja tidak menyebut
@@ -122,7 +123,7 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
     bool rahasia = false,
     String? bantuan,
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: jarak),
+    padding: const EdgeInsets.only(bottom: Spasi.lg),
     child: TextField(
       controller: c,
       keyboardType: keyboard,
@@ -140,19 +141,20 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
+    final s = context.skema;
     final info = ref.watch(infoAplikasiProvider).value;
     final galatKode = _galatIsian['kode'] != null || _galat != null;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pakai kode undangan')),
-      body: ListView(
-        padding: denganTepiBawah(context, const EdgeInsets.all(24)),
+    return HalamanSidik(
+      judul: 'Pakai kode undangan',
+      latarPutih: true,
+      isi: ListView(
+        padding: Spasi.denganTepiBawah(context, const EdgeInsets.all(Spasi.xl)),
         children: [
           Text(
             'Masukkan email yang menerima undangan dan kodenya, lalu lengkapi data Anda.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: context.teks.bodyMedium?.copyWith(color: s.onSurfaceVariant),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Spasi.xl),
           _isian(
             _email,
             'Email',
@@ -193,7 +195,7 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
                 ? null
                 : Text(
                     _galatIsian['setuju_syarat']!,
-                    style: TextStyle(color: m.gagal),
+                    style: TextStyle(color: s.error),
                   ),
           ),
           // REQ-PRV-01: dokumen yang disetujui harus bisa dibaca dulu.
@@ -216,8 +218,8 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
               ],
             ),
           if (_galat != null) ...[
-            const SizedBox(height: 8),
-            Text(_galat!, style: TextStyle(color: m.gagal)),
+            const SizedBox(height: Spasi.sm),
+            Text(_galat!, style: TextStyle(color: s.error)),
           ],
           // Flow A: kode salah / kedaluwarsa → minta kode baru ke lab.
           if (galatKode && (info?.adaKontak ?? false))
@@ -233,8 +235,8 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
                 ),
               ),
             ),
-          const SizedBox(height: 20),
-          SidikTombol(
+          const SizedBox(height: Spasi.xl),
+          TombolSidik(
             label: 'Buat akun & masuk',
             ragam: RagamTombol.utama,
             penuh: true,

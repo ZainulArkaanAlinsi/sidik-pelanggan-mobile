@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../core/konfigurasi.dart';
-import '../core/theme/sidik_material.dart';
+import '../core/tema/spasi.dart';
+import '../core/tema/ukuran.dart';
+import '../core/tema/warna_sidik.dart';
 import '../providers/pembaruan_provider.dart';
 import '../providers/sesi_provider.dart';
-import 'sidik/sidik_tombol.dart';
+import 'tombol_sidik.dart';
 
 /// Teks status satu baris untuk [k] — dipakai banner dan dialog.
 String teksPembaruan(KeadaanPembaruan k) {
@@ -40,29 +42,38 @@ class BannerPembaruan extends ConsumerWidget {
     if (!k.tersedia || k.wajib || k.disembunyikan) {
       return const SizedBox.shrink();
     }
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
+    final s = context.skema;
+    final t = context.teks;
     final pengendali = ref.read(pembaruanProvider.notifier);
     return Material(
       key: const ValueKey('banner-pembaruan'),
-      color: m.biruTipis,
+      color: s.primaryContainer,
       child: Semantics(
         liveRegion: true,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
+          padding: const EdgeInsets.fromLTRB(
+            Spasi.lg,
+            Spasi.xs,
+            Spasi.xs,
+            Spasi.xs,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
-                  Icon(Icons.system_update_outlined, size: 20, color: m.biru),
-                  const SizedBox(width: 10),
+                  Icon(
+                    Icons.system_update_outlined,
+                    size: UkuranIkon.sedang - 4,
+                    color: s.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: Spasi.md),
                   Expanded(
                     child: Text(
                       teksPembaruan(k),
                       style: t.bodySmall?.copyWith(
-                        color: m.tinta,
+                        color: s.onPrimaryContainer,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -81,15 +92,21 @@ class BannerPembaruan extends ConsumerWidget {
               ),
               if (k.tahap == TahapPembaruan.mengunduh)
                 Padding(
-                  padding: const EdgeInsets.only(top: 4, right: 12),
+                  padding: const EdgeInsets.only(
+                    top: Spasi.xs,
+                    right: Spasi.md,
+                  ),
                   child: LinearProgressIndicator(value: k.progres),
                 ),
               if (k.pesan != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: 4, right: 12),
+                  padding: const EdgeInsets.only(
+                    top: Spasi.xs,
+                    right: Spasi.md,
+                  ),
                   child: Text(
                     k.pesan!,
-                    style: t.bodySmall?.copyWith(color: m.gagal),
+                    style: t.bodySmall?.copyWith(color: s.error),
                   ),
                 ),
             ],
@@ -117,8 +134,7 @@ class PanelPerbarui extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final k = ref.watch(pembaruanProvider);
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,13 +145,13 @@ class PanelPerbarui extends ConsumerWidget {
             style: t.bodySmall,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: Spasi.sm),
         ],
         if (k.tahap == TahapPembaruan.mengunduh) ...[
           LinearProgressIndicator(value: k.progres),
-          const SizedBox(height: 12),
+          const SizedBox(height: Spasi.md),
         ],
-        SidikTombol(
+        TombolSidik(
           label: k.tersedia ? labelTombolPembaruan(k) : 'Perbarui sekarang',
           ikon: Icons.system_update_outlined,
           ragam: RagamTombol.utama,
@@ -146,16 +162,16 @@ class PanelPerbarui extends ConsumerWidget {
               : () => ref.read(pembaruanProvider.notifier).perbarui(),
         ),
         if (k.pesan != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: Spasi.sm),
           Text(
             k.pesan!,
-            style: t.bodySmall?.copyWith(color: m.gagal),
+            style: t.bodySmall?.copyWith(color: context.skema.error),
             textAlign: TextAlign.center,
           ),
         ],
         // Selalu terlihat: kalau pemasangan di aplikasi gagal berulang,
         // pelanggan tidak terkunci — APK bisa diunduh dan dipasang manual.
-        SidikTombol(
+        TombolSidik(
           label: 'Buka halaman unduhan',
           ragam: RagamTombol.teks,
           onPressed: bukaHalamanRilis,
@@ -190,10 +206,10 @@ class DialogPembaruanWajib extends ConsumerWidget {
                           'memakai SIDIK Pelanggan.',
               ),
               if (r?.catatan != null) ...[
-                const SizedBox(height: 8),
-                Text(r!.catatan!, style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: Spasi.sm),
+                Text(r!.catatan!, style: context.teks.bodySmall),
               ],
-              const SizedBox(height: 16),
+              const SizedBox(height: Spasi.lg),
               const PanelPerbarui(),
               // Dialog ini menutupi seluruh aplikasi: tanpa jalan keluar,
               // HP yang dipinjamkan atau dijual tetap terbuka di akun lama.
@@ -274,7 +290,7 @@ class _TombolKeluarAkunState extends ConsumerState<TombolKeluarAkun> {
   }
 
   @override
-  Widget build(BuildContext context) => SidikTombol(
+  Widget build(BuildContext context) => TombolSidik(
     label: 'Keluar dari akun',
     ikon: Icons.logout,
     ragam: RagamTombol.teks,

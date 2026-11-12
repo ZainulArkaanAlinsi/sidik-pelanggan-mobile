@@ -2,31 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/ukuran.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../models/data_pelanggan.dart';
 import '../../models/status_berlaku.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/koneksi_provider.dart';
 import '../../providers/push_provider.dart';
+import '../../providers/sesi_provider.dart';
+import '../../widgets/bagian_sidik.dart';
 import '../../widgets/banner.dart';
+import '../../widgets/baris_menu.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_alat.dart';
+import '../../widgets/kartu_paket.dart';
+import '../../widgets/kartu_sertifikat.dart';
+import '../../widgets/kartu_sidik.dart';
+import '../../widgets/keadaan_galat.dart';
+import '../../widgets/keadaan_kosong.dart';
 import '../../widgets/kerangka.dart';
-import '../../widgets/sidik/sidik_permukaan.dart';
-import '../../widgets/sidik/sidik_tombol.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/logo_sidik.dart';
+import '../../widgets/tombol_sidik.dart';
+import '../akun/bantuan_screen.dart';
 import '../alat/alat_detail_screen.dart';
-import '../alat/daftar_alat_screen.dart';
 import '../paket/paket_detail_screen.dart';
 import '../paket/paket_screen.dart';
 import '../rangka.dart';
 import '../sertifikat/sertifikat_detail_screen.dart';
+import 'beranda_kpi.dart';
 
-/// Beranda — ringkasan: apa yang perlu perhatian, tanpa mencari.
+/// Beranda: ringkasan apa yang perlu perhatian, tanpa mencari.
 ///
-/// Dari atas: alat yang lewat jadwal atau jatuh tempo dalam 30 / 60 / 90 hari
-/// (ketuk kotaknya untuk daftar alatnya), tiga alat paling mendesak,
-/// sertifikat terbaru, dan paket yang sedang dikerjakan lab. Daftar lengkap
-/// alat ada di [DaftarAlatScreen], sertifikat di tab Sertifikat, paket di
-/// [PaketScreen].
+/// Dari atas: sapaan dan perusahaan aktif, empat kartu jatuh tempo (lewat
+/// jadwal, 0–30, 31–60, 61–90 hari; ketuk untuk daftar alatnya), tiga alat
+/// paling mendesak, sertifikat terbaru, paket yang sedang dikerjakan lab, dan
+/// jalan pintas "Hubungi lab". Daftar lengkap alat ada di tab Alat
+/// ([DaftarAlatScreen]), sertifikat di tab Sertifikat, paket di [PaketScreen].
 ///
 /// Data: `GET /beranda` (angka 0–30 hari, sertifikat terbaru, paket berjalan)
 /// dan `GET /alat` (kelompok 31–60 dan 61–90 hari, [jatuhTempoProvider]). Tarik
@@ -57,8 +69,8 @@ class _BerandaScreenState extends ConsumerState<BerandaScreen> {
     final async = ref.watch(berandaProvider);
     // Selama dimuat ulang karena perusahaan/akun berganti (`isReloading`),
     // nilai lama MASIH ada di `async.value`. Jangan dipakai: nama perusahaan
-    // lama tidak boleh tampil di judul sambil menunggu yang baru. Tarik-untuk-
-    // segarkan (`isRefreshing`) tetap menampilkan data yang ada.
+    // lama tidak boleh tampil sambil menunggu yang baru. Tarik-untuk-segarkan
+    // (`isRefreshing`) tetap menampilkan data yang ada.
     final beranda = async.isReloading ? null : async.value;
     // Momen kontekstual izin notifikasi (REQ-NTF-08): begitu pengguna melihat
     // alatnya untuk pertama kali, pengingat jadwal punya alasan yang jelas.
@@ -70,17 +82,14 @@ class _BerandaScreenState extends ConsumerState<BerandaScreen> {
       });
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          beranda?.namaPerusahaan.isNotEmpty == true
-              ? beranda!.namaPerusahaan
-              : 'Beranda',
-        ),
-      ),
-      body: Column(
+    return HalamanSidik(
+      judulKustom: const _JudulMerek(),
+      isi: Column(
         children: [
-          const BannerIzinNotifikasi(),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(Spasi.lg, Spasi.md, Spasi.lg, 0),
+            child: BannerIzinNotifikasi(),
+          ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: _segarkan,
@@ -100,50 +109,70 @@ class _BerandaScreenState extends ConsumerState<BerandaScreen> {
   }
 }
 
-void _bukaDaftarAlat(BuildContext context, FilterAlat filter) =>
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => DaftarAlatScreen(filterAwal: filter),
+/// Judul app bar Beranda: logo kecil + nama aplikasi.
+class _JudulMerek extends StatelessWidget {
+  const _JudulMerek();
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      const LogoSidik(tinggi: UkuranIkon.besar),
+      const SizedBox(width: Spasi.md),
+      Flexible(
+        child: Text(
+          'SIDIK Pelanggan',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.teks.titleMedium,
+        ),
       ),
-    );
+    ],
+  );
+}
 
 class _Isi extends ConsumerWidget {
   const _Isi({required this.beranda});
 
   final Beranda beranda;
 
+  /// Alat yang ditampilkan di "Perlu perhatian", dan sertifikat/paket terbaru.
+  static const _tampilMaks = 3;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final b = beranda;
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
     final koneksi = ref.watch(koneksiProvider);
     final jt = ref.watch(jatuhTempoProvider);
-    // Sama seperti judul: hitungan perusahaan lama tidak boleh bocor saat
-    // hitungan perusahaan baru masih dimuat.
+    // Hitungan perusahaan lama tidak boleh bocor saat hitungan perusahaan baru
+    // masih dimuat.
     final r = jt.isReloading ? null : jt.value;
+    final sisaPaket =
+        b.jumlahPaketBerjalan - b.paketBerjalan.take(_tampilMaks).length;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
+      padding: Spasi.daftar(context),
       children: [
+        _Sapaan(namaPerusahaan: b.namaPerusahaan),
         if (koneksi.offline && koneksi.dataTerakhir != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(top: Spasi.sm),
             child: Text(
               'Terakhir diperbarui '
               '${Format.jamAtauTanggal(koneksi.dataTerakhir!)}',
               style: t.bodySmall,
             ),
           ),
-        const JudulSeksi('Jatuh tempo kalibrasi'),
-        _KotakJatuhTempo(
+        const BagianSidik('Jatuh tempo kalibrasi'),
+        KotakJatuhTempo(
           beranda: b,
           kelompok2: r?.kelompok2.length,
           kelompok3: r?.kelompok3.length,
         ),
         if (jt.hasError)
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: Spasi.sm),
             child: Text(
               'Hitungan 31–90 hari belum bisa dimuat. Tarik layar ke bawah '
               'untuk mencoba lagi.',
@@ -151,9 +180,8 @@ class _Isi extends ConsumerWidget {
             ),
           ),
         if (b.jumlahAlat == 0) ...[
-          const SizedBox(height: jarak),
-          const Kertas(
-            padding: EdgeInsets.all(jarak),
+          const SizedBox(height: Spasi.lg),
+          const KartuSidik(
             child: KeadaanKosongIsi(
               ikon: Icons.straighten_outlined,
               judul: 'Belum ada alat',
@@ -162,10 +190,11 @@ class _Isi extends ConsumerWidget {
             ),
           ),
         ] else
-          ..._perluPerhatian(context, jt, r),
-        JudulSeksi(
+          ..._perluPerhatian(context, ref, jt, r),
+        BagianSidik(
           'Sertifikat terbaru',
-          aksi: _AksiLihatSemua(
+          aksi: AksiBagian(
+            label: 'Lihat semua',
             semantik: 'Lihat semua sertifikat',
             onTap: () =>
                 ref.read(tabProvider.notifier).pilih(IndeksTab.sertifikat),
@@ -174,9 +203,9 @@ class _Isi extends ConsumerWidget {
         if (b.sertifikatTerbaru.isEmpty)
           const _KosongSingkat('Belum ada sertifikat yang terbit.')
         else
-          for (final s in b.sertifikatTerbaru.take(3))
+          for (final s in b.sertifikatTerbaru.take(_tampilMaks))
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: Spasi.md),
               child: KartuSertifikat(
                 sertifikat: s,
                 onTap: () => Navigator.of(context).push(
@@ -186,9 +215,10 @@ class _Isi extends ConsumerWidget {
                 ),
               ),
             ),
-        JudulSeksi(
+        BagianSidik(
           'Paket yang sedang dikerjakan',
-          aksi: _AksiLihatSemua(
+          aksi: AksiBagian(
+            label: 'Lihat semua',
             semantik: 'Lihat semua paket',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const PaketScreen()),
@@ -198,9 +228,9 @@ class _Isi extends ConsumerWidget {
         if (b.paketBerjalan.isEmpty)
           const _KosongSingkat('Tidak ada paket yang sedang dikerjakan.')
         else ...[
-          for (final p in b.paketBerjalan.take(3))
+          for (final p in b.paketBerjalan.take(_tampilMaks))
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: Spasi.md),
               child: KartuPaket(
                 paket: p,
                 onTap: () => Navigator.of(context).push(
@@ -210,29 +240,36 @@ class _Isi extends ConsumerWidget {
                 ),
               ),
             ),
-          if (b.jumlahPaketBerjalan > b.paketBerjalan.take(3).length)
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(
-                'dan ${b.jumlahPaketBerjalan - b.paketBerjalan.take(3).length} '
-                'paket lainnya',
-                style: t.bodySmall,
+          if (sisaPaket > 0)
+            Text('dan $sisaPaket paket lainnya', style: t.bodySmall),
+        ],
+        const BagianSidik('Butuh bantuan?'),
+        KelompokBaris(
+          baris: [
+            BarisMenu(
+              ikon: Icons.support_agent,
+              judul: 'Hubungi lab',
+              keterangan: 'Tanya jadwal, sertifikat, atau paket',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const BantuanScreen()),
               ),
             ),
-        ],
+          ],
+        ),
       ],
     );
   }
 
-  /// Tiga alat paling mendesak + jalan ke daftar lengkap.
+  /// Tiga alat paling mendesak + jalan ke tab Alat.
   List<Widget> _perluPerhatian(
     BuildContext context,
+    WidgetRef ref,
     AsyncValue<RingkasanJatuhTempo> jt,
     RingkasanJatuhTempo? r,
   ) {
     final Widget isi;
     if (r != null) {
-      final alat = r.urut.take(3).toList();
+      final alat = r.urut.take(_tampilMaks).toList();
       isi = alat.isEmpty
           ? _KosongSingkat(
               'Tidak ada alat yang '
@@ -240,10 +277,11 @@ class _Isi extends ConsumerWidget {
               'tempo dalam 90 hari.',
             )
           : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final a in alat)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(bottom: Spasi.md),
                     child: KartuAlat(
                       alat: a,
                       onTap: () => Navigator.of(context).push(
@@ -261,162 +299,73 @@ class _Isi extends ConsumerWidget {
       isi = const SizedBox.shrink();
     }
     return [
-      const JudulSeksi('Perlu perhatian'),
+      const BagianSidik('Perlu perhatian'),
       isi,
-      const SizedBox(height: 2),
-      SidikTombol(
+      TombolSidik(
         label: 'Lihat semua alat (${beranda.jumlahAlat})',
-        ikon: Icons.straighten_outlined,
+        ikon: Icons.precision_manufacturing_outlined,
         penuh: true,
-        onPressed: () => _bukaDaftarAlat(context, FilterAlat.semua),
+        onPressed: () => ref.read(tabProvider.notifier).pilih(IndeksTab.alat),
       ),
     ];
   }
 }
 
-/// Empat kotak: lewat jadwal, lalu tiga rentang jatuh tempo. 0–30 hari dan
-/// lewat jadwal dari hitungan server (sama dengan daftar yang terbuka saat
-/// diketuk); 31–60 dan 61–90 dari hitungan aplikasi ([kelompok2], [kelompok3],
-/// `null` = belum/tidak bisa dimuat, tampil "–").
-class _KotakJatuhTempo extends StatelessWidget {
-  const _KotakJatuhTempo({
-    required this.beranda,
-    required this.kelompok2,
-    required this.kelompok3,
-  });
+/// Sapaan menurut jam, dan perusahaan yang sedang dibuka.
+class _Sapaan extends ConsumerWidget {
+  const _Sapaan({required this.namaPerusahaan});
 
-  final Beranda beranda;
-  final int? kelompok2;
-  final int? kelompok3;
+  final String namaPerusahaan;
+
+  static String _salam(int jam) => switch (jam) {
+    < 11 => 'Selamat pagi',
+    < 15 => 'Selamat siang',
+    < 18 => 'Selamat sore',
+    _ => 'Selamat malam',
+  };
 
   @override
-  Widget build(BuildContext context) {
-    Widget baris(Widget a, Widget b) => IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.teks;
+    final s = context.skema;
+    final nama = ref.watch(sesiProvider).value?.akun.nama;
+    final salam = _salam(ref.read(jamHpProvider)().hour);
+    return Padding(
+      padding: const EdgeInsets.only(top: Spasi.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: a),
-          const SizedBox(width: 10),
-          Expanded(child: b),
+          Text(
+            nama == null || nama.isEmpty ? salam : '$salam, $nama',
+            style: t.bodyMedium?.copyWith(color: s.onSurfaceVariant),
+          ),
+          if (namaPerusahaan.isNotEmpty) ...[
+            const SizedBox(height: Spasi.xs),
+            Row(
+              children: [
+                Icon(
+                  Icons.apartment_outlined,
+                  size: UkuranIkon.sedang,
+                  color: s.primary,
+                ),
+                const SizedBox(width: Spasi.sm),
+                Expanded(child: Text(namaPerusahaan, style: t.headlineSmall)),
+              ],
+            ),
+          ],
         ],
       ),
     );
-
-    return Column(
-      children: [
-        baris(
-          _Angka(
-            angka: beranda.lewatJatuhTempo,
-            label: FilterAlat.lewatJadwal.label,
-            nada: beranda.lewatJatuhTempo > 0 ? _Nada.gagal : _Nada.netral,
-            onTap: () => _bukaDaftarAlat(context, FilterAlat.lewatJadwal),
-          ),
-          _Angka(
-            angka: beranda.segeraJatuhTempo,
-            label: FilterAlat.hari30.label,
-            nada: beranda.segeraJatuhTempo > 0 ? _Nada.awas : _Nada.netral,
-            onTap: () => _bukaDaftarAlat(context, FilterAlat.hari30),
-          ),
-        ),
-        const SizedBox(height: 10),
-        baris(
-          _Angka(
-            angka: kelompok2,
-            label: FilterAlat.hari60.label,
-            onTap: () => _bukaDaftarAlat(context, FilterAlat.hari60),
-          ),
-          _Angka(
-            angka: kelompok3,
-            label: FilterAlat.hari90.label,
-            onTap: () => _bukaDaftarAlat(context, FilterAlat.hari90),
-          ),
-        ),
-      ],
-    );
   }
 }
 
-enum _Nada { netral, awas, gagal }
-
-/// Satu angka ringkasan. Warna status HANYA kalau angkanya bukan nol — nol
-/// alat terlambat itu kabar baik, bukan peringatan merah.
-class _Angka extends StatelessWidget {
-  const _Angka({
-    required this.angka,
-    required this.label,
-    this.nada = _Nada.netral,
-    required this.onTap,
-  });
-
-  /// `null` = belum bisa dihitung.
-  final int? angka;
-  final String label;
-  final _Nada nada;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
-    final warna = switch (nada) {
-      _Nada.gagal => m.gagal,
-      _Nada.awas => m.awas,
-      _Nada.netral => m.tinta,
-    };
-    return Semantics(
-      button: true,
-      label: '$label: ${angka == null ? 'belum tersedia' : '$angka alat'}',
-      excludeSemantics: true,
-      child: Kertas(
-        onTap: onTap,
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              angka == null ? '–' : '$angka',
-              style: t.headlineMedium?.copyWith(
-                color: warna,
-                fontWeight: FontWeight.w700,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(label, style: t.bodySmall, maxLines: 2),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Tombol teks di ujung judul seksi. Tinggi sentuhnya 48 dp dari tema.
-/// [semantik] = kalimat lengkap untuk pembaca layar (teksnya sendiri pendek
-/// supaya judul seksi di sebelahnya tidak terjepit di layar sempit).
-class _AksiLihatSemua extends StatelessWidget {
-  const _AksiLihatSemua({required this.semantik, required this.onTap});
-
-  final String semantik;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Flexible(
-    child: TextButton(
-      onPressed: onTap,
-      child: Text('Lihat semua', semanticsLabel: semantik),
-    ),
-  );
-}
-
-/// Satu kalimat di dalam kertas untuk bagian yang kosong.
+/// Satu kalimat di dalam kartu untuk bagian yang kosong.
 class _KosongSingkat extends StatelessWidget {
   const _KosongSingkat(this.teks);
 
   final String teks;
 
   @override
-  Widget build(BuildContext context) => Kertas(
-    padding: const EdgeInsets.all(14),
-    child: Text(teks, style: Theme.of(context).textTheme.bodyMedium),
-  );
+  Widget build(BuildContext context) =>
+      KartuSidik(child: Text(teks, style: context.teks.bodyMedium));
 }

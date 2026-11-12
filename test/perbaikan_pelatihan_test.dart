@@ -11,7 +11,7 @@ import 'package:open_filex/open_filex.dart';
 
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
 import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
-import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
@@ -240,7 +240,7 @@ void main() {
         ProviderScope(
           overrides: [layananProvider.overrideWithValue(_LayananGagal(galat))],
           child: MaterialApp(
-            theme: SidikTheme.terang,
+            theme: TemaSidik.terang,
             home: const SertifikatDetailScreen(id: 9),
           ),
         ),
@@ -294,7 +294,7 @@ void main() {
         UncontrolledProviderScope(
           container: c,
           child: MaterialApp(
-            theme: SidikTheme.terang,
+            theme: TemaSidik.terang,
             home: const MasukScreen(),
           ),
         ),
@@ -349,7 +349,7 @@ void main() {
           (ref) async => (versi: '1.0.0', build: '1'),
         ),
       ],
-      child: MaterialApp(theme: SidikTheme.terang, home: const BantuanScreen()),
+      child: MaterialApp(theme: TemaSidik.terang, home: const BantuanScreen()),
     );
 
     testWidgets('Bantuan saat server 404: pesan ramah, tanpa galat mentah', (

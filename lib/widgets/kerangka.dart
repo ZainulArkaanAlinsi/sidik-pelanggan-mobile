@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
 
-import '../core/theme/sidik_material.dart';
-import 'sidik/sidik_permukaan.dart';
+import '../core/tema/bentuk.dart';
+import '../core/tema/spasi.dart';
+import 'kartu_sidik.dart';
 
-/// Kerangka muat (04-UI-UX §1.2: "memuat = skeleton, bukan spinner kosong").
-///
-/// Bentuknya meniru kartu yang akan datang — judul, satu baris keterangan,
-/// satu baris status — supaya layar tidak "melompat" waktu data tiba. Denyut
-/// pelan; mati kalau HP meminta animasi dikurangi.
+/// Keadaan memuat: KERANGKA berdenyut, bukan pemutar kosong. [Memuat.new]
+/// untuk daftar, [Memuat.detail] untuk layar detail.
+class Memuat extends StatelessWidget {
+  const Memuat({super.key}) : _detail = false;
+
+  const Memuat.detail({super.key}) : _detail = true;
+
+  final bool _detail;
+
+  @override
+  Widget build(BuildContext context) =>
+      _detail ? const KerangkaDetail() : const KerangkaDaftar();
+}
+
+/// Daftar kartu kerangka. Bentuknya meniru kartu yang akan datang supaya layar
+/// tidak melompat waktu data tiba. Denyut mati bila HP meminta animasi
+/// dikurangi.
 class KerangkaDaftar extends StatelessWidget {
   const KerangkaDaftar({super.key, this.jumlah = 5, this.padding});
 
@@ -21,9 +34,9 @@ class KerangkaDaftar extends StatelessWidget {
     child: ListView.separated(
       // Tetap bisa ditarik (RefreshIndicator) selama memuat.
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: padding ?? const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: padding ?? Spasi.daftar(context),
       itemCount: jumlah,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: Spasi.md),
       itemBuilder: (_, _) => const KerangkaKartu(),
     ),
   );
@@ -35,29 +48,22 @@ class KerangkaKartu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const ExcludeSemantics(
-    child: Kertas(
-      padding: EdgeInsets.all(14),
+    child: KartuSidik(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(child: BalokKerangka(tinggi: 16, lebar: 180)),
-              SizedBox(width: 12),
-              BalokKerangka(tinggi: 22, lebar: 88, radius: 11),
-            ],
-          ),
-          SizedBox(height: 10),
+          BalokKerangka(tinggi: 16, lebar: 180),
+          SizedBox(height: Spasi.sm),
           BalokKerangka(tinggi: 12, lebar: 220),
-          SizedBox(height: 10),
-          BalokKerangka(tinggi: 12, lebar: 140),
+          SizedBox(height: Spasi.md),
+          BalokKerangka(tinggi: 24, lebar: 96, radius: Bentuk.pil),
         ],
       ),
     ),
   );
 }
 
-/// Kerangka layar detail: satu lembar besar berisi baris label–nilai.
+/// Kerangka layar detail: satu kartu besar berisi baris label dan nilai.
 class KerangkaDetail extends StatelessWidget {
   const KerangkaDetail({super.key});
 
@@ -67,35 +73,32 @@ class KerangkaDetail extends StatelessWidget {
     liveRegion: true,
     child: ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: Spasi.daftar(context),
       children: [
         ExcludeSemantics(
-          child: Kertas(
-            padding: const EdgeInsets.all(16),
+          child: KartuSidik(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const BalokKerangka(tinggi: 20, lebar: 200),
-                const SizedBox(height: 12),
+                const SizedBox(height: Spasi.md),
                 const BalokKerangka(tinggi: 28, lebar: 150),
-                const SizedBox(height: 20),
+                const SizedBox(height: Spasi.xl),
                 for (var i = 0; i < 5; i++) ...const [
                   Row(
                     children: [
                       BalokKerangka(tinggi: 12, lebar: 100),
-                      SizedBox(width: 24),
+                      SizedBox(width: Spasi.xl),
                       Expanded(child: BalokKerangka(tinggi: 12)),
                     ],
                   ),
-                  SizedBox(height: 14),
+                  SizedBox(height: Spasi.lg),
                 ],
               ],
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        const KerangkaKartu(),
-        const SizedBox(height: 10),
+        const SizedBox(height: Spasi.lg),
         const KerangkaKartu(),
       ],
     ),
@@ -126,7 +129,7 @@ class _BalokKerangkaState extends State<BalokKerangka>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.of(context).disableAnimations) {
+    if (MediaQuery.disableAnimationsOf(context)) {
       _c
         ..stop()
         ..value = 0.8;
@@ -143,15 +146,14 @@ class _BalokKerangkaState extends State<BalokKerangka>
 
   @override
   Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
     return FadeTransition(
       opacity: _c,
       child: Container(
         height: widget.tinggi,
         width: widget.lebar,
         decoration: BoxDecoration(
-          color: m.kertas2,
-          borderRadius: BorderRadius.circular(widget.radius ?? 4),
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(widget.radius ?? Bentuk.kecil),
         ),
       ),
     );

@@ -20,7 +20,7 @@ import 'package:sidik_pelanggan/app.dart';
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
 import 'package:sidik_pelanggan/core/konfigurasi.dart';
 import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
-import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
@@ -122,7 +122,7 @@ Widget _app(
     tambahan: [penampilPdfProvider.overrideWithValue(penampil.pembangun)],
   ),
   child: MaterialApp(
-    theme: SidikTheme.terang,
+    theme: TemaSidik.terang,
     builder: skalaHp
         ? (context, child) => MediaQuery.withClampedTextScaling(
             minScaleFactor: batasSkalaHuruf.max,
@@ -755,7 +755,7 @@ void main() {
             layananProvider.overrideWithValue(layanan),
           ],
           child: MaterialApp(
-            theme: SidikTheme.terang,
+            theme: TemaSidik.terang,
             home: PratinjauPdfScreen(sertifikat: _sertifikat(11)),
           ),
         ),

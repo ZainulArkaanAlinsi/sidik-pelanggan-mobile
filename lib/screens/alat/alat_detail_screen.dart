@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../providers/data_provider.dart';
+import '../../widgets/bagian_sidik.dart';
+import '../../widgets/baris_info.dart';
+import '../../widgets/chip_status.dart';
 import '../../widgets/garis_waktu_sertifikat.dart';
-import '../../widgets/sidik/sidik_permukaan.dart';
-import '../../widgets/sidik/sidik_status.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_sidik.dart';
+import '../../widgets/keadaan_galat.dart';
+import '../../widgets/keadaan_kosong.dart';
+import '../../widgets/kerangka.dart';
+import '../../widgets/pemetaan_status.dart';
 import '../sertifikat/sertifikat_detail_screen.dart';
 
-/// Detail satu alat (S09): identitas, status & jadwal kalibrasi ulang
+/// Detail satu alat (S09): identitas, status dan jadwal kalibrasi ulang
 /// (hitung mundur), dan riwayat sertifikat sebagai garis waktu (terbaru di
 /// atas). Tarik layar untuk memuat ulang.
 class AlatDetailScreen extends ConsumerWidget {
@@ -20,11 +28,11 @@ class AlatDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(detailAlatProvider(id));
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(async.value?.nama ?? 'Alat')),
-      body: async.when(
+    return HalamanSidik(
+      judul: async.value?.nama ?? 'Alat',
+      isi: async.when(
         loading: () => const Memuat.detail(),
         error: (e, _) => KeadaanGalat(
           galat: e,
@@ -37,30 +45,22 @@ class AlatDetailScreen extends ConsumerWidget {
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: denganTepiBawah(
-              context,
-              const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
-            ),
+            padding: Spasi.daftar(context),
             children: [
-              Kertas(
-                padding: const EdgeInsets.all(jarak),
+              KartuSidik(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: Text(a.nama, style: t.titleMedium)),
-                        const SizedBox(width: 8),
-                        Flexible(child: SidikLencana(statusAlat(a.status))),
-                      ],
+                    Text(a.nama, style: t.titleMedium),
+                    const SizedBox(height: Spasi.sm),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: ChipStatus(statusAlat(a.status)),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: Spasi.lg),
                     Text(
                       Format.sisaHari(a.hariKeJatuhTempo),
-                      style: t.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: t.headlineSmall,
                     ),
                     Text(
                       a.jatuhTempo == null
@@ -68,10 +68,17 @@ class AlatDetailScreen extends ConsumerWidget {
                           : 'Jadwal kalibrasi ulang ${Format.tanggal(a.jatuhTempo)}',
                       style: t.bodySmall,
                     ),
-                    const Divider(height: 24),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: Spasi.md),
+                      child: Divider(),
+                    ),
                     BarisInfo('Merk / model', a.merkModel),
-                    BarisInfo('Nomor seri', a.serial),
-                    BarisInfo('No. identifikasi', a.noIdentifikasi),
+                    BarisInfo('Nomor seri', a.serial, angka: true),
+                    BarisInfo(
+                      'No. identifikasi',
+                      a.noIdentifikasi,
+                      angka: true,
+                    ),
                     BarisInfo('Rentang ukur', a.rentang),
                     BarisInfo('Lokasi', a.lokasi),
                     BarisInfo('Catatan', a.catatan),
@@ -82,11 +89,9 @@ class AlatDetailScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              const JudulSeksi('Riwayat kalibrasi'),
+              const BagianSidik('Riwayat kalibrasi'),
               if (a.riwayat.isEmpty)
-                const Kertas(
-                  padding: EdgeInsets.all(jarak),
+                const KartuSidik(
                   child: KeadaanKosongIsi(
                     ikon: Icons.history,
                     judul: 'Belum ada sertifikat',
@@ -97,7 +102,7 @@ class AlatDetailScreen extends ConsumerWidget {
                 )
               else ...[
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.only(bottom: Spasi.md),
                   child: Text(
                     '${a.riwayat.length} sertifikat, yang terbaru di atas. '
                     'Ketuk untuk membuka.',

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/format.dart';
-import '../core/theme/sidik_material.dart';
+import '../core/tema/bentuk.dart';
+import '../core/tema/spasi.dart';
+import '../core/tema/ukuran.dart';
+import '../core/tema/warna_sidik.dart';
 import '../providers/koneksi_provider.dart';
 import '../providers/push_provider.dart';
 import '../providers/sinkron_provider.dart';
@@ -55,25 +58,34 @@ class _BannerOffline extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
+    final w = context.warna;
+    final t = context.teks;
     return Material(
-      color: m.awasTipis,
+      color: w.awasLatar,
       child: SafeArea(
         bottom: false,
         child: Semantics(
           liveRegion: true,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+            padding: const EdgeInsets.fromLTRB(
+              Spasi.lg,
+              Spasi.xs,
+              Spasi.sm,
+              Spasi.xs,
+            ),
             child: Row(
               children: [
-                Icon(Icons.cloud_off_outlined, size: 20, color: m.awas),
-                const SizedBox(width: 10),
+                Icon(
+                  Icons.cloud_off_outlined,
+                  size: UkuranIkon.sedang - 4,
+                  color: w.awas,
+                ),
+                const SizedBox(width: Spasi.md),
                 Expanded(
                   child: Text(
                     teksOffline(keadaan),
                     style: t.bodySmall?.copyWith(
-                      color: m.tinta,
+                      color: context.skema.onSurface,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -98,19 +110,28 @@ class BannerIzinNotifikasi extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(bannerIzinProvider)) return const SizedBox.shrink();
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
+    final w = context.warna;
+    final t = context.teks;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: Spasi.md),
       child: Material(
-        color: m.awasTipis,
-        borderRadius: BorderRadius.circular(SidikMaterial.sudutKertas),
+        color: w.awasLatar,
+        borderRadius: Bentuk.sudutKartu,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+          padding: const EdgeInsets.fromLTRB(
+            Spasi.lg,
+            Spasi.sm,
+            Spasi.sm,
+            Spasi.sm,
+          ),
           child: Row(
             children: [
-              Icon(Icons.notifications_off_outlined, color: m.awas),
-              const SizedBox(width: 10),
+              Icon(
+                Icons.notifications_off_outlined,
+                color: w.awas,
+                size: UkuranIkon.sedang,
+              ),
+              const SizedBox(width: Spasi.md),
               Expanded(
                 child: Text(
                   'Notifikasi mati. Anda bisa melewatkan pengingat jadwal '

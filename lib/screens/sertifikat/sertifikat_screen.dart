@@ -1,12 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
+import '../../core/tema/spasi.dart';
 import '../../widgets/daftar_berhalaman.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_sertifikat.dart';
+import '../../widgets/keadaan_kosong.dart';
+import '../../widgets/kolom_cari.dart';
 import 'sertifikat_detail_screen.dart';
 
 /// Daftar sertifikat terbit (cari + infinite scroll). Dibuka dari Beranda
@@ -21,50 +23,27 @@ class SertifikatScreen extends ConsumerStatefulWidget {
 }
 
 class _SertifikatScreenState extends ConsumerState<SertifikatScreen> {
-  final _cari = TextEditingController();
   String _kata = '';
   bool _termasukDigantikan = false;
-  Timer? _tunda;
-
-  @override
-  void dispose() {
-    _tunda?.cancel();
-    _cari.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final kunci = (cari: _kata, termasukDigantikan: _termasukDigantikan);
     final async = ref.watch(daftarSertifikatProvider(kunci));
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sertifikat')),
-      body: Column(
+    return HalamanSidik(
+      judul: 'Sertifikat',
+      isi: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 0),
-            child: TextField(
-              controller: _cari,
-              onChanged: (v) {
-                _tunda?.cancel();
-                _tunda = Timer(
-                  const Duration(milliseconds: 350),
-                  () => setState(() => _kata = v.trim()),
-                );
-              },
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Cari nomor sertifikat, alat, atau nomor seri',
-              ),
-            ),
+          KolomCari(
+            petunjuk: 'Cari nomor sertifikat, alat, atau nomor seri',
+            onCari: (kata) => setState(() => _kata = kata),
           ),
           SwitchListTile(
             value: _termasukDigantikan,
             onChanged: (v) => setState(() => _termasukDigantikan = v),
             title: const Text('Tampilkan juga yang sudah direvisi'),
-            dense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: jarak),
+            contentPadding: Spasi.halaman,
           ),
           Expanded(
             child: RefreshIndicator(
@@ -75,6 +54,7 @@ class _SertifikatScreenState extends ConsumerState<SertifikatScreen> {
               child: DaftarBerhalaman<Sertifikat>(
                 async: async,
                 namaButir: 'sertifikat',
+                padding: Spasi.daftar(context),
                 muatLagi: ({ulangiGalat = false}) => ref
                     .read(daftarSertifikatProvider(kunci).notifier)
                     .muatLagi(ulangiGalat: ulangiGalat),

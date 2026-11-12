@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:pdfx/pdfx.dart';
 
+import '../core/tema/palet_sidik.dart';
+
 /// Kendali penampil PDF yang dipegang layar pratinjau: halaman, jumlah
 /// halaman, dan tiga aksi (pindah halaman, perbesar/perkecil). Dipisah dari
 /// plugin supaya layar dan tes tidak bergantung pada `pdfx`; penampil sungguhan
@@ -226,10 +228,10 @@ class _PenampilPdfxState extends State<_PenampilPdfx> {
               padding: 8,
               maxScale: 6,
               backgroundDecoration: BoxDecoration(
-                color: Colors.white,
+                color: PaletSidik.kertasPdf,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.28),
+                    color: PaletSidik.bayangan.withValues(alpha: 0.28),
                     blurRadius: 4,
                     offset: const Offset(1, 2),
                   ),

@@ -3,14 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/theme/sidik_material.dart';
+import '../core/tema/spasi.dart';
+import '../core/tema/ukuran.dart';
+import '../core/tema/warna_sidik.dart';
 import '../providers/pembaruan_provider.dart';
 import '../providers/perangkat_provider.dart';
 import '../providers/sesi_provider.dart';
-import '../widgets/sidik/sidik_permukaan.dart';
-import '../widgets/sidik/sidik_tombol.dart';
+import '../widgets/halaman_sidik.dart';
+import '../widgets/kartu_sidik.dart';
+import '../widgets/keadaan_galat.dart';
+import '../widgets/kolom_formulir.dart';
+import '../widgets/logo_sidik.dart';
 import '../widgets/pembaruan.dart';
-import '../widgets/umum.dart';
+import '../widgets/tombol_sidik.dart';
 import 'akun/bantuan_screen.dart';
 import 'auth/masuk_screen.dart';
 import 'auth/sambutan_screen.dart';
@@ -44,8 +49,8 @@ class Gerbang extends ConsumerWidget {
     final sesi = ref.watch(sesiProvider);
     return sesi.when(
       loading: () => const _Pembuka(),
-      error: (e, _) => Scaffold(
-        body: SafeArea(
+      error: (e, _) => HalamanSidik(
+        isi: SafeArea(
           child: KeadaanGalat(
             galat: e,
             cobaLagi: () => ref.invalidate(sesiProvider),
@@ -103,49 +108,45 @@ class PilihPerusahaanScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sesi = ref.watch(sesiProvider).value;
     final daftar = sesi?.akun.keanggotaan ?? const [];
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pilih perusahaan'),
-        automaticallyImplyLeading: bisaKembali,
-      ),
-      body: ListView(
-        padding: denganTepiBawah(context, const EdgeInsets.all(jarak)),
+    final t = context.teks;
+    final skema = context.skema;
+    return HalamanSidik(
+      judul: 'Pilih perusahaan',
+      otomatisKembali: bisaKembali,
+      isi: ListView(
+        padding: Spasi.daftar(context),
         children: [
           Text(
             'Akun Anda terdaftar di beberapa perusahaan. Data yang tampil selalu milik perusahaan yang dipilih.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: t.bodyMedium?.copyWith(color: skema.onSurfaceVariant),
           ),
-          const SizedBox(height: jarak),
+          const SizedBox(height: Spasi.lg),
           for (final k in daftar)
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Kertas(
-                padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.only(bottom: Spasi.md),
+              child: KartuSidik(
                 onTap: () {
                   ref.read(sesiProvider.notifier).pilihPerusahaan(k.customerId);
                   if (bisaKembali) Navigator.of(context).pop();
                 },
                 child: Row(
                   children: [
-                    const Icon(Icons.apartment_outlined),
-                    const SizedBox(width: 12),
+                    Icon(
+                      Icons.apartment_outlined,
+                      color: skema.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: Spasi.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            k.namaPerusahaan,
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                          Text(
-                            k.labelPeran,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
+                          Text(k.namaPerusahaan, style: t.titleSmall),
+                          Text(k.labelPeran, style: t.bodySmall),
                         ],
                       ),
                     ),
                     if (k.customerId == sesi?.perusahaanId)
-                      const Icon(Icons.check),
+                      Icon(Icons.check_circle, color: skema.primary),
                   ],
                 ),
               ),
@@ -165,6 +166,9 @@ class _Pembuka extends StatefulWidget {
 
   /// Lama menunggu sebelum keterangan "server sedang dinyalakan" muncul.
   static const jedaKeterangan = Duration(seconds: 5);
+
+  /// Lebar bilah kemajuan di bawah nama aplikasi.
+  static const double lebarBilah = 120;
 
   @override
   State<_Pembuka> createState() => _PembukaState();
@@ -190,27 +194,32 @@ class _PembukaState extends State<_Pembuka> {
 
   @override
   Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
-    final teks = Theme.of(context).textTheme;
-    return Scaffold(
-      body: Center(
+    final t = context.teks;
+    return HalamanSidik(
+      latarPutih: true,
+      isi: Center(
         child: Semantics(
           label: 'Memuat SIDIK Pelanggan',
           liveRegion: true,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: Spasi.xxl),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('SIDIK PELANGGAN', style: m.gayaEtsa(ukuran: 14)),
-                const SizedBox(height: 16),
-                const SizedBox(width: 120, child: LinearProgressIndicator()),
+                const LogoSidik(tinggi: 96),
+                const SizedBox(height: Spasi.xl),
+                Text('SIDIK Pelanggan', style: t.titleMedium),
+                const SizedBox(height: Spasi.lg),
+                const SizedBox(
+                  width: _Pembuka.lebarBilah,
+                  child: LinearProgressIndicator(),
+                ),
                 if (_lama) ...[
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Spasi.xl),
                   Text(
                     'Server sedang dinyalakan.\nBiasanya 30–60 detik, mohon tunggu.',
                     textAlign: TextAlign.center,
-                    style: teks.bodyMedium,
+                    style: t.bodyMedium,
                   ),
                 ],
               ],
@@ -362,64 +371,69 @@ class _LayarInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(ikon, size: 52, color: m.tinta2),
-                  const SizedBox(height: jarak),
-                  Text(
-                    judul,
-                    style: t.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(isi, style: t.bodyMedium, textAlign: TextAlign.center),
-                  if (catatan != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      catatan!,
-                      style: t.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  ?isiBawah,
-                  if (aksi != null)
-                    SidikTombol(
-                      label: aksi!,
-                      ragam: RagamTombol.utama,
-                      penuh: true,
-                      onPressed: onAksi,
-                    ),
-                  if (aksiTengah != null) ...[
-                    const SizedBox(height: 10),
-                    SidikTombol(
-                      label: aksiTengah!,
-                      ikon: Icons.support_agent,
-                      penuh: true,
-                      onPressed: onAksiTengah,
-                    ),
-                  ],
-                  if (aksiKedua != null)
-                    SidikTombol(
-                      label: aksiKedua!,
-                      ragam: RagamTombol.teks,
-                      onPressed: onAksiKedua,
-                    ),
-                ],
+    final t = context.teks;
+    final skema = context.skema;
+    return HalamanSidik(
+      latarPutih: true,
+      isi: KolomFormulir(
+        children: [
+          Center(
+            child: ExcludeSemantics(
+              child: Container(
+                width: UkuranIkon.ilustrasi + Spasi.xl,
+                height: UkuranIkon.ilustrasi + Spasi.xl,
+                decoration: BoxDecoration(
+                  color: skema.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  ikon,
+                  size: UkuranIkon.besar,
+                  color: skema.onPrimaryContainer,
+                ),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: Spasi.lg),
+          Text(judul, style: t.headlineSmall, textAlign: TextAlign.center),
+          const SizedBox(height: Spasi.sm),
+          Text(
+            isi,
+            style: t.bodyMedium?.copyWith(color: skema.onSurfaceVariant),
+            textAlign: TextAlign.center,
+          ),
+          if (catatan != null) ...[
+            const SizedBox(height: Spasi.sm),
+            Text(catatan!, style: t.bodySmall, textAlign: TextAlign.center),
+          ],
+          const SizedBox(height: Spasi.xl),
+          ?isiBawah,
+          if (aksi != null)
+            TombolSidik(
+              label: aksi!,
+              ragam: RagamTombol.utama,
+              penuh: true,
+              onPressed: onAksi,
+            ),
+          if (aksiTengah != null) ...[
+            const SizedBox(height: Spasi.md),
+            TombolSidik(
+              label: aksiTengah!,
+              ikon: Icons.support_agent,
+              penuh: true,
+              onPressed: onAksiTengah,
+            ),
+          ],
+          if (aksiKedua != null) ...[
+            const SizedBox(height: Spasi.sm),
+            TombolSidik(
+              label: aksiKedua!,
+              ragam: RagamTombol.teks,
+              penuh: true,
+              onPressed: onAksiKedua,
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -47,6 +47,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    # Logo resmi PT Sidik (disalin dari sidik-calibration-mobile, dipalet 128
+    # warna: 46 KB dari 117 KB).
+    - assets/images/logo_sidik.png
   fonts:
     - family: Inter
       fonts:
