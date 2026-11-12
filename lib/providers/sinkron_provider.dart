@@ -49,6 +49,7 @@ final sinkronProvider = Provider<void>((ref) {
 /// sampai yang baru datang (tidak ada kedip kerangka muat).
 final List<ProviderOrFamily> providerDataLayar = [
   berandaProvider,
+  jatuhTempoProvider,
   daftarAlatProvider,
   detailAlatProvider,
   daftarSertifikatProvider,

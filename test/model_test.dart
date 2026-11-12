@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
+import 'package:sidik_pelanggan/models/status_berlaku.dart';
 import 'package:sidik_pelanggan/screens/tautan.dart';
 
 /// Model dibaca dari bentuk respons yang SAMA dengan resource di API
@@ -120,7 +121,7 @@ void main() {
       ],
     });
     expect(a.status, StatusKalibrasi.mendekati);
-    expect(a.labelStatus, 'Kalibrasi ulang dalam 12 hari');
+    expect(StatusBerlaku.dariAlat(a.status).label, 'Segera jatuh tempo');
     expect(a.riwayat.map((s) => s.nomor), [
       'CAL/2026/09/0002',
       'CAL/2025/10/0001',

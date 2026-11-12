@@ -4,6 +4,8 @@ import '../core/api_pelanggan.dart';
 import '../core/format.dart';
 import '../core/theme/sidik_material.dart';
 import '../models/data_pelanggan.dart';
+import '../models/paket.dart';
+import '../models/status_berlaku.dart';
 import 'kerangka.dart';
 import 'sidik/sidik_permukaan.dart';
 import 'sidik/sidik_status.dart';
@@ -209,41 +211,64 @@ class BarisInfo extends StatelessWidget {
   }
 }
 
-/// Status kalibrasi alat sebagai lencana — satu-satunya pemetaan
-/// status → warna di aplikasi ini (04-UI-UX §5: abu / biru / hijau / kuning /
-/// merah, selalu dengan teks dan ikon). [hari] = `hari_ke_jatuh_tempo`.
-StatusSidik statusAlat(StatusKalibrasi s, [int? hari]) => switch (s) {
-  StatusKalibrasi.terkalibrasi => StatusSidik(
-    s.label(hari),
-    NadaStatus.lulus,
-    Icons.check_circle_outline,
+/// Lencana status masa berlaku — SATU-SATUNYA pemetaan status → warna dan
+/// ikon untuk alat dan sertifikat (04-UI-UX §5: abu / biru / hijau / kuning /
+/// merah, selalu dengan teks dan ikon). Teksnya dari [StatusBerlaku.label]
+/// (satu sumber, termasuk keputusan istilah K3: bukan "kedaluwarsa").
+/// [statusAlat], [statusDokumen], dan [statusSertifikat] hanya memilih nilai
+/// [StatusBerlaku] lalu lewat sini, jadi kata yang sama tidak bisa tampil
+/// beda di dua layar.
+///
+/// Sisa hari tidak ikut di label: tampil di baris tanggal ([Format.sisaHari]),
+/// supaya lencananya pendek dan muat di layar 320 dp.
+StatusSidik statusBerlaku(StatusBerlaku s) => StatusSidik(
+  s.label,
+  switch (s) {
+    StatusBerlaku.berlaku => NadaStatus.lulus,
+    StatusBerlaku.segera || StatusBerlaku.digantikan => NadaStatus.awas,
+    StatusBerlaku.lewatJadwal || StatusBerlaku.dibatalkan => NadaStatus.gagal,
+    StatusBerlaku.diproses => NadaStatus.tunggu,
+    StatusBerlaku.berakhir ||
+    StatusBerlaku.belumPernah ||
+    StatusBerlaku.tidakAktif => NadaStatus.draf,
+  },
+  switch (s) {
+    StatusBerlaku.berlaku => Icons.verified_outlined,
+    StatusBerlaku.segera => Icons.schedule,
+    StatusBerlaku.lewatJadwal => Icons.error_outline,
+    StatusBerlaku.digantikan => Icons.swap_horiz,
+    StatusBerlaku.dibatalkan => Icons.block,
+    StatusBerlaku.berakhir => Icons.history,
+    StatusBerlaku.belumPernah => Icons.event_busy_outlined,
+    StatusBerlaku.diproses => Icons.autorenew,
+    StatusBerlaku.tidakAktif => Icons.pause_circle_outline,
+  },
+);
+
+/// Status alat (dihitung server) sebagai lencana.
+StatusSidik statusAlat(StatusKalibrasi s) =>
+    statusBerlaku(StatusBerlaku.dariAlat(s));
+
+/// Status dokumen sertifikat (dikirim server) sebagai lencana, tanpa menilai
+/// tanggal. Untuk status lengkap dengan masa berlaku: [statusSertifikat].
+StatusSidik statusDokumen(StatusDokumen s) =>
+    statusBerlaku(StatusBerlaku.dariDokumen(s));
+
+/// Status sertifikat termasuk masa berlakunya pada waktu [sekarang].
+/// [adaPenerus] = di riwayat alat ada sertifikat berlaku yang lebih baru.
+StatusSidik statusSertifikat(
+  Sertifikat s, {
+  required DateTime sekarang,
+  int jendela = 30,
+  bool adaPenerus = false,
+}) => statusBerlaku(
+  StatusBerlaku.dariSertifikat(
+    s,
+    sekarang: sekarang,
+    jendela: jendela,
+    adaPenerus: adaPenerus,
   ),
-  StatusKalibrasi.mendekati => StatusSidik(
-    s.label(hari),
-    NadaStatus.awas,
-    Icons.schedule,
-  ),
-  StatusKalibrasi.lewat => StatusSidik(
-    s.label(hari),
-    NadaStatus.gagal,
-    Icons.error_outline,
-  ),
-  StatusKalibrasi.belumPernah => StatusSidik(
-    s.label(hari),
-    NadaStatus.draf,
-    Icons.event_busy_outlined,
-  ),
-  StatusKalibrasi.dalamProses => StatusSidik(
-    s.label(hari),
-    NadaStatus.tunggu,
-    Icons.autorenew,
-  ),
-  StatusKalibrasi.nonaktif => StatusSidik(
-    s.label(hari),
-    NadaStatus.draf,
-    Icons.pause_circle_outline,
-  ),
-};
+);
 
 /// Keputusan sertifikat. FAIL TIDAK dilunakkan (REQ-SRT-04): labelnya
 /// "Tidak memenuhi toleransi", merah, dengan ikon.
@@ -259,25 +284,6 @@ StatusSidik? statusKeputusan(String? keputusan) => switch (keputusan) {
     Icons.cancel_outlined,
   ),
   _ => null,
-};
-
-/// Satu-satunya pemetaan status dokumen sertifikat → lencana.
-StatusSidik statusDokumen(StatusDokumen s) => switch (s) {
-  StatusDokumen.berlaku => StatusSidik(
-    s.label,
-    NadaStatus.lulus,
-    Icons.verified_outlined,
-  ),
-  StatusDokumen.digantikan => StatusSidik(
-    s.label,
-    NadaStatus.awas,
-    Icons.swap_horiz,
-  ),
-  StatusDokumen.dibatalkan => StatusSidik(
-    s.label,
-    NadaStatus.gagal,
-    Icons.block,
-  ),
 };
 
 /// Kartu satu alat di daftar.
@@ -301,11 +307,7 @@ class KartuAlat extends StatelessWidget {
             children: [
               Expanded(child: Text(alat.nama, style: t.titleSmall)),
               const SizedBox(width: 8),
-              Flexible(
-                child: SidikLencana(
-                  statusAlat(alat.status, alat.hariKeJatuhTempo),
-                ),
-              ),
+              Flexible(child: SidikLencana(statusAlat(alat.status))),
             ],
           ),
           const SizedBox(height: 4),
@@ -441,3 +443,55 @@ StatusSidik statusPaket(String kode, String label) => switch (kode) {
   ),
   _ => StatusSidik(label, NadaStatus.draf, Icons.help_outline),
 };
+
+/// Kartu satu paket (order) di daftar pelacakan dan di Beranda.
+class KartuPaket extends StatelessWidget {
+  const KartuPaket({super.key, required this.paket, required this.onTap});
+
+  final Paket paket;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return Kertas(
+      onTap: onTap,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: Text(paket.nomor, style: t.titleSmall)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: SidikLencana(statusPaket(paket.tahap, paket.tahapLabel)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${paket.jumlahSelesai} dari ${paket.jumlahAlat} alat selesai',
+            style: t.bodySmall,
+          ),
+          Text(
+            'Masuk ${Format.tanggal(paket.tanggalMasuk)}'
+            '${paket.tanggalJanjiSelesai == null ? '' : ' · target selesai ${Format.tanggal(paket.tanggalJanjiSelesai)}'}',
+            style: t.bodySmall,
+          ),
+          if (paket.terlambat) ...[
+            const SizedBox(height: 6),
+            const SidikLencana(
+              StatusSidik(
+                'Melewati target selesai',
+                NadaStatus.awas,
+                Icons.schedule,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}

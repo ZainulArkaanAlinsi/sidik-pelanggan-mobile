@@ -23,6 +23,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:sidik_pelanggan/app.dart';
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
 import 'package:sidik_pelanggan/core/konfigurasi.dart';
+import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
 import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
@@ -213,7 +214,7 @@ Widget aplikasiUji(ServerPalsu server, HasilAlur hasil, Directory folder) {
       layananProvider.overrideWith(
         (ref) => LayananPelanggan(
           ref.watch(apiProvider),
-          folderDokumen: () async => folder,
+          penyimpan: PenyimpanPratinjau(akar: () async => folder),
           pembukaBerkas: (path) async {
             hasil.dibuka.add(path);
             hasil.isiDibuka.add(File(path).readAsBytesSync());

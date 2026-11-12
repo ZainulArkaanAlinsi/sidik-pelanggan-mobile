@@ -1,11 +1,15 @@
 // Perkakas bersama test layar & alur: penyimpan palsu di memori (tanpa
 // Keystore/channel platform) dan pembungkus aplikasi dengan override standar.
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
 import 'package:sidik_pelanggan/core/penyimpan_cache.dart';
+import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
 import 'package:sidik_pelanggan/core/penyimpan_perangkat.dart';
 import 'package:sidik_pelanggan/core/penyimpan_sesi.dart';
 import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
@@ -54,6 +58,32 @@ class PenyimpanSesiMemori extends PenyimpanSesi {
   }
 }
 
+/// Penyimpan pratinjau PDF di memori: tanpa `path_provider` (plugin platform)
+/// dan tanpa I/O berkas, yang tidak pernah selesai di dalam `testWidgets`
+/// (FakeAsync) dan membuat `pumpAndSettle` kehabisan waktu. Mencatat apa yang
+/// disimpan dan berapa kali dibersihkan.
+class PenyimpanPratinjauMemori extends PenyimpanPratinjau {
+  PenyimpanPratinjauMemori() : super(akar: () async => Directory.systemTemp);
+
+  /// ID sertifikat → byte yang disimpan.
+  final Map<int, List<int>> isi = {};
+  int dibersihkan = 0;
+
+  @override
+  Future<File> simpan(int idSertifikat, Uint8List byte) async {
+    isi[idSertifikat] = byte;
+    return File(
+      '${PenyimpanPratinjau.namaFolder}/sertifikat-$idSertifikat.pdf',
+    );
+  }
+
+  @override
+  Future<void> bersihkan() async {
+    dibersihkan++;
+    isi.clear();
+  }
+}
+
 /// Perangkat yang sudah melewati layar sambutan.
 class PerangkatSudahLihatSambutan extends PenyimpanPerangkat {
   @override
@@ -64,16 +94,22 @@ class PerangkatSudahLihatSambutan extends PenyimpanPerangkat {
 }
 
 /// Override standar yang mematikan semua yang butuh platform (Keystore,
-/// Firebase, pemasang APK, cek rilis GitHub). [tambahan] dipasang PALING
-/// AKHIR dan menang.
+/// Firebase, pemasang APK, cek rilis GitHub, folder cache). [tambahan]
+/// dipasang PALING AKHIR; provider yang sudah dioverride di sini tidak boleh
+/// diulang di [tambahan] (Riverpod menolak override ganda): pakai parameter
+/// bernama untuk yang tersedia, mis. [pratinjau].
 List<Override> overrideDasar({
   PenyimpanSesi? sesi,
   bool pembaruanAktif = false,
+  PenyimpanPratinjau? pratinjau,
   List<Override> tambahan = const [],
 }) => [
   pemasangApkProvider.overrideWithValue(const PemasangApkMati()),
   pembaruanAktifProvider.overrideWithValue(pembaruanAktif),
   penyimpanCacheProvider.overrideWithValue(PenyimpanCacheMemori()),
+  penyimpanPratinjauProvider.overrideWithValue(
+    pratinjau ?? PenyimpanPratinjauMemori(),
+  ),
   penyimpanSesiProvider.overrideWithValue(sesi ?? PenyimpanSesiMemori()),
   penyimpanPerangkatProvider.overrideWithValue(PerangkatSudahLihatSambutan()),
   infoPaketProvider.overrideWith((ref) async => (versi: '1.0.0', build: '1')),
@@ -120,6 +156,12 @@ class LayananUji extends LayananPelanggan {
     String? saring,
     int halaman = 1,
   }) async => halamanUji(<Alat>[]);
+
+  @override
+  Future<List<Alat>> alatMenujuJatuhTempo({
+    int sampaiHari = 90,
+    int maksHalaman = 10,
+  }) async => <Alat>[];
 
   @override
   Future<Halaman<Sertifikat>> daftarSertifikat({

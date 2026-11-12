@@ -24,6 +24,10 @@ dependencies:
   path_provider: ^2.1.6
   open_filex: ^4.7.0
   url_launcher: ^6.3.1
+  # Pratinjau PDF sertifikat di dalam app (zoom, geser, putar, halaman). MIT.
+  # Di Android memakai `PdfRenderer` bawaan OS: tanpa pustaka native, jadi tidak
+  # menambah ukuran per ABI (arm/arm64). Dasar pilihan: docs/pustaka-pdf.md.
+  pdfx: ^2.11.0
   package_info_plus: ^8.1.1
   firebase_core: ^4.13.0
   firebase_messaging: ^16.5.0

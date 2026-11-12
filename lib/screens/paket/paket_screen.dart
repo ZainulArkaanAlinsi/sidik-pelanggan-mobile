@@ -3,12 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/format.dart';
 import '../../models/paket.dart';
 import '../../providers/data_provider.dart';
 import '../../widgets/daftar_berhalaman.dart';
-import '../../widgets/sidik/sidik_permukaan.dart';
-import '../../widgets/sidik/sidik_status.dart';
 import '../../widgets/umum.dart';
 import 'paket_detail_screen.dart';
 
@@ -103,7 +100,7 @@ class _PaketScreenState extends ConsumerState<PaketScreen> {
                       : 'Paket yang Anda serahkan ke laboratorium muncul di '
                             'sini beserta tahap pengerjaannya.',
                 ),
-                butir: (context, p) => _KartuPaket(
+                butir: (context, p) => KartuPaket(
                   paket: p,
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -114,57 +111,6 @@ class _PaketScreenState extends ConsumerState<PaketScreen> {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _KartuPaket extends StatelessWidget {
-  const _KartuPaket({required this.paket, required this.onTap});
-
-  final Paket paket;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    return Kertas(
-      onTap: onTap,
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: Text(paket.nomor, style: t.titleSmall)),
-              const SizedBox(width: 8),
-              Flexible(
-                child: SidikLencana(statusPaket(paket.tahap, paket.tahapLabel)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${paket.jumlahSelesai} dari ${paket.jumlahAlat} alat selesai',
-            style: t.bodySmall,
-          ),
-          Text(
-            'Masuk ${Format.tanggal(paket.tanggalMasuk)}'
-            '${paket.tanggalJanjiSelesai == null ? '' : ' · target selesai ${Format.tanggal(paket.tanggalJanjiSelesai)}'}',
-            style: t.bodySmall,
-          ),
-          if (paket.terlambat) ...[
-            const SizedBox(height: 6),
-            const SidikLencana(
-              StatusSidik(
-                'Melewati target selesai',
-                NadaStatus.awas,
-                Icons.schedule,
-              ),
-            ),
-          ],
         ],
       ),
     );

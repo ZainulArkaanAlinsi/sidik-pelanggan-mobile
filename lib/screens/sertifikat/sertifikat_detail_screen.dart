@@ -14,12 +14,13 @@ import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_status.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
+import 'pratinjau_pdf_screen.dart';
 
 /// Detail sertifikat — isinya CERMIN dari yang tercetak di PDF (dibaca dari
 /// snapshot di server), jadi layar ini tidak pernah berbeda dengan kertasnya.
 ///
 /// Tiga keadaan dokumen, semuanya keputusan server (`status`):
-/// - `berlaku`    — normal; bisa diunduh.
+/// - `berlaku`    — normal; bisa dilihat di aplikasi (pratinjau PDF) dan diunduh.
 /// - `digantikan` — kartu kuning di atas menunjuk revisinya; PDF lama tetap
 ///   bisa diunduh sebagai riwayat.
 /// - `dibatalkan` — kartu merah; unduh dimatikan (server juga menjawab 410).
@@ -239,10 +240,25 @@ class _SertifikatDetailScreenState
                 ),
               ],
               const SizedBox(height: jarak),
+              // Satu tombol utama per layar: melihat PDF di dalam aplikasi.
+              // "Unduh PDF" tetap ada untuk membukanya di aplikasi PDF lain.
+              SidikTombol(
+                label: 'Lihat PDF',
+                ikon: Icons.picture_as_pdf_outlined,
+                ragam: RagamTombol.utama,
+                penuh: true,
+                onPressed: s.bisaDiunduh && !s.dibatalkan && !offline
+                    ? () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => PratinjauPdfScreen(sertifikat: s),
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(height: 8),
               SidikTombol(
                 label: 'Unduh PDF',
                 ikon: Icons.download_outlined,
-                ragam: RagamTombol.utama,
                 penuh: true,
                 sibuk: _mengunduh,
                 onPressed: s.bisaDiunduh && !s.dibatalkan && !offline

@@ -112,6 +112,12 @@ class _Palsu extends LayananPelanggan {
   );
 
   @override
+  Future<List<Alat>> alatMenujuJatuhTempo({
+    int sampaiHari = 90,
+    int maksHalaman = 10,
+  }) async => (await daftarAlat()).isi;
+
+  @override
   Future<Sertifikat> sertifikat(int id) async => Sertifikat.dariJson({
     'id': id,
     'nomor': 'CAL/2026/09/000123-REV.2',

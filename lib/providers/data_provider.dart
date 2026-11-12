@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/anggota.dart';
 import '../models/data_pelanggan.dart';
 import '../models/paket.dart';
+import '../models/status_berlaku.dart';
 import '../services/layanan_pelanggan.dart';
 import 'paginasi.dart';
 import 'sesi_provider.dart';
@@ -49,6 +50,24 @@ class DaftarController<T> extends PaginasiController<T> {
 final berandaProvider = FutureProvider.autoDispose<Beranda>((ref) {
   _perusahaan(ref);
   return ref.watch(layananProvider).beranda();
+});
+
+/// Jam HP — hanya CADANGAN "hari ini" untuk status masa berlaku sertifikat,
+/// dipakai bila payload alat tidak membawa acuan server (`Alat.hariIniServer`).
+/// Dinamai `jamHp...` karena `pembaruan_provider.dart` sudah punya
+/// `jamProvider` untuk keperluan lain. Dipisah dari `DateTime.now` supaya
+/// bisa diuji dengan tanggal yang tetap.
+final jamHpProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// Alat yang lewat jadwal atau jatuh tempo dalam 90 hari, dikelompokkan untuk
+/// Beranda dan daftar alat. Diikat ke perusahaan aktif seperti provider data
+/// lain, jadi berganti perusahaan = dihitung ulang dari nol.
+final jatuhTempoProvider = FutureProvider.autoDispose<RingkasanJatuhTempo>((
+  ref,
+) async {
+  _perusahaan(ref);
+  final alat = await ref.watch(layananProvider).alatMenujuJatuhTempo();
+  return RingkasanJatuhTempo.dari(alat);
 });
 
 /// Kunci daftar alat: kata cari + saringan (`segera`, `lewat`, atau null).

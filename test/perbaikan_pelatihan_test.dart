@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:open_filex/open_filex.dart';
 
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
+import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
 import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
@@ -128,15 +129,24 @@ void main() {
 
     LayananPelanggan layanan({
       required http.Client klien,
-      Future<Directory> Function()? folderDokumen,
+      Future<Directory> Function()? akar,
       Future<OpenResult> Function(String)? buka,
     }) => LayananPelanggan(
       ApiPelanggan(klien: klien),
-      folderDokumen: folderDokumen ?? () async => folder,
+      penyimpan: PenyimpanPratinjau(
+        akar: akar ?? () async => folder,
+        akarLama: () async => folder,
+      ),
       pembukaBerkas: buka ?? (_) async => OpenResult(),
     );
 
-    final pdfOk = MockClient((_) async => http.Response('%PDF-1.4', 200));
+    final pdfOk = MockClient(
+      (_) async => http.Response(
+        '%PDF-1.4',
+        200,
+        headers: {'content-type': 'application/pdf'},
+      ),
+    );
 
     test('sukses: berkas tertulis dan dibuka', () async {
       String? dibuka;
@@ -190,7 +200,12 @@ void main() {
       await expectLater(
         layanan(
           klien: pdfOk,
-          folderDokumen: () async => Directory('${folder.path}/tidak/ada'),
+          // Folder cache tidak bisa dibuat: induknya berkas biasa.
+          akar: () async {
+            final berkas = File('${folder.path}/bukan-folder')
+              ..writeAsStringSync('x');
+            return Directory('${berkas.path}/dalam');
+          },
         ).unduhDanBukaPdf(_sertifikat()),
         throwsA(
           isA<GalatBerkasPdf>().having(
