@@ -23,7 +23,7 @@ abstract final class IndeksTab {
 }
 
 /// Tab yang sedang aktif — dipegang provider supaya beranda bisa melompat ke
-/// daftar alat dengan saringan "lewat jadwal" dari kartu ringkasan.
+/// daftar sertifikat dari tautan "Lihat semua" di Beranda.
 final tabProvider = NotifierProvider<TabAktif, int>(TabAktif.new);
 
 class TabAktif extends Notifier<int> {
@@ -33,24 +33,9 @@ class TabAktif extends Notifier<int> {
   void pilih(int i) => state = i;
 }
 
-/// Saringan awal daftar alat di Beranda saat diatur dari luar (kartu / push) (`lewat` / `segera` /
-/// null = semua). Membawa nomor urut supaya mengetuk kartu yang SAMA dua kali
-/// (sesudah pengguna sempat mengganti saringan di tab Alat) tetap terasa —
-/// nilai yang sama persis tidak membangunkan pendengar.
-final saringanAlatAwalProvider =
-    NotifierProvider<SaringanAwal, ({String? saring, int urutan})>(
-      SaringanAwal.new,
-    );
-
-class SaringanAwal extends Notifier<({String? saring, int urutan})> {
-  @override
-  ({String? saring, int urutan}) build() => (saring: null, urutan: 0);
-
-  void atur(String? s) => state = (saring: s, urutan: state.urutan + 1);
-}
-
-/// Rangka empat tab: Beranda (alat + jatuh tempo), Sertifikat, Notifikasi,
-/// Akun. Riwayat kalibrasi per alat ada di Detail alat.
+/// Rangka empat tab: Beranda (ringkasan jatuh tempo, sertifikat terbaru,
+/// paket), Sertifikat, Notifikasi, Akun. Daftar alat dibuka dari Beranda;
+/// riwayat sertifikat per alat ada di Detail alat.
 ///
 /// Push yang diketuk dibuka DI SINI, karena di sinilah pengguna pasti sudah
 /// masuk dan perusahaannya sudah terpilih.
@@ -178,7 +163,7 @@ class _RangkaState extends ConsumerState<Rangka> {
 }
 
 /// Buka layar tujuan sebuah push. Tanpa tujuan yang dikenal: pengingat
-/// jadwal → Beranda (alat diurutkan paling mendesak); selain itu → tab
+/// jadwal → Beranda (ringkasan jatuh tempo di atas); selain itu → tab
 /// Notifikasi, supaya ketukan tidak pernah berakhir di jalan buntu.
 void bukaTautanPush(BuildContext context, WidgetRef ref, TautanPush t) {
   final layar = layarUntukTautan(t.tipe, t.id);
@@ -187,7 +172,6 @@ void bukaTautanPush(BuildContext context, WidgetRef ref, TautanPush t) {
   if (layar != null) {
     navigator.push(MaterialPageRoute<void>(builder: (_) => layar));
   } else if (t.kategori == 'pelanggan_alat_jatuh_tempo') {
-    ref.read(saringanAlatAwalProvider.notifier).atur(null);
     ref.read(tabProvider.notifier).pilih(IndeksTab.beranda);
   } else {
     ref.read(tabProvider.notifier).pilih(IndeksTab.notifikasi);

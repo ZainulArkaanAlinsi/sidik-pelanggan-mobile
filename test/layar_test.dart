@@ -18,6 +18,7 @@ import 'package:sidik_pelanggan/providers/perangkat_provider.dart';
 import 'package:sidik_pelanggan/providers/push_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/screens/alat/alat_detail_screen.dart';
+import 'package:sidik_pelanggan/screens/alat/daftar_alat_screen.dart';
 import 'package:sidik_pelanggan/screens/beranda/beranda_screen.dart';
 import 'package:sidik_pelanggan/screens/rangka.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_screen.dart';
@@ -94,6 +95,18 @@ class _Palsu extends LayananPelanggan {
       _alat(3, 'Termometer', 200, 'terkalibrasi'),
     ]);
   }
+
+  /// Hitungan Beranda untuk 31–90 hari (`GET /alat` penuh); di sini sama
+  /// dengan isi daftar.
+  @override
+  Future<List<Alat>> alatMenujuJatuhTempo({
+    int sampaiHari = 90,
+    int maksHalaman = 10,
+  }) async => [
+    _alat(1, 'Jangka Sorong', -3, 'lewat_jadwal'),
+    _alat(2, 'Timbangan', 12, 'mendekati_jadwal'),
+    _alat(3, 'Termometer', 200, 'terkalibrasi'),
+  ];
 
   @override
   Future<Alat> alat(int id) async => Alat.dariJson({
@@ -187,15 +200,21 @@ void main() {
     await inter.load();
   });
 
-  testWidgets('Beranda: angka jatuh tempo, daftar alat dengan hitung mundur', (
+  testWidgets('Beranda: kotak jatuh tempo dan alat paling mendesak', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(_bungkus(const BerandaScreen(), _Palsu()));
     await tester.pumpAndSettle();
 
     expect(find.text('PT Contoh'), findsOneWidget);
-    // aman = 6 - 1 - 2
-    expect(find.text('3'), findsWidgets);
+    // Kotak: lewat jadwal 1, dalam 30 hari 2 (angka server).
+    expect(find.text('Lewat jadwal'), findsWidgets);
+    expect(find.text('Dalam 30 hari'), findsOneWidget);
+    // Alat yang butuh perhatian, dengan hitung mundur.
     expect(find.text('Jangka Sorong'), findsOneWidget);
     expect(find.textContaining('Lewat 3 hari'), findsOneWidget);
     expect(find.textContaining('12 hari lagi'), findsOneWidget);
@@ -204,11 +223,11 @@ void main() {
     expect(find.textContaining('Permintaan'), findsNothing);
   });
 
-  testWidgets('Beranda: saringan "Lewat jadwal" mengirim saring=lewat', (
+  testWidgets('Daftar alat: chip "Lewat jadwal" mengirim saring=lewat', (
     tester,
   ) async {
     final palsu = _Palsu();
-    await tester.pumpWidget(_bungkus(const BerandaScreen(), palsu));
+    await tester.pumpWidget(_bungkus(const DaftarAlatScreen(), palsu));
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(ChoiceChip, 'Lewat jadwal'));

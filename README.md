@@ -96,9 +96,10 @@ relatif terhadap `/api/pelanggan/v1`.
 |---|---|
 | Gerbang (pemeliharaan / versi wajib) | `GET /app/status` |
 | Akun / akun belum aktif / pilih perusahaan | `GET /saya` |
-| Beranda: ringkasan jatuh tempo dan daftar alat dengan pencarian/saringan | `GET /beranda`, `GET /alat` |
-| Detail alat dan riwayat sertifikatnya | `GET /alat/{id}` |
-| Sertifikat, Detail, Unduh PDF | `GET /sertifikat`, `GET /sertifikat/{id}`, `GET /sertifikat/{id}/unduh` |
+| Beranda: kotak jatuh tempo 30/60/90 hari, alat mendesak, sertifikat terbaru, paket berjalan | `GET /beranda`, `GET /alat?per_page=100` (hitungan 31–90 hari) |
+| Alat saya: semua alat dengan status, pencarian, saringan jatuh tempo | `GET /alat` |
+| Detail alat dan riwayat sertifikat (garis waktu) | `GET /alat/{id}` |
+| Sertifikat, Detail, Lihat PDF di aplikasi, Unduh PDF | `GET /sertifikat`, `GET /sertifikat/{id}`, `GET /sertifikat/{id}/unduh` |
 | Notifikasi dan jumlah belum dibaca | `GET /notifikasi`, `GET /notifikasi/jumlah` |
 | Bantuan & kontak / privasi & ketentuan | `GET /app/info` (tautan dibuka di aplikasi luar/peramban) |
 
@@ -120,7 +121,15 @@ oleh `test/guard_tulis_test.dart`:
   data; `lib/providers/sinkron_provider.dart` menarik ulang semua layar
   waktu aplikasi kembali ke layar depan dan waktu push masuk.
 - **Tidak ada logika bisnis di HP.** Status jatuh tempo, tahap paket, dan
-  kepemilikan dihitung server. Aplikasi hanya menampilkan.
+  kepemilikan dihitung server. Aplikasi hanya menampilkan. Dua pengecualian
+  tertulis, sementara sampai server mengirimnya: kelompok alat 31–90 hari dan
+  status masa berlaku sertifikat di riwayat alat (`docs/kebutuhan-api-pelanggan.md` §5);
+  "hari ini" untuk yang kedua dihitung dari payload server, bukan jam HP.
+- **Istilah status: bukan "kedaluwarsa".** Keputusan K3 (API `BR-09`, ISO/IEC
+  17025 §7.8.4.3) masih terbuka, jadi alat yang terlambat tampil "Lewat jadwal"
+  dan sertifikat yang tanggalnya lewat "Masa berlaku berakhir". Semua kata
+  status ada di satu tempat, `StatusBerlaku.label`; alasannya di
+  `docs/kebutuhan-api-pelanggan.md` §5c.
 - **`customer_id` tidak pernah dikirim.** Perusahaan aktif dipilih lewat
   header `X-Perusahaan-Id`, dan server tetap memeriksa keanggotaannya.
 - **Token di penyimpanan terenkripsi** (`flutter_secure_storage`), bukan

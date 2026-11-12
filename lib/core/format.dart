@@ -19,7 +19,8 @@ abstract final class Format {
       t == null ? kosong : _tanggalJam.format(t);
 
   /// "12 hari lagi" / "Kalibrasi ulang hari ini" / "Lewat 3 hari".
-  /// Istilahnya "jadwal kalibrasi ulang", bukan "kadaluarsa" (BR-09).
+  /// Istilahnya "jadwal kalibrasi ulang", bukan "kedaluwarsa" (BR-09, K3):
+  /// kata-kata status ada di satu tempat, `StatusBerlaku.label`.
   static String sisaHari(int? hari) {
     if (hari == null) return 'Belum ada jadwal kalibrasi ulang';
     if (hari == 0) return 'Kalibrasi ulang hari ini';

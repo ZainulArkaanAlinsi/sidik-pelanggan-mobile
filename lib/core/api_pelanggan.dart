@@ -226,21 +226,30 @@ class ApiPelanggan {
     );
   }
 
+  /// Batas ukuran satu berkas unduhan: 25 MB. Sertifikat dompdf beberapa ratus
+  /// KB; jawaban sebesar ini berarti salah (proxy, halaman galat, serangan) dan
+  /// tidak boleh memenuhi memori HP murah.
+  static const batasUnduhByte = 25 * 1024 * 1024;
+
   /// Unduh berkas (PDF sertifikat) sebagai byte — lewat header Bearer yang
   /// sama. Tidak bisa diserahkan ke peramban: peramban tidak membawa token.
-
+  ///
+  /// Untuk `terima: application/pdf` (bawaan) jawaban 2xx TETAP ditolak kalau
+  /// bukan PDF sungguhan: `Content-Type` harus `application/pdf` DAN isinya
+  /// diawali `%PDF-`. Halaman HTML dari proxy/captive portal atau jawaban salah
+  /// lain tidak boleh disimpan sebagai `.pdf` lalu diserahkan ke penampil.
+  /// Ukuran dibatasi [maksByte]: dibaca bertahap dan dihentikan begitu
+  /// melewati batas, bukan ditampung dulu lalu diperiksa.
   Future<Uint8List> unduh(
     String jalur, {
     String terima = 'application/pdf',
+    int maksByte = batasUnduhByte,
   }) async {
-    final http.Response r;
+    final permintaan = http.Request('GET', _uri(jalur))
+      ..headers.addAll({..._header(IdUnik.uuid4()), 'Accept': terima});
+    final http.StreamedResponse r;
     try {
-      r = await _klien
-          .get(
-            _uri(jalur),
-            headers: {..._header(IdUnik.uuid4()), 'Accept': terima},
-          )
-          .timeout(const Duration(seconds: 60));
+      r = await _klien.send(permintaan).timeout(const Duration(seconds: 60));
     } on SocketException {
       saatOffline?.call(null);
       throw GalatApi.jaringan();
@@ -251,8 +260,109 @@ class ApiPelanggan {
       throw GalatApi.jaringan();
     }
     saatOnline?.call();
-    if (r.statusCode >= 200 && r.statusCode < 300) return r.bodyBytes;
-    throw await _galatDari(r, pesan404Server: true);
+
+    if (r.statusCode < 200 || r.statusCode >= 300) {
+      // Badan galat kecil (JSON); aman dibaca utuh.
+      final badan = await _jagaJaringan(() => http.Response.fromStream(r));
+      throw await _galatDari(badan, pesan404Server: true);
+    }
+
+    final harusPdf = terima == 'application/pdf';
+    if (harusPdf && !_jenisBolehPdf(r.headers['content-type'])) {
+      _lepas(r);
+      throw _galatBerkas(r.statusCode, 'berkas_bukan_pdf', _pesanBukanPdf);
+    }
+    final panjang = r.contentLength;
+    if (panjang != null && panjang > maksByte) {
+      _lepas(r);
+      throw _galatBerkas(
+        r.statusCode,
+        'berkas_terlalu_besar',
+        _pesanTerlaluBesar(maksByte),
+      );
+    }
+
+    final isi = BytesBuilder(copy: false);
+    Future<void> baca() async {
+      await for (final potong in r.stream) {
+        isi.add(potong);
+        // Melempar dari dalam `await for` membatalkan langganan: sisa jawaban
+        // tidak ikut diunduh.
+        if (isi.length > maksByte) {
+          throw _galatBerkas(
+            r.statusCode,
+            'berkas_terlalu_besar',
+            _pesanTerlaluBesar(maksByte),
+          );
+        }
+      }
+    }
+
+    // Batas waktu untuk SELURUH badan (sama dengan batas unduhan sebelumnya).
+    await _jagaJaringan(() => baca().timeout(const Duration(seconds: 60)));
+    final byte = isi.takeBytes();
+    if (harusPdf && !_diawaliPdf(byte)) {
+      throw _galatBerkas(r.statusCode, 'berkas_bukan_pdf', _pesanBukanPdf);
+    }
+    return byte;
+  }
+
+  static const _pesanBukanPdf =
+      'Berkas yang diterima bukan PDF, jadi tidak dibuka. Coba lagi; kalau '
+      'berulang, hubungi PT Sidik.';
+
+  static String _pesanTerlaluBesar(int maksByte) =>
+      'Berkas PDF terlalu besar untuk dibuka di HP ini (maksimal '
+      '${maksByte >= 1024 * 1024 ? '${maksByte ~/ (1024 * 1024)} MB' : '$maksByte byte'}).';
+
+  GalatApi _galatBerkas(int status, String kode, String pesan) =>
+      GalatApi(status: status, kode: kode, pesan: pesan);
+
+  /// `Content-Type` yang masuk akal untuk PDF: `application/pdf`, atau jenis
+  /// biner umum yang dikirim penyimpanan berkas yang tidak mendeteksi jenis
+  /// (mis. S3 tanpa metadata). Halaman HTML, JSON, teks, dan gambar ditolak.
+  /// Jenis umum pun TETAP harus lolos pemeriksaan isi `%PDF-`.
+  static bool _jenisBolehPdf(String? jenis) {
+    final j = (jenis ?? '').split(';').first.trim().toLowerCase();
+    return const {
+      'application/pdf',
+      'application/x-pdf',
+      'application/octet-stream',
+      'binary/octet-stream',
+    }.contains(j);
+  }
+
+  /// Isi PDF sungguhan selalu diawali `%PDF-`.
+  static bool _diawaliPdf(Uint8List b) =>
+      b.length >= 5 &&
+      b[0] == 0x25 &&
+      b[1] == 0x50 &&
+      b[2] == 0x44 &&
+      b[3] == 0x46 &&
+      b[4] == 0x2D;
+
+  /// Hentikan pembacaan jawaban yang sudah ditolak (menutup sambungannya).
+  /// Tidak ditunggu: membatalkan langganan hanya usaha terbaik, dan menunggunya
+  /// bisa macet pada klien tertentu.
+  void _lepas(http.StreamedResponse r) {
+    try {
+      unawaited(r.stream.listen((_) {}).cancel());
+    } catch (_) {}
+  }
+
+  /// Galat jaringan saat membaca badan jawaban → [GalatApi.jaringan].
+  Future<T> _jagaJaringan<T>(Future<T> Function() aksi) async {
+    try {
+      return await aksi();
+    } on SocketException {
+      saatOffline?.call(null);
+      throw GalatApi.jaringan();
+    } on TimeoutException {
+      throw GalatApi.jaringan();
+    } on http.ClientException {
+      saatOffline?.call(null);
+      throw GalatApi.jaringan();
+    }
   }
 
   Future<Map<String, dynamic>> _kirim(

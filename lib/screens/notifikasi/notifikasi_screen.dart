@@ -115,8 +115,7 @@ class NotifikasiScreen extends ConsumerWidget {
                     context,
                   ).push(MaterialPageRoute<void>(builder: (_) => tujuan));
                 } else if (n.kategori == 'pelanggan_alat_jatuh_tempo') {
-                  // Pengingat jadwal → daftar alat di Beranda.
-                  ref.read(saringanAlatAwalProvider.notifier).atur(null);
+                  // Pengingat jadwal → ringkasan jatuh tempo di Beranda.
                   ref.read(tabProvider.notifier).pilih(IndeksTab.beranda);
                   Navigator.of(context).popUntil((r) => r.isFirst);
                 }

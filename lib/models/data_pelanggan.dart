@@ -1,4 +1,5 @@
 import '../core/format.dart';
+import 'paket.dart';
 
 /// Bentuk data (`/beranda`, `/alat`, `/sertifikat`, `/notifikasi`) — cermin resource `App\Http\Resources\Pelanggan\*` di API.
 
@@ -61,22 +62,6 @@ enum StatusKalibrasi {
       'nonaktif' => nonaktif,
       _ => adaSertifikat ? terkalibrasi : belumPernah,
     },
-  };
-
-  /// Label 04-UI-UX §5. [hari] = `hari_ke_jatuh_tempo` (negatif = lewat).
-  String label([int? hari]) => switch (this) {
-    terkalibrasi => 'Terkalibrasi',
-    mendekati =>
-      hari == null
-          ? 'Mendekati jadwal'
-          : hari <= 0
-          ? 'Kalibrasi ulang hari ini'
-          : 'Kalibrasi ulang dalam $hari hari',
-    lewat =>
-      hari == null || hari >= 0 ? 'Lewat jadwal' : 'Lewat jadwal ${-hari} hari',
-    belumPernah => 'Belum pernah dikalibrasi',
-    dalamProses => 'Sedang diproses',
-    nonaktif => 'Tidak aktif',
   };
 }
 
@@ -141,8 +126,17 @@ class Alat {
   final List<Sertifikat> riwayat;
   final String? catatan;
 
-  /// Label status lengkap dengan sisa hari ("Kalibrasi ulang dalam 12 hari").
-  String get labelStatus => status.label(hariKeJatuhTempo);
+  /// "Hari ini" menurut SERVER saat data alat ini dikirim: tanggal jatuh tempo
+  /// dikurangi `hari_ke_jatuh_tempo` (keduanya dihitung server di zona
+  /// waktunya). `null` kalau alat tidak punya jadwal. Dipakai sebagai acuan
+  /// status masa berlaku sertifikat supaya tidak bergantung pada jam HP
+  /// (BR-08: hari ini Asia/Jakarta); jam HP hanya cadangan.
+  DateTime? get hariIniServer {
+    final tempo = jatuhTempo;
+    final hari = hariKeJatuhTempo;
+    if (tempo == null || hari == null) return null;
+    return DateTime(tempo.year, tempo.month, tempo.day - hari);
+  }
 
   String get merkModel =>
       [merk, model].where((s) => s != null && s.isNotEmpty).join(' · ');
@@ -327,6 +321,9 @@ class Beranda {
     required this.segeraJatuhTempo,
     required this.notifikasiBelumDibaca,
     required this.jendelaHari,
+    this.jumlahPaketBerjalan = 0,
+    this.sertifikatTerbaru = const [],
+    this.paketBerjalan = const [],
   });
 
   final String namaPerusahaan;
@@ -335,6 +332,17 @@ class Beranda {
   final int segeraJatuhTempo;
   final int notifikasiBelumDibaca;
   final int jendelaHari;
+
+  /// `ringkasan.paket_berjalan`: semua paket yang belum selesai, termasuk yang
+  /// tidak ikut di [paketBerjalan] (server membatasi daftarnya tiga).
+  final int jumlahPaketBerjalan;
+
+  /// `sertifikat_terbaru[]` — yang masih berlaku saja, paling baru di atas
+  /// (server membatasi lima). Tanpa riwayat: itu tugas layar Sertifikat.
+  final List<Sertifikat> sertifikatTerbaru;
+
+  /// `paket_berjalan[]` — paket (order) yang masih dikerjakan lab.
+  final List<Paket> paketBerjalan;
 
   /// Alat yang jadwalnya aman = sisanya (server tidak punya saringan `aman`).
   int get aman {
@@ -352,6 +360,16 @@ class Beranda {
       segeraJatuhTempo: _int(r['segera_jatuh_tempo']) ?? 0,
       notifikasiBelumDibaca: _int(r['notifikasi_belum_dibaca']) ?? 0,
       jendelaHari: _int((badan['meta'] as Map?)?['jendela_segera_hari']) ?? 30,
+      jumlahPaketBerjalan: _int(r['paket_berjalan']) ?? 0,
+      // Server lama (atau jawaban tanpa bagian ini) = daftar kosong, bukan galat.
+      sertifikatTerbaru: [
+        for (final s in (d['sertifikat_terbaru'] as List? ?? const []))
+          Sertifikat.dariJson(s as Map<String, dynamic>),
+      ],
+      paketBerjalan: [
+        for (final p in (d['paket_berjalan'] as List? ?? const []))
+          Paket.dariJson(p as Map<String, dynamic>),
+      ],
     );
   }
 }

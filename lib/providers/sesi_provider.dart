@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/api_pelanggan.dart';
 import '../core/penyimpan_cache.dart';
+import '../core/penyimpan_pratinjau.dart';
 import '../core/penyimpan_sesi.dart';
 import '../models/akun.dart';
 import '../services/layanan_pelanggan.dart';
@@ -14,6 +17,12 @@ final penyimpanSesiProvider = Provider<PenyimpanSesi>((ref) => PenyimpanSesi());
 /// Cache jawaban `GET` (NFR-06) — folder cache aplikasi.
 final penyimpanCacheProvider = Provider<PenyimpanCache>(
   (ref) => PenyimpanCacheBerkas.cache(),
+);
+
+/// Salinan sementara PDF untuk pratinjau — folder cache aplikasi, dibuang
+/// setiap sesi berakhir atau perusahaan aktif berganti ([SesiController]).
+final penyimpanPratinjauProvider = Provider<PenyimpanPratinjau>(
+  (ref) => PenyimpanPratinjau(),
 );
 
 /// Satu `ApiPelanggan` untuk seluruh aplikasi. Token & perusahaan aktif
@@ -29,7 +38,10 @@ final apiProvider = Provider<ApiPelanggan>((ref) {
 });
 
 final layananProvider = Provider<LayananPelanggan>(
-  (ref) => LayananPelanggan(ref.watch(apiProvider)),
+  (ref) => LayananPelanggan(
+    ref.watch(apiProvider),
+    penyimpan: ref.watch(penyimpanPratinjauProvider),
+  ),
 );
 
 /// Versi & nomor build terpasang (`package_info_plus`).
@@ -147,6 +159,10 @@ class SesiController extends AsyncNotifier<Sesi?> {
       final sesi = _sesiUntuk(akun, _api.perusahaanId);
       _pasangPerusahaan(sesi.perusahaanId);
       _daftarkanPush();
+      // Setiap aplikasi dibuka: PDF sementara dari proses sebelumnya (dan sisa
+      // unduhan versi lama di folder Dokumen) dibuang. Pratinjau memang
+      // sementara; yang dibuka lagi diunduh ulang.
+      unawaited(ref.read(penyimpanPratinjauProvider).bersihkan());
       return sesi;
     } on GalatApi catch (e) {
       if (e.tokenTidakBerlaku) {
@@ -154,6 +170,9 @@ class SesiController extends AsyncNotifier<Sesi?> {
         _api.token = null;
         _api.perusahaanId = null;
         _api.lingkupCache = null;
+        // Token tersimpan sudah tidak berlaku (dicabut di HP lain, akun
+        // dinonaktifkan): PDF dari sesi itu juga tidak boleh tertinggal.
+        await ref.read(penyimpanPratinjauProvider).bersihkan();
         return null;
       }
       rethrow;
@@ -201,6 +220,9 @@ class SesiController extends AsyncNotifier<Sesi?> {
     final sesi = _sesiUntuk(baru.akun, null);
     _pasangPerusahaan(sesi.perusahaanId);
     ref.read(sesiBerakhirProvider.notifier).atur(false);
+    // Sisa pratinjau dari sesi sebelumnya (mis. aplikasi dimatikan paksa)
+    // tidak boleh terbawa ke akun yang baru masuk.
+    unawaited(ref.read(penyimpanPratinjauProvider).bersihkan());
     state = AsyncData(sesi);
     _daftarkanPush();
   }
@@ -236,6 +258,8 @@ class SesiController extends AsyncNotifier<Sesi?> {
     final s = state.value;
     if (s == null) return;
     _pasangPerusahaan(customerId);
+    // PDF milik perusahaan sebelumnya tidak boleh tertinggal di HP.
+    unawaited(ref.read(penyimpanPratinjauProvider).bersihkan());
     state = AsyncData(Sesi(akun: s.akun, perusahaanId: customerId));
   }
 
@@ -283,6 +307,10 @@ class SesiController extends AsyncNotifier<Sesi?> {
     _api.token = null;
     _api.perusahaanId = null;
     _api.lingkupCache = null;
+    // PDF sertifikat selalu dibuang, juga saat sesi berakhir sendiri: berbeda
+    // dari cache jawaban, tidak ada manfaat menyimpannya untuk akun yang
+    // belum tentu masuk lagi.
+    await ref.read(penyimpanPratinjauProvider).bersihkan();
     if (hapusData) {
       await ref.read(penyimpanCacheProvider).hapusSemua();
     }

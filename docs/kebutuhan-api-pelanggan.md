@@ -102,3 +102,106 @@ Dua hal di sisi server yang sekarang dikirim ke SEMUA peran:
 
 Keduanya perubahan additive/penyempit pada data, bukan pada bentuk; periksa
 `KontrakResponsPelangganTest` dan fixture `tests/Fixtures/pelanggan/anggota.json`.
+
+## 5. Beranda ringkasan, status alat, riwayat, pratinjau PDF (12 Nov 2026)
+
+Fitur 1–4 rencana §14.1 dibangun **tanpa rute baru**: hanya memakai
+`GET /beranda`, `GET /alat` (daftar dan `{id}`), `GET /sertifikat/{id}`, dan
+`GET /sertifikat/{id}/unduh`. Dua hal dihitung di aplikasi karena server belum
+mengirimnya; keduanya usulan additive (tidak merusak v1).
+
+### a. Hitungan alat jatuh tempo 31–60 dan 61–90 hari
+
+Server hanya punya `ringkasan.lewat_jatuh_tempo` dan `ringkasan.segera_jatuh_tempo`
+(0–30 hari, `meta.jendela_segera_hari`) dan saringan `GET /alat?saring=segera|lewat`.
+Beranda butuh kotak 30/60/90 hari. Untuk 31–60 dan 61–90 hari aplikasi sekarang
+menarik `GET /alat?per_page=100` (halaman 1, lanjut hanya bila halaman itu masih
+punya alat dalam jendela 90 hari, paling banyak 10 halaman) dan mengelompokkan
+dari `hari_ke_jatuh_tempo` kiriman server, setiap Beranda dibuka atau ditarik.
+Aman untuk 51 alat; boros untuk perusahaan dengan ratusan alat.
+
+Usulan: tambahkan ke `data.ringkasan` di `GET /beranda`
+`jatuh_tempo_31_60` dan `jatuh_tempo_61_90` (hitungan eksklusif, alat aktif
+dengan status dinilai seperti `segera_jatuh_tempo`), dan terima
+`saring=hari_60` / `saring=hari_90` pada `GET /alat` supaya daftarnya juga
+disaring server. Setelah ada, `alatMenujuJatuhTempo` dan `jatuhTempoProvider`
+di aplikasi dihapus.
+
+### b. Status masa berlaku sertifikat
+
+Resource sertifikat hanya mengirim `status` dokumen (`berlaku|digantikan|dibatalkan`)
+dan `berlaku_sampai`. Garis waktu riwayat per alat perlu "Berlaku / Segera jatuh
+tempo / Masa berlaku berakhir" per sertifikat, jadi aplikasi menghitungnya
+(`StatusBerlaku.dariSertifikat`, jendela "segera" 30 hari tetap).
+
+"Hari ini" untuk hitungan itu BUKAN jam HP (BR-08 mewajibkan hari ini
+Asia/Jakarta; jam HP yang mundur membuat sertifikat lewat tampil "Berlaku").
+Aplikasi memakai jangkar dari server di payload `GET /alat/{id}`:
+`tanggal_jatuh_tempo` dikurangi `hari_ke_jatuh_tempo` = tanggal "hari ini"
+menurut server saat data dikirim (`Alat.hariIniServer`). Jam HP hanya cadangan
+untuk alat tanpa jadwal jatuh tempo (payload tidak membawa jangkar). Data dari
+cache offline membawa jangkar hari ia diambil, sama dengan sisa hari yang
+ditampilkan di sebelahnya.
+
+Usulan (tanpa mengubah API sekarang): tambahkan `status_masa_berlaku`
+(`berlaku|segera|berakhir`) dan `hari_ke_berlaku_sampai` pada
+`SertifikatPelangganResource`, dihitung server dengan jendela yang sama dengan
+`status_alat` (`PengingatJatuhTempoPelanggan::TANGGA_HARI[0]`). Setelah ada,
+hitungan di aplikasi dan jangkar di atas dihapus, termasuk untuk alat tanpa
+jadwal.
+
+### c. Istilah: "Kedaluwarsa" DITAHAN (keputusan K3 masih terbuka)
+
+Rencana §14.1 menyebut status "kedaluwarsa". Itu bertabrakan dengan keputusan K3
+yang masih terbuka di repo API: `docs/pelanggan/02-SRS.md` BR-09,
+`docs/pelanggan/00-BACA-DULU.md` (baris 50 dan 62), dan risiko R-F02. ISO/IEC
+17025 §7.8.4.3 melarang sertifikat atau label memuat rekomendasi interval
+kalibrasi ulang kecuali disepakati dengan pelanggan; "kedaluwarsa" terbaca
+sebagai lab menyatakan sertifikat tidak berlaku lagi. Di aplikasi pelanggan yang
+ada adalah "jadwal kalibrasi ulang / jatuh tempo" (tanggal yang ditentukan
+admin), dan kata "kadaluarsa" tidak dipakai.
+
+Keputusan sementara (default aman, sampai K3 dijawab):
+
+| Untuk | Kata di layar | Asal |
+|---|---|---|
+| Alat yang jadwalnya lewat | **Lewat jadwal** | sama dengan kode server `lewat_jadwal` |
+| Sertifikat yang tanggalnya lewat | **Masa berlaku berakhir** | `StatusBerlaku.berakhir` |
+
+Semua kata status ditulis di SATU tempat, `StatusBerlaku.label`
+(`lib/models/status_berlaku.dart`); lencana, chip, kotak ringkasan, dan teks
+kosong membacanya dari sana (`FilterAlat.label` hanya menambah rentang hari).
+Bila K3 memutuskan lain, ubah string itu saja. `test/beranda_ringkasan_test.dart`
+dan `test/alat_status_riwayat_test.dart` menjaga agar kata "kedaluwarsa" tidak
+muncul di layar.
+
+### d. Pratinjau PDF dicatat sebagai unduhan
+
+Pratinjau di aplikasi memanggil `GET /sertifikat/{id}/unduh` (pratinjau diunduh
+ulang tiap dibuka supaya sertifikat yang baru dibatalkan tidak tampil dari
+salinan lama). Server mencatatnya sebagai aksi audit `ACTION_DIUNDUH_PELANGGAN` ("Diunduh dari
+aplikasi pelanggan") dan membatasi 30 permintaan/menit/pengguna
+(`pelanggan-unduh`). Bila lab perlu membedakan melihat dari mengunduh, butuh
+parameter (mis. `?tujuan=pratinjau`) dan aksi audit terpisah.
+
+### e. Riwayat per alat dibatasi 50
+
+`GET /alat/{id}` mengirim paling banyak 50 sertifikat di `riwayat_sertifikat`
+dan aplikasi menampilkan semuanya. Belum ada saringan alat di `GET /sertifikat`;
+bila ada alat dengan lebih dari 50 sertifikat, butuh `GET /sertifikat?alat_id=`.
+Tidak mendesak: data produksi saat ini 48 pelanggan dengan 51 alat seluruhnya.
+
+### f. Dicatat, belum dikerjakan (hasil tinjauan 12 Nov 2026)
+
+- **Audit tiap pratinjau** (butir d): usulan server `?tujuan=pratinjau` dengan
+  aksi audit terpisah dari unduhan.
+- **Paging hitungan 31–90 hari** (butir a): `alatMenujuJatuhTempo` membaca paling
+  banyak 10 halaman × 100 = 1000 alat; perusahaan dengan lebih banyak alat
+  terhitung kurang. Penyelesaiannya hitungan di server (butir a), bukan
+  menaikkan batas di aplikasi.
+- **`Content-Type` unduhan PDF**: aplikasi menerima `application/pdf` dan jenis
+  biner umum (`application/octet-stream`, `binary/octet-stream`) selama isinya
+  diawali `%PDF-`; jenis lain ditolak. Bila server memastikan selalu mengirim
+  `application/pdf` (disk `arsip` S3 tanpa metadata bisa mengirim octet-stream),
+  pelonggaran ini bisa dicabut di `ApiPelanggan._jenisBolehPdf`.
+

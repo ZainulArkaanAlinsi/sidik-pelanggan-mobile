@@ -1,9 +1,9 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../core/api_pelanggan.dart';
+import '../core/penyimpan_pratinjau.dart';
 import '../models/akun.dart';
 import '../models/anggota.dart';
 import '../models/data_pelanggan.dart';
@@ -70,19 +70,20 @@ class GalatBerkasPdf implements Exception {
 /// kepemilikan dihitung SERVER. Aplikasi yang menghitung ulang sendiri pasti
 /// suatu hari berbeda pendapat dengan layar lab.
 class LayananPelanggan {
-  /// [folderDokumen] dan [pembukaBerkas] hanya untuk tes; bawaannya folder
-  /// dokumen aplikasi dan penampil PDF HP.
+  /// [penyimpan] = tempat PDF disimpan sementara (cache aplikasi, dibuang saat
+  /// keluar akun / ganti perusahaan); [pembukaBerkas] = penampil PDF HP.
+  /// Bawaan keduanya untuk produksi; tes menggantinya.
   LayananPelanggan(
     this.api, {
-    Future<Directory> Function()? folderDokumen,
+    PenyimpanPratinjau? penyimpan,
     Future<OpenResult> Function(String path)? pembukaBerkas,
-  }) : _folderDokumen = folderDokumen ?? getApplicationDocumentsDirectory,
+  }) : _penyimpan = penyimpan ?? PenyimpanPratinjau(),
        _bukaBerkas =
            pembukaBerkas ??
            ((path) => OpenFilex.open(path, type: 'application/pdf'));
 
   final ApiPelanggan api;
-  final Future<Directory> Function() _folderDokumen;
+  final PenyimpanPratinjau _penyimpan;
   final Future<OpenResult> Function(String path) _bukaBerkas;
 
   // ── Tanpa token ──────────────────────────────────────────────────────
@@ -233,6 +234,36 @@ class LayananPelanggan {
     (await api.get('/alat/$id'))['data'] as Map<String, dynamic>,
   );
 
+  /// Alat yang sudah lewat jadwal atau jatuh tempo dalam [sampaiHari] hari —
+  /// bahan hitungan Beranda untuk kelompok 31–60 dan 61–90 hari, yang belum
+  /// punya saringan di server (`saring` hanya `segera` = 30 hari dan `lewat`).
+  ///
+  /// Memakai `GET /alat` yang sama dengan daftar alat, 100 per halaman. Server
+  /// mengurutkan jatuh tempo menaik (yang paling lewat dulu, alat tanpa jadwal
+  /// terakhir), jadi paging berhenti begitu satu halaman penuh sudah di luar
+  /// jendela. [maksHalaman] menjaga agar perusahaan dengan alat sangat banyak
+  /// tidak menarik tanpa batas. Hasilnya SEMUA alat dari halaman yang dibaca
+  /// (belum disaring); `hari_ke_jatuh_tempo` tetap hitungan server.
+  Future<List<Alat>> alatMenujuJatuhTempo({
+    int sampaiHari = 90,
+    int maksHalaman = 10,
+  }) async {
+    final hasil = <Alat>[];
+    for (var h = 1; h <= maksHalaman; h++) {
+      final hal = Halaman.dariJson(
+        await api.get('/alat', query: {'page': '$h', 'per_page': '100'}),
+        Alat.dariJson,
+      );
+      final dalamJendela = hal.isi.where((a) {
+        final hari = a.hariKeJatuhTempo;
+        return hari != null && hari <= sampaiHari;
+      });
+      hasil.addAll(hal.isi);
+      if (dalamJendela.isEmpty || !hal.adaLagi) break;
+    }
+    return hasil;
+  }
+
   Future<Halaman<Sertifikat>> daftarSertifikat({
     String? cari,
     bool termasukDigantikan = false,
@@ -253,8 +284,17 @@ class LayananPelanggan {
     (await api.get('/sertifikat/$id'))['data'] as Map<String, dynamic>,
   );
 
-  /// Unduh PDF ke folder dokumen aplikasi, lalu buka dengan penampil PDF HP.
-  /// Berkas yang sama ditimpa kalau diunduh ulang — tidak menumpuk salinan.
+  /// Byte PDF sertifikat untuk pratinjau di dalam aplikasi. Jalurnya sama
+  /// dengan [unduhDanBukaPdf] (`ApiPelanggan.unduh`: header Authorization hanya
+  /// ke host API). Menyimpannya sementara = `PenyimpanPratinjau`.
+  Future<Uint8List> unduhPdf(Sertifikat s) =>
+      api.unduh('/sertifikat/${s.id}/unduh');
+
+  /// Unduh PDF ke cache aplikasi ([PenyimpanPratinjau]), lalu buka dengan
+  /// penampil PDF HP. Berkas yang sama ditimpa kalau diunduh ulang — tidak
+  /// menumpuk salinan. Dulu disimpan di folder Dokumen aplikasi dan tidak
+  /// pernah dibersihkan; sisa dari versi lama dibuang `PenyimpanPratinjau.
+  /// bersihkan`.
   ///
   /// Galat dipisah menurut tahapnya: gagal unduh/jaringan = [GalatApi] (dari
   /// [ApiPelanggan.unduh]); gagal menulis berkas atau tak ada aplikasi
@@ -263,12 +303,9 @@ class LayananPelanggan {
     final byte = await api.unduh('/sertifikat/${s.id}/unduh');
     final String path;
     try {
-      final folder = await _folderDokumen();
-      final nama =
-          'Sertifikat-${s.nomor.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '-')}.pdf';
-      final berkas = File('${folder.path}/$nama');
-      await berkas.writeAsBytes(byte, flush: true);
-      path = berkas.path;
+      // Cache aplikasi yang sama dengan pratinjau: dibuang saat keluar akun
+      // atau berganti perusahaan, dan namanya tidak memuat nomor sertifikat.
+      path = (await _penyimpan.simpan(s.id, byte)).path;
     } on Object {
       throw const GalatBerkasPdf(JenisGagalPdf.simpan);
     }
