@@ -9,7 +9,11 @@ import '../../widgets/sidik/sidik_permukaan.dart';
 import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
 import '../gerbang.dart';
+import '../paket/paket_screen.dart';
+import 'anggota_screen.dart';
 import 'bantuan_screen.dart';
+import 'ganti_sandi_screen.dart';
+import 'preferensi_notifikasi_screen.dart';
 
 /// Teks kaki Akun (S17): versi + build + ID pengguna, untuk dukungan.
 String teksVersi({
@@ -114,6 +118,48 @@ class AkunScreen extends ConsumerWidget {
               ),
             ),
           ],
+          const JudulSeksi('Perusahaan'),
+          Kertas(
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                children: [
+                  _MenuAkun(
+                    ikon: Icons.inventory_2_outlined,
+                    judul: 'Pelacakan paket',
+                    tujuan: const PaketScreen(),
+                  ),
+                  const Divider(height: 1, indent: 56),
+                  _MenuAkun(
+                    ikon: Icons.groups_outlined,
+                    judul: 'Anggota perusahaan',
+                    tujuan: const AnggotaScreen(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const JudulSeksi('Akun'),
+          Kertas(
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                children: [
+                  _MenuAkun(
+                    ikon: Icons.notifications_active_outlined,
+                    judul: 'Pengaturan notifikasi',
+                    tujuan: const PreferensiNotifikasiScreen(),
+                  ),
+                  const Divider(height: 1, indent: 56),
+                  _MenuAkun(
+                    ikon: Icons.lock_reset_outlined,
+                    judul: 'Ganti sandi',
+                    tujuan: const GantiSandiScreen(),
+                  ),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: jarak),
           Kertas(
             child: Material(
@@ -192,4 +238,27 @@ class AkunScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Satu baris menu di Akun yang membuka [tujuan].
+class _MenuAkun extends StatelessWidget {
+  const _MenuAkun({
+    required this.ikon,
+    required this.judul,
+    required this.tujuan,
+  });
+
+  final IconData ikon;
+  final String judul;
+  final Widget tujuan;
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: Icon(ikon),
+    title: Text(judul),
+    trailing: const Icon(Icons.chevron_right),
+    onTap: () => Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => tujuan)),
+  );
 }

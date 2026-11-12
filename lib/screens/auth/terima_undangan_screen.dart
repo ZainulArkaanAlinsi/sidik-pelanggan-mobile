@@ -8,6 +8,34 @@ import '../../widgets/sidik/sidik_tombol.dart';
 import '../../widgets/umum.dart';
 import '../akun/bantuan_screen.dart';
 
+/// Pesan untuk email undangan yang SUDAH punya akun. Sengaja tidak menyebut
+/// nama akun lama, perusahaan lain, atau nomor apa pun — hanya apa yang
+/// terjadi dan apa yang harus dilakukan kalau lupa sandi lama.
+class DialogAkunSudahAda extends StatelessWidget {
+  const DialogAkunSudahAda({super.key});
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    icon: const Icon(Icons.info_outline),
+    title: const Text('Email ini sudah punya akun'),
+    content: const SingleChildScrollView(
+      child: Text(
+        'Anda masuk ke akun SIDIK Pelanggan yang sudah ada, dan perusahaan '
+        'dari undangan ini ditambahkan ke akun itu.\n\n'
+        'Nama dan sandi yang baru Anda isi tidak dipakai: sandi Anda tetap '
+        'sandi akun yang lama. Kalau lupa, keluar lalu pilih "Lupa sandi?" '
+        'di layar Masuk.',
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Mengerti'),
+      ),
+    ],
+  );
+}
+
 /// Tukar kode undangan jadi akun. Satu layar, urutan kolom sama dengan yang
 /// diminta server (`TerimaUndanganRequest`), galat ditampilkan DI BAWAH
 /// kolomnya masing-masing.
@@ -47,7 +75,7 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
     });
     final navigator = Navigator.of(context);
     try {
-      await ref
+      final akunLama = await ref
           .read(sesiProvider.notifier)
           .terimaUndangan(
             email: _email.text,
@@ -58,6 +86,19 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
             sandi: _sandi.text,
             setujuSyarat: _setuju,
           );
+      // Email yang sudah punya akun dipakai TANPA membuat akun baru; isian
+      // nama & sandi diabaikan server. Beri tahu sebelum layar ini menyingkir
+      // — orang yang mengira sandinya baru saja diganti akan gagal masuk
+      // besok dan tidak tahu sebabnya.
+      if (akunLama && mounted) {
+        // Pemutar di tombol berhenti dulu: pesannya dibaca tanpa layar yang
+        // terlihat masih "memproses".
+        setState(() => _sibuk = false);
+        await showDialog<void>(
+          context: context,
+          builder: (_) => const DialogAkunSudahAda(),
+        );
+      }
       // Gerbang di akar aplikasi yang memindahkan ke beranda; layar ini
       // cukup menyingkir.
       navigator.popUntil((r) => r.isFirst);

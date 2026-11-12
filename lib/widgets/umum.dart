@@ -411,3 +411,33 @@ class KartuSertifikat extends StatelessWidget {
     );
   }
 }
+
+/// Lencana tahap paket. Teksnya dari server (label versi pelanggan); aplikasi
+/// hanya memilih nada & ikon untuk tiap kode tahap, dan kode yang tidak
+/// dikenal tampil netral — daftar tahap boleh bertambah tanpa merusak layar.
+StatusSidik statusPaket(String kode, String label) => switch (kode) {
+  'diterima' => StatusSidik(label, NadaStatus.draf, Icons.inbox_outlined),
+  'dikalibrasi' => StatusSidik(label, NadaStatus.tunggu, Icons.tune),
+  'perlu_diulang' => StatusSidik(label, NadaStatus.awas, Icons.replay),
+  'menunggu_pemeriksaan' || 'menunggu_pengesahan' => StatusSidik(
+    label,
+    NadaStatus.tunggu,
+    Icons.fact_check_outlined,
+  ),
+  'sertifikat_terbit' => StatusSidik(
+    label,
+    NadaStatus.lulus,
+    Icons.verified_outlined,
+  ),
+  'siap_diambil' => StatusSidik(
+    label,
+    NadaStatus.lulus,
+    Icons.inventory_2_outlined,
+  ),
+  'diserahkan' => StatusSidik(
+    label,
+    NadaStatus.lulus,
+    Icons.check_circle_outline,
+  ),
+  _ => StatusSidik(label, NadaStatus.draf, Icons.help_outline),
+};
