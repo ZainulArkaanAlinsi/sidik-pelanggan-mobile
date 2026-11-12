@@ -19,6 +19,15 @@ const _izinTulis = <String>{
   'DELETE /perangkat', // FCM token removal
   'POST /notifikasi/{x}/dibaca',
   'POST /notifikasi/dibaca-semua',
+  // Dasar tertulis: keputusan pemilik 20 Okt 2026 (docs/permintaan-user-7.md
+  // §53 di repo API): "Yang tetap: ganti sandi, PATCH/DELETE /saya,
+  // PUT /preferensi-notifikasi, kelola anggota PIC, perangkat push, tanda baca
+  // notifikasi, auth." Hanya tiga di bawah yang ada layarnya; sisanya
+  // (PATCH/DELETE /saya, undang/batalkan undangan) belum dibangun dan TIDAK
+  // masuk daftar sampai dibangun.
+  'POST /saya/ganti-sandi',
+  'PUT /preferensi-notifikasi',
+  'POST /anggota/{x}/nonaktifkan', // PIC utama saja; server yang menegakkan
 };
 
 /// Only file allowed to talk HTTP to OUR API.
@@ -113,6 +122,13 @@ void main() {
     expect(pelanggar, isEmpty, reason: 'write calls outside the allowlist');
     // Not vacuous: the scanner must see the known login/logout calls.
     expect(ditemukan, containsAll(['POST /auth/masuk', 'POST /auth/keluar']));
+    // ...and every route the allowlist grants must really be used by some
+    // screen's service call, so a stale grant cannot linger unnoticed.
+    expect(
+      _izinTulis.difference(ditemukan),
+      isEmpty,
+      reason: 'allowlist entries without a caller in lib/',
+    );
   });
 
   test('no equipment write route exists (PATCH /alat removed)', () {

@@ -208,7 +208,9 @@ class SesiController extends AsyncNotifier<Sesi?> {
   Future<void> masuk(String email, String sandi) async =>
       _mulai(await _layanan.masuk(email, sandi));
 
-  Future<void> terimaUndangan({
+  /// `true` kalau email undangan ternyata sudah punya akun (dipakai akun lama,
+  /// isian nama & sandi diabaikan server) — layar memberi tahu penggunanya.
+  Future<bool> terimaUndangan({
     required String email,
     required String kode,
     required String nama,
@@ -216,8 +218,8 @@ class SesiController extends AsyncNotifier<Sesi?> {
     String? jabatan,
     required String sandi,
     required bool setujuSyarat,
-  }) async => _mulai(
-    await _layanan.terimaUndangan(
+  }) async {
+    final baru = await _layanan.terimaUndangan(
       email: email,
       kode: kode,
       nama: nama,
@@ -225,8 +227,10 @@ class SesiController extends AsyncNotifier<Sesi?> {
       jabatan: jabatan,
       sandi: sandi,
       setujuSyarat: setujuSyarat,
-    ),
-  );
+    );
+    await _mulai(baru);
+    return baru.akunSudahAda;
+  }
 
   void pilihPerusahaan(int customerId) {
     final s = state.value;
@@ -244,6 +248,12 @@ class SesiController extends AsyncNotifier<Sesi?> {
   }
 
   Future<void> keluar() async {
+    // Klien harus memegang token yang tersimpan supaya `POST /auth/keluar`
+    // benar-benar mencabutnya di server, juga bila pemulihan sesi (build) belum
+    // sempat memasangnya — mis. keluar dari layar gerbang versi minimum.
+    try {
+      _api.token ??= await _penyimpan.token();
+    } catch (_) {}
     // Urutan penting: cabut push SELAGI token masih berlaku, baru keluar.
     await PushPelanggan.cabut(_layanan);
     try {
@@ -279,3 +289,15 @@ class SesiController extends AsyncNotifier<Sesi?> {
     state = const AsyncData(null);
   }
 }
+
+/// Ada token tersimpan di HP ini? Untuk layar yang tampil SEBELUM sesi
+/// dipulihkan (gerbang versi minimum): `sesiProvider` tidak bisa ditanya di
+/// sana, karena memulihkannya memanggil `GET /saya` dan server menjawab 426
+/// untuk versi yang sudah usang — hasilnya galat, bukan sesi.
+final adaSesiTersimpanProvider = FutureProvider.autoDispose<bool>((ref) async {
+  try {
+    return await ref.read(penyimpanSesiProvider).token() != null;
+  } catch (_) {
+    return false;
+  }
+});

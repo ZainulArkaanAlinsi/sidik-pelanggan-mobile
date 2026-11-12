@@ -23,6 +23,10 @@ flutter test
 
 # Jalankan ke server lokal (emulator Android → 10.0.2.2)
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+
+# Alur dasar di perangkat (butuh emulator/HP; CI belum menjalankannya).
+# Skenario yang sama jalan tanpa perangkat di test/alur_dasar_test.dart.
+flutter test integration_test -d <id-perangkat>
 ```
 
 Server harus menyalakan modul pelanggan (`FITUR_PELANGGAN=true`).

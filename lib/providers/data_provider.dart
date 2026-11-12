@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/anggota.dart';
 import '../models/data_pelanggan.dart';
+import '../models/paket.dart';
 import '../services/layanan_pelanggan.dart';
 import 'paginasi.dart';
 import 'sesi_provider.dart';
@@ -108,3 +110,64 @@ final jumlahBelumDibacaProvider = FutureProvider.autoDispose<int>((ref) {
   ref.watch(sesiProvider);
   return ref.watch(layananProvider).jumlahNotifikasiBelumDibaca();
 });
+
+/// Anggota perusahaan aktif. Dibangun ulang saat perusahaan berganti.
+final anggotaProvider = FutureProvider.autoDispose<DaftarAnggota>((ref) {
+  _perusahaan(ref);
+  return ref.watch(layananProvider).anggota();
+});
+
+/// Kunci daftar paket: nomor order yang dicari + riwayat (selesai) atau yang
+/// masih berjalan.
+typedef KunciPaket = ({String cari, bool selesai});
+
+final daftarPaketProvider = AsyncNotifierProvider.autoDispose
+    .family<DaftarController<Paket>, DataBerhalaman<Paket>, KunciPaket>(
+      (k) => DaftarController(
+        (l, h) => l.daftarPaket(cari: k.cari, selesai: k.selesai, halaman: h),
+        (p) => p.id,
+      ),
+    );
+
+final detailPaketProvider = FutureProvider.autoDispose.family<DetailPaket, int>(
+  (ref, id) {
+    _perusahaan(ref);
+    return ref.watch(layananProvider).paket(id);
+  },
+);
+
+/// Saklar notifikasi anggota ini di perusahaan aktif (per anggota per
+/// perusahaan di server). Mengubah satu saklar langsung terlihat, lalu
+/// disimpan; gagal simpan mengembalikan saklar itu dan melempar galatnya.
+final preferensiNotifikasiProvider =
+    AsyncNotifierProvider.autoDispose<
+      PreferensiNotifikasiController,
+      Map<String, bool>
+    >(PreferensiNotifikasiController.new);
+
+class PreferensiNotifikasiController extends AsyncNotifier<Map<String, bool>> {
+  @override
+  Future<Map<String, bool>> build() {
+    _perusahaan(ref);
+    return ref.watch(layananProvider).preferensiNotifikasi();
+  }
+
+  Future<void> setel(String kunci, bool nilai) async {
+    final sebelum = state.value;
+    if (sebelum == null) return;
+    final lama = sebelum[kunci];
+    state = AsyncData({...sebelum, kunci: nilai});
+    try {
+      final baru = await ref.read(layananProvider).simpanPreferensiNotifikasi({
+        kunci: nilai,
+      });
+      state = AsyncData(baru);
+    } catch (_) {
+      // Hanya saklar ini yang dikembalikan; saklar lain yang sempat diketuk
+      // selama permintaan berjalan tidak ikut terhapus.
+      final kini = state.value ?? sebelum;
+      state = AsyncData({...kini, kunci: ?lama});
+      rethrow;
+    }
+  }
+}

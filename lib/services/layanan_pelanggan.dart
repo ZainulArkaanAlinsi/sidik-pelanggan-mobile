@@ -5,14 +5,41 @@ import 'package:path_provider/path_provider.dart';
 
 import '../core/api_pelanggan.dart';
 import '../models/akun.dart';
+import '../models/anggota.dart';
 import '../models/data_pelanggan.dart';
+import '../models/paket.dart';
 
 /// Hasil masuk / terima undangan: token + akunnya.
 class SesiBaru {
-  const SesiBaru(this.token, this.akun);
+  const SesiBaru(this.token, this.akun, {this.akunSudahAda = false});
 
   final String token;
   final Akun akun;
+
+  /// Hanya diisi oleh terima-undangan: email undangan SUDAH punya akun, jadi
+  /// yang dipakai akun lama itu (nama & sandi isian diabaikan server). Lihat
+  /// [tampakAkunLama].
+  final bool akunSudahAda;
+}
+
+/// Apakah [akun] yang dijawab `POST /auth/terima-undangan` tampak akun LAMA,
+/// bukan akun yang baru dibuat dari isian [namaDiketik].
+///
+/// Server (kontrak §1) tidak mengirim penanda "akun sudah ada": untuk email
+/// yang sudah terdaftar ia menambahkan perusahaan ke akun itu dan membalas 201
+/// biasa, mengabaikan `nama` dan `sandi` isian. Satu-satunya petunjuk ada di
+/// jawabannya sendiri:
+/// - akun yang baru lahir punya TEPAT satu keanggotaan, jadi lebih dari satu =
+///   akun lama;
+/// - akun yang baru lahir memakai nama isian apa adanya (server hanya
+///   merapikan spasi di ujung), jadi nama yang berbeda = akun lama.
+/// Akun lama yang kebetulan bernama sama dan baru punya satu perusahaan tidak
+/// terdeteksi (tidak ada pesan, sama seperti sebelumnya). Penanda eksplisit
+/// dari server diminta di `docs/kebutuhan-api-pelanggan.md`.
+bool tampakAkunLama(String namaDiketik, Akun akun) {
+  String rapi(String s) =>
+      s.trim().toLowerCase().split(RegExp(r'\s+')).join(' ');
+  return akun.keanggotaan.length > 1 || rapi(akun.nama) != rapi(namaDiketik);
 }
 
 /// Tahap yang gagal setelah PDF berhasil diunduh.
@@ -114,7 +141,12 @@ class LayananPelanggan {
       'sandi': sandi,
       'setuju_syarat': setujuSyarat,
     });
-    return _sesi(b);
+    final sesi = _sesi(b);
+    return SesiBaru(
+      sesi.token,
+      sesi.akun,
+      akunSudahAda: tampakAkunLama(nama, sesi.akun),
+    );
   }
 
   Future<void> lupaSandi(String email) =>
@@ -142,6 +174,23 @@ class LayananPelanggan {
 
   Future<Akun> saya() async =>
       Akun.dariJson((await api.get('/saya'))['data'] as Map<String, dynamic>);
+
+  /// Ganti sandi sendiri (`POST /saya/ganti-sandi`). Sesi di HP ini tetap
+  /// hidup; sesi di perangkat LAIN dicabut server. Jawaban: jumlah sesi lain
+  /// yang dicabut.
+  ///
+  /// Sandi tidak pernah disimpan atau dicatat di sini; hanya dikirim sekali.
+  Future<int> gantiSandi({
+    required String sandiLama,
+    required String sandiBaru,
+  }) async {
+    final b = await api.post('/saya/ganti-sandi', {
+      'sandi_lama': sandiLama,
+      'sandi': sandiBaru,
+    });
+    final n = (b['data'] as Map?)?['sesi_dicabut'];
+    return n is num ? n.toInt() : 0;
+  }
 
   Future<void> keluar() => api.post('/auth/keluar');
 
@@ -242,6 +291,54 @@ class LayananPelanggan {
         throw const GalatBerkasPdf(JenisGagalPdf.buka);
     }
   }
+
+  // ── Anggota, preferensi, paket ────────────────────────────────────────
+
+  /// Anggota perusahaan AKTIF (header `X-Perusahaan-Id`). Semua peran boleh
+  /// melihat.
+  Future<DaftarAnggota> anggota() async => DaftarAnggota.dariJson(
+    (await api.get('/anggota'))['data'] as Map<String, dynamic>,
+  );
+
+  /// Nonaktifkan satu anggota (PIC utama saja — server yang menegakkan).
+  /// [idAnggota] = `Anggota.id` (ID keanggotaan).
+  Future<void> nonaktifkanAnggota(int idAnggota) =>
+      api.post('/anggota/$idAnggota/nonaktifkan');
+
+  /// Saklar notifikasi anggota ini di perusahaan aktif.
+  Future<Map<String, bool>> preferensiNotifikasi() async =>
+      _saklar(await api.get('/preferensi-notifikasi'));
+
+  /// Simpan SEBAGIAN saklar (yang tidak dikirim tidak berubah). Jawaban:
+  /// seluruh set terkini.
+  Future<Map<String, bool>> simpanPreferensiNotifikasi(
+    Map<String, bool> sebagian,
+  ) async => _saklar(await api.put('/preferensi-notifikasi', sebagian));
+
+  Map<String, bool> _saklar(Map<String, dynamic> badan) {
+    final d = (badan['data'] as Map?) ?? const {};
+    return {
+      for (final e in d.entries)
+        if (e.value is bool) '${e.key}': e.value as bool,
+    };
+  }
+
+  /// Pelacakan paket (order). [selesai] = riwayat; bawaan server = yang masih
+  /// berjalan. [cari] mencari NOMOR order.
+  Future<Halaman<Paket>> daftarPaket({
+    String? cari,
+    bool selesai = false,
+    int halaman = 1,
+  }) async => Halaman.dariJson(
+    await api.get(
+      '/paket',
+      query: {'q': cari, 'selesai': selesai ? '1' : null, 'page': '$halaman'},
+    ),
+    Paket.dariJson,
+  );
+
+  Future<DetailPaket> paket(int id) async =>
+      DetailPaket.dariJson(await api.get('/paket/$id'));
 
   Future<Halaman<Notifikasi>> daftarNotifikasi({int halaman = 1}) async =>
       Halaman.dariJson(

@@ -300,17 +300,35 @@ class _LayarWajibPerbaruiState extends ConsumerState<LayarWajibPerbarui> {
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: false,
-    child: _LayarInfo(
-      ikon: Icons.system_update_outlined,
-      judul: 'Perbarui aplikasi',
-      isi:
-          'Versi ${widget.terpasang} sudah tidak didukung. Perbarui SIDIK '
-          'Pelanggan ke versi ${widget.terbaru} untuk melanjutkan.',
-      isiBawah: const PanelPerbarui(),
-    ),
-  );
+  Widget build(BuildContext context) {
+    // Bukan `sesiProvider`: memulihkan sesi memanggil `GET /saya`, yang untuk
+    // versi usang dijawab 426 (galat), jadi tombol tidak akan pernah muncul
+    // tepat saat dibutuhkan. Yang ditanya: ada token tersimpan atau tidak.
+    final adaSesi = ref.watch(adaSesiTersimpanProvider).value ?? false;
+    return PopScope(
+      canPop: false,
+      child: _LayarInfo(
+        ikon: Icons.system_update_outlined,
+        judul: 'Perbarui aplikasi',
+        isi:
+            'Versi ${widget.terpasang} sudah tidak didukung. Perbarui SIDIK '
+            'Pelanggan ke versi ${widget.terbaru} untuk melanjutkan.',
+        isiBawah: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const PanelPerbarui(),
+            if (adaSesi)
+              TombolKeluarAkun(
+                // Layar ini bukan rute: tetap di tempat, tombolnya saja yang
+                // hilang begitu tidak ada sesi lagi.
+                sesudahKeluar: () => ref.invalidate(adaSesiTersimpanProvider),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _LayarInfo extends StatelessWidget {
