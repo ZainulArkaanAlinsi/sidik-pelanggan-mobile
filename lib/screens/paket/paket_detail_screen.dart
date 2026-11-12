@@ -2,13 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/tipografi.dart';
+import '../../core/tema/ukuran.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../models/paket.dart';
 import '../../providers/data_provider.dart';
-import '../../widgets/sidik/sidik_permukaan.dart';
-import '../../widgets/sidik/sidik_status.dart';
-import '../../widgets/sidik/sidik_tombol.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/bagian_sidik.dart';
+import '../../widgets/baris_info.dart';
+import '../../widgets/chip_status.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_sidik.dart';
+import '../../widgets/keadaan_galat.dart';
+import '../../widgets/kerangka.dart';
+import '../../widgets/pemetaan_status.dart';
+import '../../widgets/status_tampil.dart';
+import '../../widgets/tombol_sidik.dart';
 import '../sertifikat/sertifikat_detail_screen.dart';
 
 /// Detail satu paket: ringkasan, garis waktu (urutan & penanda dari server),
@@ -23,9 +32,9 @@ class PaketDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(detailPaketProvider(id));
-    return Scaffold(
-      appBar: AppBar(title: const Text('Detail paket')),
-      body: async.when(
+    return HalamanSidik(
+      judul: 'Detail paket',
+      isi: async.when(
         loading: () => const Memuat.detail(),
         error: (e, _) => KeadaanGalat(
           galat: e,
@@ -51,26 +60,24 @@ class _Isi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = detail.paket;
-    final t = Theme.of(context).textTheme;
-    final m = SidikMaterial.of(context);
+    final t = context.teks;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: denganTepiBawah(
-        context,
-        const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
-      ),
+      padding: Spasi.daftar(context),
       children: [
-        Kertas(
-          padding: const EdgeInsets.all(jarak),
+        KartuSidik(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('NOMOR ORDER', style: m.gayaEtsa(ukuran: 11)),
-              const SizedBox(height: 4),
-              Text(p.nomor, style: t.titleLarge),
-              const SizedBox(height: 8),
-              SidikLencana(statusPaket(p.tahap, p.tahapLabel)),
-              const Divider(height: 24),
+              Text('Nomor order', style: t.bodySmall),
+              const SizedBox(height: Spasi.xs),
+              Text(p.nomor, style: t.headlineSmall?.tabular),
+              const SizedBox(height: Spasi.md),
+              ChipStatus(statusPaket(p.tahap, p.tahapLabel)),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: Spasi.md),
+                child: Divider(),
+              ),
               BarisInfo('Tanggal masuk', Format.tanggal(p.tanggalMasuk)),
               BarisInfo(
                 'Target selesai',
@@ -82,11 +89,11 @@ class _Isi extends StatelessWidget {
               ),
               if (p.terlambat)
                 const Padding(
-                  padding: EdgeInsets.only(top: 6),
+                  padding: EdgeInsets.only(top: Spasi.sm),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: SidikLencana(
-                      StatusSidik(
+                    child: ChipStatus(
+                      StatusTampil(
                         'Melewati target selesai',
                         NadaStatus.awas,
                         Icons.schedule,
@@ -98,15 +105,14 @@ class _Isi extends StatelessWidget {
           ),
         ),
         if (detail.garisWaktu.isNotEmpty) ...[
-          const JudulSeksi('Perkembangan'),
-          Kertas(
-            padding: const EdgeInsets.all(jarak),
+          const BagianSidik('Perkembangan'),
+          KartuSidik(
             child: Column(
               children: [for (final l in detail.garisWaktu) _Langkah(l)],
             ),
           ),
         ],
-        const JudulSeksi('Alat dalam paket'),
+        const BagianSidik('Alat dalam paket'),
         if (p.alat.isEmpty)
           Text(
             'Belum ada alat yang tercatat di paket ini.',
@@ -115,7 +121,7 @@ class _Isi extends StatelessWidget {
         else
           for (final a in p.alat)
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: Spasi.md),
               child: _KartuAlat(alat: a),
             ),
       ],
@@ -130,19 +136,19 @@ class _Langkah extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final m = SidikMaterial.of(context);
+    final t = context.teks;
+    final skema = context.skema;
     final (ikon, warna) = langkah.lewat
-        ? (Icons.check_circle, m.lulus)
+        ? (Icons.check_circle, context.warna.lulus)
         : langkah.sekarang
-        ? (Icons.radio_button_checked, m.biru)
-        : (Icons.radio_button_unchecked, m.tinta2);
+        ? (Icons.radio_button_checked, skema.primary)
+        : (Icons.radio_button_unchecked, skema.onSurfaceVariant);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: Spasi.xs * 1.5),
       child: Row(
         children: [
-          Icon(ikon, size: 20, color: warna),
-          const SizedBox(width: 12),
+          Icon(ikon, size: UkuranIkon.sedang, color: warna),
+          const SizedBox(width: Spasi.md),
           Expanded(
             child: Text(
               langkah.label,
@@ -152,7 +158,10 @@ class _Langkah extends StatelessWidget {
             ),
           ),
           if (langkah.sekarang)
-            Text('Sekarang', style: t.bodySmall?.copyWith(color: m.biru)),
+            Text(
+              'Sekarang',
+              style: t.bodySmall?.copyWith(color: skema.primary),
+            ),
         ],
       ),
     );
@@ -166,22 +175,12 @@ class _KartuAlat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    return Kertas(
-      padding: const EdgeInsets.all(14),
+    final t = context.teks;
+    return KartuSidik(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: Text(alat.nama, style: t.titleSmall)),
-              const SizedBox(width: 8),
-              Flexible(
-                child: SidikLencana(statusPaket(alat.tahap, alat.tahapLabel)),
-              ),
-            ],
-          ),
+          Text(alat.nama, style: t.titleSmall),
           if (alat.merk != null || alat.serial != null)
             Text(
               [
@@ -195,14 +194,18 @@ class _KartuAlat extends StatelessWidget {
               'Diserahkan kepada ${alat.diserahkanKepada}',
               style: t.bodySmall,
             ),
+          const SizedBox(height: Spasi.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ChipStatus(statusPaket(alat.tahap, alat.tahapLabel)),
+          ),
           if (alat.sertifikatId != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: Spasi.md),
             Align(
               alignment: Alignment.centerLeft,
-              child: SidikTombol(
+              child: TombolSidik(
                 label: 'Lihat sertifikat',
                 ikon: Icons.description_outlined,
-                kecil: true,
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) =>

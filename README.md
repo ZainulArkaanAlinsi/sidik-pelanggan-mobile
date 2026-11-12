@@ -96,8 +96,8 @@ relatif terhadap `/api/pelanggan/v1`.
 |---|---|
 | Gerbang (pemeliharaan / versi wajib) | `GET /app/status` |
 | Akun / akun belum aktif / pilih perusahaan | `GET /saya` |
-| Beranda: kotak jatuh tempo 30/60/90 hari, alat mendesak, sertifikat terbaru, paket berjalan | `GET /beranda`, `GET /alat?per_page=100` (hitungan 31–90 hari) |
-| Alat saya: semua alat dengan status, pencarian, saringan jatuh tempo | `GET /alat` |
+| Beranda: sapaan, kartu jatuh tempo (lewat jadwal, 0–30, 31–60, 61–90 hari), alat mendesak, sertifikat terbaru, paket berjalan, Hubungi lab | `GET /beranda`, `GET /alat?per_page=100` (hitungan 31–90 hari) |
+| Tab Alat (Alat saya): semua alat dengan status, pencarian, saringan jatuh tempo | `GET /alat` |
 | Detail alat dan riwayat sertifikat (garis waktu) | `GET /alat/{id}` |
 | Sertifikat, Detail, Lihat PDF di aplikasi, Unduh PDF | `GET /sertifikat`, `GET /sertifikat/{id}`, `GET /sertifikat/{id}/unduh` |
 | Notifikasi dan jumlah belum dibaca | `GET /notifikasi`, `GET /notifikasi/jumlah` |
@@ -134,8 +134,20 @@ oleh `test/guard_tulis_test.dart`:
   header `X-Perusahaan-Id`, dan server tetap memeriksa keanggotaannya.
 - **Token di penyimpanan terenkripsi** (`flutter_secure_storage`), bukan
   SharedPreferences.
-- **Tema = salinan apa adanya** dari `sidik-calibration-mobile`
-  (`lib/core/theme/*`, `lib/core/motion/*`, `lib/widgets/sidik/*`). Ubah di
-  aplikasi lab dulu, lalu salin — jangan bercabang.
+- **Tema sendiri, bukan salinan aplikasi lab.** Material 3 datar, kobalt
+  `#043EA1`, netral dingin, terang dan gelap: token di `lib/core/tema/`
+  (`README.md` di sana), komponen di `lib/widgets/` (`README.md` di sana).
+  Layar tidak menulis warna/jarak sendiri; `test/tema/tema_sidik_test.dart`
+  menolaknya. Gerak halaman (`lib/core/motion/`) masih sama dengan aplikasi lab.
+- **Tampilan diperiksa tanpa emulator**: `SIDIK_PNG_DIR=<folder di luar repo>
+  flutter test test/tampilan/render_layar_test.dart` me-render 19 layar pada
+  HP 360×800, HP sempit 320×640 huruf 1,3×, dan tablet 840×1200, terang dan
+  gelap, ke PNG (font Inter dari aset). Tanpa variabelnya tes tetap memeriksa
+  luapan di HP sempit dan tablet (terang). Tidak ada golden baseline; gambar dari Windows bukan acuan.
+- **Navigasi lima tab** (Beranda, Alat, Sertifikat, Notifikasi, Akun): bawah di
+  HP, rel samping di lebar >= 600 dp, isi dibatasi ±720 dp.
+- **Ikon peluncur dan splash** dari logo resmi Lab: `tool/buat_aset_android.py`
+  (hasilnya di `android/app/src/main/res`, ikon adaptif + monokrom Android 13,
+  splash Android 12+).
 - Teks masih Bahasa Indonesia saja (pelanggan lab ini perusahaan Indonesia).
   Pindah ke ARB/l10n kalau pelanggan berbahasa lain mulai ada.

@@ -13,7 +13,7 @@ import 'package:http/testing.dart';
 import 'package:sidik_pelanggan/app.dart';
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
 import 'package:sidik_pelanggan/core/konfigurasi.dart';
-import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/models/status_berlaku.dart';
@@ -21,9 +21,10 @@ import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/screens/alat/daftar_alat_screen.dart';
 import 'package:sidik_pelanggan/screens/beranda/beranda_screen.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
-import 'package:sidik_pelanggan/widgets/sidik/sidik_status.dart';
-import 'package:sidik_pelanggan/widgets/sidik/sidik_tombol.dart';
-import 'package:sidik_pelanggan/widgets/umum.dart';
+import 'package:sidik_pelanggan/widgets/status_tampil.dart';
+import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
+import 'package:sidik_pelanggan/widgets/pemetaan_status.dart';
+import 'package:sidik_pelanggan/widgets/kartu_alat.dart';
 
 import 'dukungan/fixture_fitur.dart';
 
@@ -83,7 +84,7 @@ Widget _app(
 }) => ProviderScope(
   overrides: overrideFitur(server, perusahaan: perusahaan),
   child: MaterialApp(
-    theme: SidikTheme.terang,
+    theme: TemaSidik.terang,
     builder: skalaHp
         ? (context, child) => MediaQuery.withClampedTextScaling(
             minScaleFactor: batasSkalaHuruf.max,
@@ -622,13 +623,13 @@ void main() {
 
       // Target sentuh ≥ 48 dp: tombol utama, tombol teks, dan kotak ringkasan.
       await tester.scrollUntilVisible(
-        find.widgetWithText(SidikTombol, 'Lihat semua alat (3)'),
+        find.widgetWithText(TombolSidik, 'Lihat semua alat (3)'),
         -300,
         scrollable: find.byType(Scrollable).first,
       );
       expect(
         tester
-            .getSize(find.widgetWithText(SidikTombol, 'Lihat semua alat (3)'))
+            .getSize(find.widgetWithText(TombolSidik, 'Lihat semua alat (3)'))
             .height,
         greaterThanOrEqualTo(48),
       );

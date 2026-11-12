@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/rilis_aplikasi.dart';
 import 'package:sidik_pelanggan/providers/pembaruan_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
@@ -359,7 +359,7 @@ void main() {
         UncontrolledProviderScope(
           container: c,
           child: MaterialApp(
-            theme: SidikTheme.terang,
+            theme: TemaSidik.terang,
             home: const Scaffold(bottomNavigationBar: BannerPembaruan()),
           ),
         ),
@@ -419,7 +419,7 @@ void main() {
         UncontrolledProviderScope(
           container: c,
           child: MaterialApp(
-            theme: SidikTheme.terang,
+            theme: TemaSidik.terang,
             home: Builder(
               builder: (context) => Scaffold(
                 body: TextButton(
@@ -466,7 +466,7 @@ void main() {
         UncontrolledProviderScope(
           container: c,
           child: MaterialApp(
-            theme: SidikTheme.terang,
+            theme: TemaSidik.terang,
             home: const Scaffold(body: DialogPembaruanWajib()),
           ),
         ),
@@ -491,7 +491,7 @@ void main() {
           UncontrolledProviderScope(
             container: c,
             child: MaterialApp(
-              theme: SidikTheme.terang,
+              theme: TemaSidik.terang,
               home: const LayarWajibPerbarui(
                 terpasang: '1.0.0',
                 terbaru: '1.2.3',

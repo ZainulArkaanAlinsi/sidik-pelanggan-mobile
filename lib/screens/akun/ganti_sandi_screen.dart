@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/sidik/sidik_tombol.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/tombol_sidik.dart';
 
 /// Panjang minimum sandi baru — sama dengan aturan server (`Password::min(10)`).
 const panjangSandiMinimum = 10;
@@ -115,7 +116,7 @@ class _GantiSandiScreenState extends ConsumerState<GantiSandiScreen> {
     String? bantuan,
     List<String> petunjuk = const [],
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: jarak),
+    padding: const EdgeInsets.only(bottom: Spasi.lg),
     child: TextField(
       controller: c,
       obscureText: true,
@@ -132,18 +133,20 @@ class _GantiSandiScreenState extends ConsumerState<GantiSandiScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Ganti sandi')),
-      body: ListView(
-        padding: denganTepiBawah(context, const EdgeInsets.all(24)),
+    return HalamanSidik(
+      judul: 'Ganti sandi',
+      latarPutih: true,
+      isi: ListView(
+        padding: Spasi.denganTepiBawah(context, const EdgeInsets.all(Spasi.xl)),
         children: [
           Text(
             'Sesi Anda di HP ini tetap berjalan. Sesi di perangkat lain '
             'berakhir, jadi di sana Anda perlu masuk lagi dengan sandi baru.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: context.teks.bodyMedium?.copyWith(
+              color: context.skema.onSurfaceVariant,
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Spasi.xl),
           _isian(
             _lama,
             'Sandi saat ini',
@@ -164,10 +167,10 @@ class _GantiSandiScreenState extends ConsumerState<GantiSandiScreen> {
             petunjuk: const [AutofillHints.newPassword],
           ),
           if (_galat != null) ...[
-            Text(_galat!, style: TextStyle(color: m.gagal)),
-            const SizedBox(height: 12),
+            Text(_galat!, style: TextStyle(color: context.skema.error)),
+            const SizedBox(height: Spasi.md),
           ],
-          SidikTombol(
+          TombolSidik(
             label: 'Simpan sandi baru',
             ragam: RagamTombol.utama,
             penuh: true,

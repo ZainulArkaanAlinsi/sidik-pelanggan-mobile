@@ -6,24 +6,27 @@ import '../providers/pembaruan_provider.dart';
 import '../providers/push_provider.dart';
 import '../providers/sinkron_provider.dart';
 import '../services/push_pelanggan.dart';
+import '../widgets/navigasi_utama.dart';
 import '../widgets/pembaruan.dart';
 import 'akun/akun_screen.dart';
+import 'alat/daftar_alat_screen.dart';
 import 'beranda/beranda_screen.dart';
 import 'notifikasi/notifikasi_screen.dart';
 import 'sertifikat/sertifikat_screen.dart';
 import 'tautan.dart';
 
-/// Indeks tab — dipegang di satu tempat supaya lompatan antar-tab (kartu
+/// Indeks tab. Dipegang di satu tempat supaya lompatan antar-tab (kartu
 /// beranda, push) tidak memakai angka telanjang.
 abstract final class IndeksTab {
   static const beranda = 0;
-  static const sertifikat = 1;
-  static const notifikasi = 2;
-  static const akun = 3;
+  static const alat = 1;
+  static const sertifikat = 2;
+  static const notifikasi = 3;
+  static const akun = 4;
 }
 
-/// Tab yang sedang aktif — dipegang provider supaya beranda bisa melompat ke
-/// daftar sertifikat dari tautan "Lihat semua" di Beranda.
+/// Tab yang sedang aktif. Dipegang provider supaya Beranda bisa melompat ke
+/// daftar sertifikat atau alat dari tautan "Lihat semua".
 final tabProvider = NotifierProvider<TabAktif, int>(TabAktif.new);
 
 class TabAktif extends Notifier<int> {
@@ -33,9 +36,9 @@ class TabAktif extends Notifier<int> {
   void pilih(int i) => state = i;
 }
 
-/// Rangka empat tab: Beranda (ringkasan jatuh tempo, sertifikat terbaru,
-/// paket), Sertifikat, Notifikasi, Akun. Daftar alat dibuka dari Beranda;
-/// riwayat sertifikat per alat ada di Detail alat.
+/// Rangka lima tab: Beranda (ringkasan jatuh tempo, alat mendesak, sertifikat
+/// terbaru, paket), Alat, Sertifikat, Notifikasi, Akun. Di HP navigasinya di
+/// bawah; di layar lebar (>= 600 dp) berupa rel di kiri ([NavigasiUtama]).
 ///
 /// Push yang diketuk dibuka DI SINI, karena di sinilah pengguna pasti sudah
 /// masuk dan perusahaannya sudah terpilih.
@@ -49,6 +52,7 @@ class Rangka extends ConsumerStatefulWidget {
 class _RangkaState extends ConsumerState<Rangka> {
   static const _tab = <Widget>[
     BerandaScreen(),
+    DaftarAlatScreen(),
     SertifikatScreen(),
     NotifikasiScreen(),
     AkunScreen(),
@@ -116,47 +120,44 @@ class _RangkaState extends ConsumerState<Rangka> {
     final aktif = ref.watch(tabProvider);
     final belum = ref.watch(jumlahBelumDibacaProvider).value ?? 0;
     return Scaffold(
-      body: IndexedStack(index: aktif, children: _tab),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Di atas navigasi bawah, bukan di atas layar: AppBar tiap tab
-          // sudah memegang jarak status bar.
-          const BannerPembaruan(),
-          NavigationBar(
-            selectedIndex: aktif,
-            onDestinationSelected: ref.read(tabProvider.notifier).pilih,
-            destinations: [
-              const NavigationDestination(
-                icon: Icon(Icons.space_dashboard_outlined),
-                selectedIcon: Icon(Icons.space_dashboard),
-                label: 'Beranda',
-              ),
-              const NavigationDestination(
-                icon: Icon(Icons.description_outlined),
-                selectedIcon: Icon(Icons.description),
-                label: 'Sertifikat',
-              ),
-              NavigationDestination(
-                icon: Badge(
-                  isLabelVisible: belum > 0,
-                  label: Text(belum > 99 ? '99+' : '$belum'),
-                  child: const Icon(Icons.notifications_none),
-                ),
-                selectedIcon: const Icon(Icons.notifications),
-                label: 'Notifikasi',
-                tooltip: belum == 0
-                    ? 'Notifikasi'
-                    : 'Notifikasi, $belum belum dibaca',
-              ),
-              const NavigationDestination(
-                icon: Icon(Icons.person_outline),
-                selectedIcon: Icon(Icons.person),
-                label: 'Akun',
-              ),
-            ],
+      body: NavigasiUtama(
+        indeks: aktif,
+        onPilih: ref.read(tabProvider.notifier).pilih,
+        // Banner pembaruan di atas navigasi, bukan di atas layar: AppBar tiap
+        // tab sudah memegang jarak status bar.
+        penutup: const BannerPembaruan(),
+        tujuan: [
+          const TujuanNavigasi(
+            ikon: Icons.space_dashboard_outlined,
+            ikonAktif: Icons.space_dashboard,
+            label: 'Beranda',
+          ),
+          const TujuanNavigasi(
+            ikon: Icons.precision_manufacturing_outlined,
+            ikonAktif: Icons.precision_manufacturing,
+            label: 'Alat',
+          ),
+          const TujuanNavigasi(
+            ikon: Icons.description_outlined,
+            ikonAktif: Icons.description,
+            label: 'Sertifikat',
+          ),
+          TujuanNavigasi(
+            ikon: Icons.notifications_none,
+            ikonAktif: Icons.notifications,
+            label: 'Notifikasi',
+            tooltip: belum == 0
+                ? 'Notifikasi'
+                : 'Notifikasi, $belum belum dibaca',
+            lencana: belum,
+          ),
+          const TujuanNavigasi(
+            ikon: Icons.person_outline,
+            ikonAktif: Icons.person,
+            label: 'Akun',
           ),
         ],
+        isi: IndexedStack(index: aktif, children: _tab),
       ),
     );
   }

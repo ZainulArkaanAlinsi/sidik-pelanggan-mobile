@@ -27,9 +27,10 @@ import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
 import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
-import 'package:sidik_pelanggan/widgets/sidik/sidik_tombol.dart';
+import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
 
 import 'dukungan.dart';
+import 'layar_uji.dart';
 
 /// Server palsu `/api/pelanggan/v1`. Menolak (401) semua rute bertoken yang
 /// tidak membawa `Authorization: Bearer <token>` yang pernah dikeluarkannya —
@@ -262,6 +263,8 @@ Future<HasilAlur> jalankanAlurDasar(
   final server = ServerPalsu(akunSudahAda: akunSudahAda);
   final hasil = HasilAlur(server);
 
+  // Alur HP: navigasi bawah (di layar >= 600 dp berganti jadi rel samping).
+  layarHp(tester);
   await tester.pumpWidget(aplikasiUji(server, hasil, folder));
   await tester.pumpAndSettle();
 
@@ -342,7 +345,7 @@ Future<HasilAlur> jalankanAlurDasar(
     ),
   );
   await tester.pumpAndSettle();
-  final keluar = find.widgetWithText(SidikTombol, 'Keluar');
+  final keluar = find.widgetWithText(TombolSidik, 'Keluar');
   await _gulirKe(tester, keluar);
   await tester.tap(keluar);
   await tester.pumpAndSettle();

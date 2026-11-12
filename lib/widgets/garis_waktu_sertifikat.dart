@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../core/format.dart';
-import '../core/theme/sidik_material.dart';
+import '../core/tema/spasi.dart';
+import '../core/tema/tipografi.dart';
+import '../core/tema/warna_sidik.dart';
 import '../models/data_pelanggan.dart';
 import '../models/status_berlaku.dart';
-import 'sidik/sidik_permukaan.dart';
-import 'sidik/sidik_status.dart';
-import 'umum.dart';
+import 'chip_status.dart';
+import 'kartu_sidik.dart';
+import 'pemetaan_status.dart';
 
 /// Riwayat sertifikat satu alat sebagai garis waktu tegak, terbaru di atas.
 ///
-/// Satu simpul = satu sertifikat: tanggal terbit, nomor, status (lencana dari
+/// Satu simpul = satu sertifikat: tanggal terbit, nomor, status (chip dari
 /// pemetaan bersama [statusSertifikat]), masa berlaku, dan hubungan revisi.
 /// Mengetuk simpul membuka detail sertifikatnya ([onBuka]). Revisi, yang
 /// digantikan, dan yang dibatalkan ikut tampil dengan statusnya: di riwayat,
@@ -18,7 +20,7 @@ import 'umum.dart';
 ///
 /// Simpul yang SEKARANG berlaku (sertifikat terbaru yang belum digantikan dan
 /// tidak dibatalkan) berbulatan penuh; sisanya berongga. Sertifikat yang
-/// tanggal berlakunya sudah lewat berlencana netral ([StatusBerlaku.berakhir]),
+/// tanggal berlakunya sudah lewat bernada netral ([StatusBerlaku.berakhir]),
 /// bukan merah dan bukan "kedaluwarsa" (K3): peringatan jadwal ada di status
 /// ALATNYA ([StatusBerlaku.lewatJadwal]), bukan di tiap sertifikat riwayat.
 ///
@@ -85,12 +87,17 @@ class _Simpul extends StatelessWidget {
   final int jendela;
   final VoidCallback onTap;
 
-  static const _lebarRel = 28.0;
+  /// Lebar lajur penanda di kiri kartu.
+  static const double _lebarRel = 28;
+
+  /// Garis tengah penanda dan diameter bulatan.
+  static const double _garis = 2;
+  static const double _bulatan = 14;
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final m = SidikMaterial.of(context);
+    final t = context.teks;
+    final skema = context.skema;
     final s = sertifikat;
     final status = statusSertifikat(
       s,
@@ -99,13 +106,13 @@ class _Simpul extends StatelessWidget {
       adaPenerus: adaPenerus,
     );
     final vonis = s.dibatalkan ? null : statusKeputusan(s.keputusan);
-    final (tinta, _) = status.warna(m);
+    final (tinta, _) = status.warna(context);
 
     final ringkas = [
       'Sertifikat ${s.nomor}',
       'terbit ${Format.tanggal(s.diterbitkan)}',
       'status ${status.label}',
-      if (vonis != null) vonis.label,
+      ?vonis?.label,
     ].join(', ');
 
     return IntrinsicHeight(
@@ -116,78 +123,72 @@ class _Simpul extends StatelessWidget {
             width: _lebarRel,
             child: Column(
               children: [
-                const SizedBox(height: 16),
-                // Penanda: penuh untuk yang sekarang berlaku, berongga untuk
-                // riwayat. Warna ikut nada status, tapi artinya tetap ada di
-                // lencana (bukan hanya warna).
+                const SizedBox(height: Spasi.lg),
+                // Penuh untuk yang sekarang berlaku, berongga untuk riwayat.
+                // Warna ikut nada status, tapi artinya tetap ada di chip.
                 Container(
-                  width: 14,
-                  height: 14,
+                  width: _bulatan,
+                  height: _bulatan,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: sekarangBerlaku ? tinta : m.kertas,
-                    border: Border.all(color: tinta, width: 2),
+                    color: sekarangBerlaku ? tinta : skema.surface,
+                    border: Border.all(color: tinta, width: _garis),
                   ),
                 ),
                 if (!terakhir)
-                  Expanded(child: Container(width: 2, color: m.kertasTepi)),
+                  Expanded(
+                    child: Container(
+                      width: _garis,
+                      color: skema.outlineVariant,
+                    ),
+                  ),
               ],
             ),
           ),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(bottom: terakhir ? 0 : 10),
-              child: Semantics(
-                button: true,
-                label: ringkas,
-                excludeSemantics: true,
-                child: Kertas(
-                  onTap: onTap,
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              padding: EdgeInsets.only(bottom: terakhir ? 0 : Spasi.md),
+              child: KartuSidik(
+                onTap: onTap,
+                labelSemantik: ringkas,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Terbit ${Format.tanggal(s.diterbitkan)}',
+                      style: t.titleSmall,
+                    ),
+                    const SizedBox(height: Spasi.xs / 2),
+                    Text(s.nomor, style: t.bodyMedium?.tabular),
+                    const SizedBox(height: Spasi.sm),
+                    Wrap(
+                      spacing: Spasi.sm,
+                      runSpacing: Spasi.sm,
+                      children: [
+                        ChipStatus(status),
+                        if (vonis != null) ChipStatus(vonis),
+                      ],
+                    ),
+                    const SizedBox(height: Spasi.sm),
+                    Text(
+                      s.berlakuSampai == null
+                          ? 'Tanpa tanggal berlaku'
+                          : 'Berlaku sampai ${Format.tanggal(s.berlakuSampai)}',
+                      style: t.bodySmall,
+                    ),
+                    if (s.revisiDari != null)
+                      Text('Merevisi ${s.revisiDari}', style: t.bodySmall),
+                    if (s.digantikanOleh != null)
                       Text(
-                        'Terbit ${Format.tanggal(s.diterbitkan)}',
-                        style: t.titleSmall,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        s.nomor,
-                        style: t.bodyMedium?.copyWith(
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          SidikLencana(status),
-                          if (vonis != null) SidikLencana(vonis),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        s.berlakuSampai == null
-                            ? 'Tanpa tanggal berlaku'
-                            : 'Berlaku sampai ${Format.tanggal(s.berlakuSampai)}',
+                        'Digantikan oleh ${s.digantikanOleh!.nomor}',
                         style: t.bodySmall,
                       ),
-                      if (s.revisiDari != null)
-                        Text('Merevisi ${s.revisiDari}', style: t.bodySmall),
-                      if (s.digantikanOleh != null)
-                        Text(
-                          'Digantikan oleh ${s.digantikanOleh!.nomor}',
-                          style: t.bodySmall,
-                        ),
-                      if (s.dibatalkan && s.dibatalkanPada != null)
-                        Text(
-                          'Dibatalkan ${Format.tanggal(s.dibatalkanPada)}',
-                          style: t.bodySmall,
-                        ),
-                    ],
-                  ),
+                    if (s.dibatalkan && s.dibatalkanPada != null)
+                      Text(
+                        'Dibatalkan ${Format.tanggal(s.dibatalkanPada)}',
+                        style: t.bodySmall,
+                      ),
+                  ],
                 ),
               ),
             ),

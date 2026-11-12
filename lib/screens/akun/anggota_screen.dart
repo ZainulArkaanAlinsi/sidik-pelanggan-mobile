@@ -3,14 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
 import '../../core/format.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../models/anggota.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/sidik/sidik_permukaan.dart';
-import '../../widgets/sidik/sidik_status.dart';
-import '../../widgets/sidik/sidik_tombol.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/bagian_sidik.dart';
+import '../../widgets/chip_status.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_sidik.dart';
+import '../../widgets/keadaan_galat.dart';
+import '../../widgets/kerangka.dart';
+import '../../widgets/status_tampil.dart';
+import '../../widgets/tombol_sidik.dart';
 
 /// Anggota perusahaan yang sedang dibuka (REQ-ANG-03: semua peran boleh
 /// melihat). PIC utama juga bisa menonaktifkan anggota lain; server tetap
@@ -78,9 +83,9 @@ class _AnggotaScreenState extends ConsumerState<AnggotaScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(anggotaProvider);
     final aktif = ref.watch(sesiProvider).value?.keanggotaanAktif;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Anggota perusahaan')),
-      body: RefreshIndicator(
+    return HalamanSidik(
+      judul: 'Anggota perusahaan',
+      isi: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(anggotaProvider);
           await ref.read(anggotaProvider.future);
@@ -118,15 +123,12 @@ class _Isi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
     final aktif = data.anggota.where((a) => a.aktif).toList();
     final nonaktif = data.anggota.where((a) => !a.aktif).toList();
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: denganTepiBawah(
-        context,
-        const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
-      ),
+      padding: Spasi.daftar(context),
       children: [
         if (namaPerusahaan != null) Text(namaPerusahaan!, style: t.titleMedium),
         Text(
@@ -136,16 +138,16 @@ class _Isi extends StatelessWidget {
           style: t.bodySmall,
         ),
         if (!data.sayaPicUtama) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: Spasi.sm),
           Text(
             'Mengubah keanggotaan hanya bisa dilakukan PIC utama perusahaan.',
             style: t.bodySmall,
           ),
         ],
-        const JudulSeksi('Anggota aktif'),
+        const BagianSidik('Anggota aktif'),
         for (final a in aktif)
           Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: Spasi.md),
             child: _KartuAnggota(
               anggota: a,
               bisaDinonaktifkan: data.sayaPicUtama && !a.saya,
@@ -154,10 +156,10 @@ class _Isi extends StatelessWidget {
             ),
           ),
         if (nonaktif.isNotEmpty) ...[
-          const JudulSeksi('Nonaktif'),
+          const BagianSidik('Nonaktif'),
           for (final a in nonaktif)
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: Spasi.md),
               child: _KartuAnggota(
                 anggota: a,
                 bisaDinonaktifkan: false,
@@ -169,16 +171,15 @@ class _Isi extends StatelessWidget {
         // Alamat email orang yang diundang hanya untuk PIC utama — staf tidak
         // perlu melihat siapa yang sedang diundang.
         if (data.sayaPicUtama && data.undangan.isNotEmpty) ...[
-          const JudulSeksi('Undangan menunggu'),
+          const BagianSidik('Undangan menunggu'),
           for (final u in data.undangan)
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Kertas(
-                padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.only(bottom: Spasi.md),
+              child: KartuSidik(
                 child: Row(
                   children: [
                     const Icon(Icons.mail_outline),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: Spasi.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,19 +218,21 @@ class _KartuAnggota extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    final m = SidikMaterial.of(context);
+    final t = context.teks;
+    final s = context.skema;
     final a = anggota;
-    return Kertas(
-      padding: const EdgeInsets.all(14),
+    return KartuSidik(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.person_outline, color: a.aktif ? null : m.tinta2),
-              const SizedBox(width: 12),
+              Icon(
+                Icons.person_outline,
+                color: a.aktif ? s.onSurface : s.onSurfaceVariant,
+              ),
+              const SizedBox(width: Spasi.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,37 +243,34 @@ class _KartuAnggota extends StatelessWidget {
                     ),
                     if (a.jabatan != null) Text(a.jabatan!, style: t.bodySmall),
                     if (a.email != null) Text(a.email!, style: t.bodySmall),
+                    const SizedBox(height: Spasi.sm),
+                    ChipStatus(
+                      a.aktif
+                          ? StatusTampil(
+                              a.labelPeran,
+                              a.picUtama ? NadaStatus.lulus : NadaStatus.netral,
+                              a.picUtama
+                                  ? Icons.verified_user_outlined
+                                  : Icons.person_outline,
+                            )
+                          : const StatusTampil(
+                              'Nonaktif',
+                              NadaStatus.netral,
+                              Icons.pause_circle_outline,
+                            ),
+                    ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: SidikLencana(
-                  a.aktif
-                      ? StatusSidik(
-                          a.labelPeran,
-                          a.picUtama ? NadaStatus.lulus : NadaStatus.draf,
-                          a.picUtama
-                              ? Icons.verified_user_outlined
-                              : Icons.person_outline,
-                        )
-                      : const StatusSidik(
-                          'Nonaktif',
-                          NadaStatus.draf,
-                          Icons.pause_circle_outline,
-                        ),
                 ),
               ),
             ],
           ),
           if (bisaDinonaktifkan) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: Spasi.md),
             Align(
               alignment: Alignment.centerRight,
-              child: SidikTombol(
+              child: TombolSidik(
                 label: 'Nonaktifkan',
-                ragam: RagamTombol.bahayaGaris,
-                kecil: true,
+                ragam: RagamTombol.bahaya,
                 sibuk: sibuk,
                 onPressed: onNonaktifkan,
               ),

@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/bentuk.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/ukuran.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/pdf_provider.dart';
 import '../../providers/sesi_provider.dart';
 import '../../services/layanan_pelanggan.dart';
 import '../../widgets/penampil_pdf.dart';
-import '../../widgets/sidik/sidik_tombol.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/tombol_sidik.dart';
 
 /// Pratinjau PDF sertifikat di dalam aplikasi: zoom (cubit atau tombol),
 /// geser, putar 90°, dan pindah halaman — tanpa aplikasi PDF lain.
@@ -123,7 +125,7 @@ class _PratinjauPdfScreenState extends ConsumerState<PratinjauPdfScreen> {
   }
 
   Widget _isi(BuildContext context) {
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
     final galat = _galat;
     if (galat != null) {
       return _GalatPratinjau(
@@ -137,12 +139,12 @@ class _PratinjauPdfScreenState extends ConsumerState<PratinjauPdfScreen> {
     if (path == null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(jarak * 2),
+          padding: const EdgeInsets.all(Spasi.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const CircularProgressIndicator(),
-              const SizedBox(height: jarak),
+              const SizedBox(height: Spasi.lg),
               Text(
                 'Menyiapkan PDF…',
                 textAlign: TextAlign.center,
@@ -172,7 +174,7 @@ class _PratinjauPdfScreenState extends ConsumerState<PratinjauPdfScreen> {
           children: [
             Expanded(
               child: ColoredBox(
-                color: SidikMaterial.of(context).meja2,
+                color: context.skema.surfaceContainerHigh,
                 child: bangun(context, (
                   path: path,
                   putaran: _putaran,
@@ -202,17 +204,17 @@ class _BilahAlat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
+    final s = context.skema;
+    final t = context.teks;
     final jumlah = kontrol.jumlahHalaman;
     final siap = kontrol.siap;
     return Material(
-      color: m.kertas,
-      elevation: 4,
+      color: s.surface,
+      shape: Border(top: BorderSide(color: s.outlineVariant)),
       child: Padding(
-        padding: denganTepiBawah(
+        padding: Spasi.denganTepiBawah(
           context,
-          const EdgeInsets.fromLTRB(8, 4, 8, 6),
+          const EdgeInsets.fromLTRB(Spasi.sm, Spasi.xs, Spasi.sm, Spasi.sm),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -221,7 +223,6 @@ class _BilahAlat extends StatelessWidget {
               children: [
                 IconButton(
                   tooltip: 'Halaman sebelumnya',
-                  style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
                   icon: const Icon(Icons.chevron_left),
                   onPressed: kontrol.adaSebelumnya ? kontrol.sebelumnya : null,
                 ),
@@ -239,7 +240,6 @@ class _BilahAlat extends StatelessWidget {
                 ),
                 IconButton(
                   tooltip: 'Halaman berikutnya',
-                  style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
                   icon: const Icon(Icons.chevron_right),
                   onPressed: kontrol.adaBerikutnya ? kontrol.berikutnya : null,
                 ),
@@ -281,9 +281,11 @@ class _AlatPdf extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
-    final warna = onTap == null ? m.tinta2.withValues(alpha: 0.5) : m.etsa;
+    final s = context.skema;
+    final t = context.teks;
+    final warna = onTap == null
+        ? s.onSurface.withValues(alpha: 0.38)
+        : s.onSurface;
     return Semantics(
       button: true,
       enabled: onTap != null,
@@ -291,9 +293,12 @@ class _AlatPdf extends StatelessWidget {
       excludeSemantics: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: Bentuk.sudutKontrol,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 80, minHeight: 56),
+          constraints: const BoxConstraints(
+            minWidth: AreaSentuh.minimum + Spasi.xl,
+            minHeight: AreaSentuh.minimum + Spasi.sm,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -323,29 +328,30 @@ class _GalatPratinjau extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
     return ListView(
-      padding: denganTepiBawah(context, const EdgeInsets.all(jarak * 2)),
+      padding: Spasi.denganTepiBawah(context, const EdgeInsets.all(Spasi.xl)),
       children: [
         Icon(
           Icons.picture_as_pdf_outlined,
-          size: 44,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          size: UkuranIkon.ilustrasi,
+          color: context.skema.onSurfaceVariant,
         ),
-        const SizedBox(height: jarak),
+        const SizedBox(height: Spasi.lg),
         Text(pesan, textAlign: TextAlign.center, style: t.bodyLarge),
-        const SizedBox(height: jarak),
+        const SizedBox(height: Spasi.lg),
         if (bisaUlang)
           Center(
-            child: SidikTombol(
+            child: TombolSidik(
               label: 'Coba lagi',
               ikon: Icons.refresh,
+              ragam: RagamTombol.utama,
               onPressed: onUlang,
             ),
           ),
         if (onBukaLuar != null)
           Center(
-            child: SidikTombol(
+            child: TombolSidik(
               label: 'Buka di aplikasi PDF lain',
               ikon: Icons.open_in_new,
               onPressed: onBukaLuar,

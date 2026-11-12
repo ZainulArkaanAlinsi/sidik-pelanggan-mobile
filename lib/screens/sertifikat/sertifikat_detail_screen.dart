@@ -4,26 +4,35 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api_pelanggan.dart';
 import '../../core/format.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/tipografi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/koneksi_provider.dart';
 import '../../providers/sesi_provider.dart';
 import '../../services/layanan_pelanggan.dart';
-import '../../widgets/sidik/sidik_permukaan.dart';
-import '../../widgets/sidik/sidik_status.dart';
-import '../../widgets/sidik/sidik_tombol.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/baris_info.dart';
+import '../../widgets/chip_status.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_sidik.dart';
+import '../../widgets/keadaan_galat.dart';
+import '../../widgets/kerangka.dart';
+import '../../widgets/lencana_kan.dart';
+import '../../widgets/panel_pemberitahuan.dart';
+import '../../widgets/pemetaan_status.dart';
+import '../../widgets/status_tampil.dart';
+import '../../widgets/tombol_sidik.dart';
 import 'pratinjau_pdf_screen.dart';
 
-/// Detail sertifikat — isinya CERMIN dari yang tercetak di PDF (dibaca dari
+/// Detail sertifikat. Isinya CERMIN dari yang tercetak di PDF (dibaca dari
 /// snapshot di server), jadi layar ini tidak pernah berbeda dengan kertasnya.
 ///
 /// Tiga keadaan dokumen, semuanya keputusan server (`status`):
-/// - `berlaku`    — normal; bisa dilihat di aplikasi (pratinjau PDF) dan diunduh.
-/// - `digantikan` — kartu kuning di atas menunjuk revisinya; PDF lama tetap
+/// - `berlaku`    : normal; bisa dilihat di aplikasi (pratinjau PDF) dan diunduh.
+/// - `digantikan` : panel kuning di atas menunjuk revisinya; PDF lama tetap
 ///   bisa diunduh sebagai riwayat.
-/// - `dibatalkan` — kartu merah; unduh dimatikan (server juga menjawab 410).
+/// - `dibatalkan` : panel merah; unduh dimatikan (server juga menjawab 410).
 class SertifikatDetailScreen extends ConsumerStatefulWidget {
   const SertifikatDetailScreen({super.key, required this.id});
 
@@ -44,7 +53,7 @@ class _SertifikatDetailScreenState
     try {
       await ref.read(layananProvider).unduhDanBukaPdf(s);
     } on GalatApi catch (e) {
-      // 410 = dibatalkan sejak layar ini dimuat: tarik ulang supaya kartu
+      // 410 = dibatalkan sejak layar ini dimuat: tarik ulang supaya panel
       // merah muncul dan tombolnya mati.
       if (e.status == 410) ref.invalidate(detailSertifikatProvider(widget.id));
       messenger.showSnackBar(SnackBar(content: Text(e.pesan)));
@@ -61,70 +70,15 @@ class _SertifikatDetailScreenState
     }
   }
 
-  Widget _kartuPeringatan(
-    BuildContext context, {
-    required Color warna,
-    required IconData ikon,
-    required Color warnaIkon,
-    required String judul,
-    String? isi,
-    String? catatan,
-    Widget? aksi,
-  }) {
-    final t = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Kertas(
-        warna: warna,
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(ikon, color: warnaIkon),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        judul,
-                        style: t.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (isi != null) ...[
-                        const SizedBox(height: 2),
-                        Text(isi, style: t.bodyMedium),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (aksi != null) ...[const SizedBox(height: 10), aksi],
-            if (catatan != null) ...[
-              const SizedBox(height: 10),
-              Text('Catatan dari lab: $catatan', style: t.bodySmall),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(detailSertifikatProvider(widget.id));
-    final t = Theme.of(context).textTheme;
-    final m = SidikMaterial.of(context);
+    final t = context.teks;
     final offline = ref.watch(koneksiProvider).offline;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Sertifikat')),
-      body: async.when(
+    return HalamanSidik(
+      judul: 'Sertifikat',
+      isi: async.when(
         loading: () => const Memuat.detail(),
         error: (e, _) => KeadaanGalat(
           galat: e,
@@ -133,27 +87,22 @@ class _SertifikatDetailScreenState
         data: (s) {
           final vonis = statusKeputusan(s.keputusan);
           final pengganti = s.digantikanOleh;
+          final bisaBuka = s.bisaDiunduh && !s.dibatalkan && !offline;
           return ListView(
-            padding: denganTepiBawah(
-              context,
-              const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
-            ),
+            padding: Spasi.daftar(context),
             children: [
-              if (s.digantikan && pengganti != null)
-                _kartuPeringatan(
-                  context,
-                  warna: m.awasTipis,
+              if (s.digantikan && pengganti != null) ...[
+                PanelPemberitahuan(
+                  nada: NadaStatus.awas,
                   ikon: Icons.info_outline,
-                  warnaIkon: m.awas,
                   judul: 'Sertifikat ini sudah digantikan',
                   isi:
                       'Yang berlaku sekarang: ${pengganti.nomor}'
                       '${pengganti.diterbitkan == null ? '' : ' (terbit ${Format.tanggal(pengganti.diterbitkan)})'}',
                   catatan: s.catatanPelanggan,
-                  aksi: SidikTombol(
+                  aksi: TombolSidik(
                     label: 'Buka yang berlaku',
                     ikon: Icons.open_in_new,
-                    kecil: true,
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) =>
@@ -162,45 +111,46 @@ class _SertifikatDetailScreenState
                     ),
                   ),
                 ),
-              if (s.dibatalkan)
-                _kartuPeringatan(
-                  context,
-                  warna: m.gagalTipis,
+                const SizedBox(height: Spasi.md),
+              ],
+              if (s.dibatalkan) ...[
+                PanelPemberitahuan(
+                  nada: NadaStatus.gagal,
                   ikon: Icons.block,
-                  warnaIkon: m.gagal,
                   judul: 'Dibatalkan pada ${Format.tanggal(s.dibatalkanPada)}',
                   isi:
                       'Sertifikat ini tidak berlaku lagi dan PDF-nya tidak '
                       'bisa diunduh.',
                   catatan: s.catatanPelanggan,
                 ),
-              Kertas(
-                padding: const EdgeInsets.all(jarak),
+                const SizedBox(height: Spasi.md),
+              ],
+              KartuSidik(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('NOMOR SERTIFIKAT', style: m.gayaEtsa(ukuran: 11)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            s.nomor,
-                            style: t.titleLarge?.copyWith(
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (vonis != null && !s.dibatalkan) SidikLencana(vonis),
-                      ],
-                    ),
-                    if (s.status != StatusDokumen.berlaku) ...[
-                      const SizedBox(height: 8),
-                      SidikLencana(statusDokumen(s.status)),
+                    Text('Nomor sertifikat', style: t.bodySmall),
+                    const SizedBox(height: Spasi.xs),
+                    Text(s.nomor, style: t.headlineSmall?.tabular),
+                    if ((vonis != null && !s.dibatalkan) ||
+                        s.status != StatusDokumen.berlaku) ...[
+                      const SizedBox(height: Spasi.md),
+                      Wrap(
+                        spacing: Spasi.sm,
+                        runSpacing: Spasi.sm,
+                        children: [
+                          if (s.status != StatusDokumen.berlaku)
+                            ChipStatus(statusDokumen(s.status)),
+                          if (vonis != null && !s.dibatalkan) ChipStatus(vonis),
+                        ],
+                      ),
                     ],
-                    const Divider(height: 24),
+                    const SizedBox(height: Spasi.md),
+                    const LencanaKan(),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: Spasi.md),
+                      child: Divider(),
+                    ),
                     BarisInfo('Alat', s.namaAlat),
                     BarisInfo(
                       'Merk / model',
@@ -209,7 +159,7 @@ class _SertifikatDetailScreenState
                         s.model,
                       ].where((x) => x != null && x.isNotEmpty).join(' · '),
                     ),
-                    BarisInfo('Nomor seri', s.serial),
+                    BarisInfo('Nomor seri', s.serial, angka: true),
                     BarisInfo('Diterbitkan', Format.tanggal(s.diterbitkan)),
                     BarisInfo(
                       'Berlaku sampai',
@@ -220,18 +170,16 @@ class _SertifikatDetailScreenState
                     if (s.penandaTangan != null)
                       BarisInfo('Disahkan oleh', s.penandaTangan),
                     if (s.revisiDari != null)
-                      BarisInfo('Merevisi', s.revisiDari),
+                      BarisInfo('Merevisi', s.revisiDari, angka: true),
                   ],
                 ),
               ),
               // REQ-SRT-04: FAIL tidak disembunyikan dan tidak dilunakkan.
               if (s.keputusan == 'FAIL' && !s.dibatalkan) ...[
-                const SizedBox(height: 12),
-                _kartuPeringatan(
-                  context,
-                  warna: m.gagalTipis,
+                const SizedBox(height: Spasi.md),
+                const PanelPemberitahuan(
+                  nada: NadaStatus.gagal,
                   ikon: Icons.cancel_outlined,
-                  warnaIkon: m.gagal,
                   judul: 'Tidak memenuhi toleransi.',
                   isi:
                       'Alat ini berada di luar batas toleransi pada saat '
@@ -239,15 +187,15 @@ class _SertifikatDetailScreenState
                       'tanyakan ke Tim PT Sidik.',
                 ),
               ],
-              const SizedBox(height: jarak),
-              // Satu tombol utama per layar: melihat PDF di dalam aplikasi.
+              const SizedBox(height: Spasi.xl),
+              // Satu aksi utama per layar: melihat PDF di dalam aplikasi.
               // "Unduh PDF" tetap ada untuk membukanya di aplikasi PDF lain.
-              SidikTombol(
+              TombolSidik(
                 label: 'Lihat PDF',
                 ikon: Icons.picture_as_pdf_outlined,
                 ragam: RagamTombol.utama,
                 penuh: true,
-                onPressed: s.bisaDiunduh && !s.dibatalkan && !offline
+                onPressed: bisaBuka
                     ? () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => PratinjauPdfScreen(sertifikat: s),
@@ -255,63 +203,36 @@ class _SertifikatDetailScreenState
                       )
                     : null,
               ),
-              const SizedBox(height: 8),
-              SidikTombol(
+              const SizedBox(height: Spasi.sm),
+              TombolSidik(
                 label: 'Unduh PDF',
                 ikon: Icons.download_outlined,
                 penuh: true,
                 sibuk: _mengunduh,
-                onPressed: s.bisaDiunduh && !s.dibatalkan && !offline
-                    ? () => _unduh(s)
-                    : null,
+                onPressed: bisaBuka ? () => _unduh(s) : null,
               ),
               if (offline && s.bisaDiunduh && !s.dibatalkan)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    'Sambungkan internet untuk mengunduh PDF.',
-                    style: t.bodySmall,
-                  ),
-                )
+                _Catatan('Sambungkan internet untuk mengunduh PDF.')
               else if (s.dibatalkan)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    'Sertifikat yang dibatalkan tidak bisa diunduh.',
-                    style: t.bodySmall,
-                  ),
-                )
+                _Catatan('Sertifikat yang dibatalkan tidak bisa diunduh.')
               else if (!s.bisaDiunduh)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    'PDF sedang disiapkan laboratorium. Coba lagi nanti.',
-                    style: t.bodySmall,
-                  ),
-                )
+                _Catatan('PDF sedang disiapkan laboratorium. Coba lagi nanti.')
               else if (s.digantikan)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    'PDF lama tetap bisa diunduh sebagai riwayat.',
-                    style: t.bodySmall,
-                  ),
-                ),
+                _Catatan('PDF lama tetap bisa diunduh sebagai riwayat.'),
               if (s.tautanVerifikasi != null) ...[
-                const SizedBox(height: 8),
-                SidikTombol(
+                const SizedBox(height: Spasi.sm),
+                TombolSidik(
                   label: 'Buka halaman verifikasi',
                   ikon: Icons.verified_outlined,
+                  ragam: RagamTombol.teks,
                   penuh: true,
                   onPressed: () => launchUrl(
                     Uri.parse(s.tautanVerifikasi!),
                     mode: LaunchMode.externalApplication,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
+                const _Catatan(
                   'Halaman yang sama dengan QR di PDF — boleh dibagikan ke auditor untuk memeriksa keaslian.',
-                  style: t.bodySmall,
                 ),
               ],
             ],
@@ -320,4 +241,17 @@ class _SertifikatDetailScreenState
       ),
     );
   }
+}
+
+/// Keterangan kecil di bawah tombol.
+class _Catatan extends StatelessWidget {
+  const _Catatan(this.teks);
+
+  final String teks;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: Spasi.sm),
+    child: Text(teks, style: context.teks.bodySmall),
+  );
 }

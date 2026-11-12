@@ -12,7 +12,7 @@ import 'package:sidik_pelanggan/core/penyimpan_cache.dart';
 import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
 import 'package:sidik_pelanggan/core/penyimpan_perangkat.dart';
 import 'package:sidik_pelanggan/core/penyimpan_sesi.dart';
-import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/providers/pembaruan_provider.dart';
@@ -123,7 +123,7 @@ List<Override> overrideDasar({
 Widget bungkus(Widget anak, {List<Override> override = const []}) =>
     ProviderScope(
       overrides: override,
-      child: MaterialApp(theme: SidikTheme.terang, home: anak),
+      child: MaterialApp(theme: TemaSidik.terang, home: anak),
     );
 
 /// Halaman kosong untuk daftar berhalaman.

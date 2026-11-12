@@ -11,7 +11,8 @@ import 'package:sidik_pelanggan/app.dart';
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
 import 'package:sidik_pelanggan/core/penyimpan_perangkat.dart';
 import 'package:sidik_pelanggan/core/penyimpan_sesi.dart';
-import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/core/tema/spasi.dart';
+import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/models/rilis_aplikasi.dart';
@@ -184,7 +185,7 @@ Widget _bungkus(Widget anak, {List<Override> tambahan = const []}) =>
         layananProvider.overrideWithValue(_Palsu()),
       ],
       child: MaterialApp(
-        theme: SidikTheme.terang,
+        theme: TemaSidik.terang,
         builder: (context, child) => MediaQuery.withClampedTextScaling(
           minScaleFactor: batasSkalaHuruf.max,
           maxScaleFactor: batasSkalaHuruf.max,
@@ -360,6 +361,6 @@ void main() {
     await tester.pumpAndSettle();
 
     final daftar = tester.widget<ListView>(find.byType(ListView).first);
-    expect(daftar.padding!.resolve(TextDirection.ltr).bottom, 32 + 48);
+    expect(daftar.padding!.resolve(TextDirection.ltr).bottom, Spasi.xl + 48);
   });
 }

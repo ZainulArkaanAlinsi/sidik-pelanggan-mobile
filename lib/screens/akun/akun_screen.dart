@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
 import '../../core/konfigurasi.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/ukuran.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/sidik/sidik_permukaan.dart';
-import '../../widgets/sidik/sidik_tombol.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/bagian_sidik.dart';
+import '../../widgets/baris_menu.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_sidik.dart';
+import '../../widgets/tombol_sidik.dart';
 import '../gerbang.dart';
 import '../paket/paket_screen.dart';
 import 'anggota_screen.dart';
@@ -28,19 +32,21 @@ String teksVersi({
 ].join(' · ');
 
 /// Akun (S17): siapa saya, perusahaan aktif (ganti kalau anggota lebih dari
-/// satu), bantuan & privasi, keluar (HP ini / semua perangkat), dan versi.
+/// satu), bantuan dan privasi, keluar (HP ini / semua perangkat), dan versi.
 class AkunScreen extends ConsumerWidget {
   const AkunScreen({super.key});
 
-  Future<void> _keluarSemua(BuildContext context, WidgetRef ref) async {
+  Future<bool> _konfirmasi(
+    BuildContext context, {
+    required String judul,
+    required String isi,
+    required String aksi,
+  }) async {
     final yakin = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: const Text('Keluar dari semua perangkat?'),
-        content: const Text(
-          'Sesi akun Anda di SEMUA HP — termasuk HP ini — langsung berakhir, '
-          'dan HP-HP itu berhenti menerima notifikasi. Anda perlu masuk lagi.',
-        ),
+        title: Text(judul),
+        content: Text(isi),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(d).pop(false),
@@ -48,12 +54,24 @@ class AkunScreen extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(d).pop(true),
-            child: const Text('Keluar dari semua'),
+            child: Text(aksi),
           ),
         ],
       ),
     );
-    if (yakin != true || !context.mounted) return;
+    return yakin == true;
+  }
+
+  Future<void> _keluarSemua(BuildContext context, WidgetRef ref) async {
+    final yakin = await _konfirmasi(
+      context,
+      judul: 'Keluar dari semua perangkat?',
+      isi:
+          'Sesi akun Anda di SEMUA HP — termasuk HP ini — langsung berakhir, '
+          'dan HP-HP itu berhenti menerima notifikasi. Anda perlu masuk lagi.',
+      aksi: 'Keluar dari semua',
+    );
+    if (!yakin || !context.mounted) return;
     final pesan = ScaffoldMessenger.of(context);
     try {
       final n = await ref.read(sesiProvider.notifier).keluarSemua();
@@ -66,165 +84,142 @@ class AkunScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _keluar(BuildContext context, WidgetRef ref) async {
+    final yakin = await _konfirmasi(
+      context,
+      judul: 'Keluar dari aplikasi?',
+      isi:
+          'HP ini berhenti menerima notifikasi akun Anda sampai Anda masuk lagi.',
+      aksi: 'Keluar',
+    );
+    if (yakin) await ref.read(sesiProvider.notifier).keluar();
+  }
+
+  void _buka(BuildContext context, Widget tujuan) => Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => tujuan));
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sesi = ref.watch(sesiProvider).value;
     final paket = ref.watch(infoPaketProvider).value;
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
     if (sesi == null) return const SizedBox.shrink();
     final aktif = sesi.keanggotaanAktif;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Akun')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
+    return HalamanSidik(
+      judul: 'Akun',
+      isi: ListView(
+        padding: Spasi.daftar(context),
         children: [
-          Kertas(
-            padding: const EdgeInsets.all(jarak),
+          KartuSidik(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(sesi.akun.nama, style: t.titleMedium),
-                Text(sesi.akun.email, style: t.bodySmall),
-                if (sesi.akun.jabatan != null)
-                  Text(sesi.akun.jabatan!, style: t.bodySmall),
-                const Divider(height: 24),
-                Text('PERUSAHAAN AKTIF', style: m.gayaEtsa(ukuran: 11)),
-                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    _Avatar(nama: sesi.akun.nama),
+                    const SizedBox(width: Spasi.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(sesi.akun.nama, style: t.titleMedium),
+                          Text(sesi.akun.email, style: t.bodySmall),
+                          if (sesi.akun.jabatan != null)
+                            Text(sesi.akun.jabatan!, style: t.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: Spasi.md),
+                  child: Divider(),
+                ),
+                Text('Perusahaan aktif', style: t.bodySmall),
+                const SizedBox(height: Spasi.xs),
                 Text(aktif?.namaPerusahaan ?? '—', style: t.titleSmall),
-                Text(aktif?.labelPeran ?? '', style: t.bodySmall),
+                if ((aktif?.labelPeran ?? '').isNotEmpty)
+                  Text(aktif!.labelPeran, style: t.bodySmall),
               ],
             ),
           ),
           if (sesi.akun.lebihDariSatuPerusahaan) ...[
-            const SizedBox(height: jarak),
-            Kertas(
-              // Material transparan: percikan tinta ListTile digambar di
-              // Material terdekat, yang tanpa ini tertutup warna Kertas.
-              child: Material(
-                type: MaterialType.transparency,
-                child: ListTile(
-                  leading: const Icon(Icons.swap_horiz),
-                  title: const Text('Ganti perusahaan'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          const PilihPerusahaanScreen(bisaKembali: true),
-                    ),
+            const SizedBox(height: Spasi.md),
+            KelompokBaris(
+              baris: [
+                BarisMenu(
+                  ikon: Icons.swap_horiz,
+                  judul: 'Ganti perusahaan',
+                  onTap: () => _buka(
+                    context,
+                    const PilihPerusahaanScreen(bisaKembali: true),
                   ),
                 ),
-              ),
+              ],
             ),
           ],
-          const JudulSeksi('Perusahaan'),
-          Kertas(
-            child: Material(
-              type: MaterialType.transparency,
-              child: Column(
-                children: [
-                  _MenuAkun(
-                    ikon: Icons.inventory_2_outlined,
-                    judul: 'Pelacakan paket',
-                    tujuan: const PaketScreen(),
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  _MenuAkun(
-                    ikon: Icons.groups_outlined,
-                    judul: 'Anggota perusahaan',
-                    tujuan: const AnggotaScreen(),
-                  ),
-                ],
+          const BagianSidik('Perusahaan'),
+          KelompokBaris(
+            baris: [
+              BarisMenu(
+                ikon: Icons.inventory_2_outlined,
+                judul: 'Pelacakan paket',
+                onTap: () => _buka(context, const PaketScreen()),
               ),
-            ),
-          ),
-          const JudulSeksi('Akun'),
-          Kertas(
-            child: Material(
-              type: MaterialType.transparency,
-              child: Column(
-                children: [
-                  _MenuAkun(
-                    ikon: Icons.notifications_active_outlined,
-                    judul: 'Pengaturan notifikasi',
-                    tujuan: const PreferensiNotifikasiScreen(),
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  _MenuAkun(
-                    ikon: Icons.lock_reset_outlined,
-                    judul: 'Ganti sandi',
-                    tujuan: const GantiSandiScreen(),
-                  ),
-                ],
+              BarisMenu(
+                ikon: Icons.groups_outlined,
+                judul: 'Anggota perusahaan',
+                onTap: () => _buka(context, const AnggotaScreen()),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: jarak),
-          Kertas(
-            child: Material(
-              type: MaterialType.transparency,
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.support_agent),
-                    title: const Text('Bantuan & kontak'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const BantuanScreen(),
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 1, indent: 56),
-                  ListTile(
-                    leading: const Icon(Icons.privacy_tip_outlined),
-                    title: const Text('Privasi & ketentuan'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const PrivasiScreen(),
-                      ),
-                    ),
-                  ),
-                ],
+          const BagianSidik('Akun'),
+          KelompokBaris(
+            baris: [
+              BarisMenu(
+                ikon: Icons.notifications_active_outlined,
+                judul: 'Pengaturan notifikasi',
+                onTap: () => _buka(context, const PreferensiNotifikasiScreen()),
               ),
-            ),
+              BarisMenu(
+                ikon: Icons.lock_reset_outlined,
+                judul: 'Ganti sandi',
+                onTap: () => _buka(context, const GantiSandiScreen()),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          SidikTombol(
+          const BagianSidik('Bantuan'),
+          KelompokBaris(
+            baris: [
+              BarisMenu(
+                ikon: Icons.support_agent,
+                judul: 'Bantuan & kontak',
+                onTap: () => _buka(context, const BantuanScreen()),
+              ),
+              BarisMenu(
+                ikon: Icons.privacy_tip_outlined,
+                judul: 'Privasi & ketentuan',
+                onTap: () => _buka(context, const PrivasiScreen()),
+              ),
+            ],
+          ),
+          const SizedBox(height: Spasi.xl),
+          TombolSidik(
             label: 'Keluar',
             ikon: Icons.logout,
             penuh: true,
-            onPressed: () async {
-              final yakin = await showDialog<bool>(
-                context: context,
-                builder: (d) => AlertDialog(
-                  title: const Text('Keluar dari aplikasi?'),
-                  content: const Text(
-                    'HP ini berhenti menerima notifikasi akun Anda sampai Anda masuk lagi.',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(d).pop(false),
-                      child: const Text('Batal'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(d).pop(true),
-                      child: const Text('Keluar'),
-                    ),
-                  ],
-                ),
-              );
-              if (yakin == true) await ref.read(sesiProvider.notifier).keluar();
-            },
+            onPressed: () => _keluar(context, ref),
           ),
-          SidikTombol(
+          const SizedBox(height: Spasi.xs),
+          TombolSidik(
             label: 'Keluar dari semua perangkat',
             ragam: RagamTombol.teks,
+            penuh: true,
             onPressed: () => _keluarSemua(context, ref),
           ),
-          const SizedBox(height: jarak),
+          const SizedBox(height: Spasi.lg),
           SelectableText(
             teksVersi(
               versi: paket?.versi ?? '-',
@@ -240,25 +235,40 @@ class AkunScreen extends ConsumerWidget {
   }
 }
 
-/// Satu baris menu di Akun yang membuka [tujuan].
-class _MenuAkun extends StatelessWidget {
-  const _MenuAkun({
-    required this.ikon,
-    required this.judul,
-    required this.tujuan,
-  });
+/// Lingkaran berinisial nama (dua kata pertama).
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.nama});
 
-  final IconData ikon;
-  final String judul;
-  final Widget tujuan;
+  final String nama;
+
+  String get _inisial {
+    final kata = nama.trim().split(RegExp(r'\s+')).where((k) => k.isNotEmpty);
+    final huruf = kata
+        .take(2)
+        .map((k) => String.fromCharCode(k.runes.first).toUpperCase());
+    final hasil = huruf.join();
+    return hasil.isEmpty ? '?' : hasil;
+  }
 
   @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(ikon),
-    title: Text(judul),
-    trailing: const Icon(Icons.chevron_right),
-    onTap: () => Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => tujuan)),
-  );
+  Widget build(BuildContext context) {
+    final s = context.skema;
+    return ExcludeSemantics(
+      child: Container(
+        width: AreaSentuh.minimum + Spasi.sm,
+        height: AreaSentuh.minimum + Spasi.sm,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: s.primaryContainer,
+          shape: BoxShape.circle,
+        ),
+        child: Text(
+          _inisial,
+          style: context.teks.titleMedium?.copyWith(
+            color: s.onPrimaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
 }

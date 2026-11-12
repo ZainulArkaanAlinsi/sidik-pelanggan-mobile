@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
 import '../../core/format.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/sesi_provider.dart';
+import '../../widgets/bagian_sidik.dart';
 import '../../widgets/daftar_berhalaman.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_sidik.dart';
+import '../../widgets/keadaan_kosong.dart';
 import '../rangka.dart';
 import '../tautan.dart';
 
@@ -61,24 +65,36 @@ class NotifikasiScreen extends ConsumerWidget {
     ref.invalidate(jumlahBelumDibacaProvider);
   }
 
+  void _buka(BuildContext context, WidgetRef ref, Notifikasi n) {
+    _dibaca(ref, n);
+    // Tautan → layar tujuannya; yang tanpa tautan cukup ditandai dibaca.
+    final tujuan = _tujuan(n);
+    if (tujuan != null) {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => tujuan));
+    } else if (n.kategori == 'pelanggan_alat_jatuh_tempo') {
+      // Pengingat jadwal → ringkasan jatuh tempo di Beranda.
+      ref.read(tabProvider.notifier).pilih(IndeksTab.beranda);
+      Navigator.of(context).popUntil((r) => r.isFirst);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(notifikasiProvider);
-    final m = SidikMaterial.of(context);
-    final t = Theme.of(context).textTheme;
     final semua = async.value?.isi ?? const <Notifikasi>[];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifikasi'),
-        actions: [
-          TextButton(
-            onPressed: () => _tandaiSemua(context, ref),
-            child: const Text('Tandai semua dibaca'),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
+    return HalamanSidik(
+      judul: 'Notifikasi',
+      aksi: [
+        IconButton(
+          tooltip: 'Tandai semua dibaca',
+          icon: const Icon(Icons.done_all),
+          onPressed: () => _tandaiSemua(context, ref),
+        ),
+      ],
+      isi: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(notifikasiProvider);
           ref.invalidate(jumlahBelumDibacaProvider);
@@ -87,8 +103,7 @@ class NotifikasiScreen extends ConsumerWidget {
         child: DaftarBerhalaman<Notifikasi>(
           async: async,
           namaButir: 'notifikasi',
-          padding: const EdgeInsets.only(bottom: 32),
-          pemisah: const Divider(height: 1),
+          padding: Spasi.daftar(context),
           muatLagi: ({ulangiGalat = false}) => ref
               .read(notifikasiProvider.notifier)
               .muatLagi(ulangiGalat: ulangiGalat),
@@ -104,62 +119,80 @@ class NotifikasiScreen extends ConsumerWidget {
             final i = semua.indexOf(n);
             final hari = _hari(n.dibuat);
             final kepala = i <= 0 || _hari(semua[i - 1].dibuat) != hari;
-            final baris = ListTile(
-              onTap: () {
-                _dibaca(ref, n);
-                // Tautan → layar tujuannya; yang tanpa tautan cukup
-                // ditandai dibaca.
-                final tujuan = _tujuan(n);
-                if (tujuan != null) {
-                  Navigator.of(
-                    context,
-                  ).push(MaterialPageRoute<void>(builder: (_) => tujuan));
-                } else if (n.kategori == 'pelanggan_alat_jatuh_tempo') {
-                  // Pengingat jadwal → ringkasan jatuh tempo di Beranda.
-                  ref.read(tabProvider.notifier).pilih(IndeksTab.beranda);
-                  Navigator.of(context).popUntil((r) => r.isFirst);
-                }
-              },
-              leading: Container(
-                width: 10,
-                height: 10,
-                margin: const EdgeInsets.only(top: 6),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: n.dibaca ? Colors.transparent : m.biruTinta,
-                ),
-              ),
-              minLeadingWidth: 10,
-              title: Text(
-                n.judul,
-                semanticsLabel: n.dibaca ? n.judul : 'Belum dibaca. ${n.judul}',
-                style: t.titleSmall?.copyWith(
-                  fontWeight: n.dibaca ? FontWeight.w500 : FontWeight.w700,
-                ),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (n.isi != null) Text(n.isi!, style: t.bodyMedium),
-                  const SizedBox(height: 2),
-                  Text(Format.tanggalJam(n.dibuat), style: t.bodySmall),
-                ],
-              ),
-              isThreeLine: n.isi != null,
+            final baris = _KartuNotifikasi(
+              notifikasi: n,
+              onTap: () => _buka(context, ref, n),
             );
             if (!kepala) return baris;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: jarak),
-                  child: JudulSeksi(_labelHari(hari)),
-                ),
-                baris,
-              ],
+              children: [BagianSidik(_labelHari(hari)), baris],
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+/// Satu notifikasi: titik penanda di kiri untuk yang belum dibaca (bukan latar
+/// berwarna, yang di sepuluh baris sekaligus cuma jadi bising), judul tebal
+/// selama belum dibaca, isi, dan waktu.
+class _KartuNotifikasi extends StatelessWidget {
+  const _KartuNotifikasi({required this.notifikasi, required this.onTap});
+
+  final Notifikasi notifikasi;
+  final VoidCallback onTap;
+
+  /// Garis tengah titik penanda.
+  static const double _titik = 10;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.teks;
+    final s = context.skema;
+    final n = notifikasi;
+    return KartuSidik(
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: _titik,
+            height: _titik,
+            margin: const EdgeInsets.only(top: Spasi.xs + 2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: n.dibaca ? Colors.transparent : s.primary,
+            ),
+          ),
+          const SizedBox(width: Spasi.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  n.judul,
+                  semanticsLabel: n.dibaca
+                      ? n.judul
+                      : 'Belum dibaca. ${n.judul}',
+                  style: n.dibaca
+                      ? t.bodyMedium?.copyWith(fontWeight: FontWeight.w500)
+                      : t.titleSmall,
+                ),
+                if (n.isi != null) ...[
+                  const SizedBox(height: Spasi.xs / 2),
+                  Text(
+                    n.isi!,
+                    style: t.bodyMedium?.copyWith(color: s.onSurfaceVariant),
+                  ),
+                ],
+                const SizedBox(height: Spasi.xs),
+                Text(Format.tanggalJam(n.dibuat), style: t.bodySmall),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

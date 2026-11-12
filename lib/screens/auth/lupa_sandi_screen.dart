@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
-import '../../core/theme/sidik_material.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/sidik/sidik_tombol.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/tombol_sidik.dart';
 
 /// Lupa sandi: dua langkah di SATU layar — minta kode OTP ke email, lalu
 /// masukkan kode + sandi baru. Server selalu menjawab "kode terkirim" walau
@@ -58,22 +59,23 @@ class _LupaSandiScreenState extends ConsumerState<LupaSandiScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final m = SidikMaterial.of(context);
+    final s = context.skema;
     final layanan = ref.read(layananProvider);
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Atur ulang sandi')),
-      body: ListView(
-        padding: denganTepiBawah(context, const EdgeInsets.all(24)),
+    return HalamanSidik(
+      judul: 'Atur ulang sandi',
+      latarPutih: true,
+      isi: ListView(
+        padding: Spasi.denganTepiBawah(context, const EdgeInsets.all(Spasi.xl)),
         children: [
           Text(
             _kodeTerkirim
                 ? 'Kalau ${_email.text.trim()} terdaftar, kode 6 digit sudah dikirim ke sana. Berlaku 10 menit.'
                 : 'Masukkan email akun Anda. Kami kirim kode untuk membuat sandi baru.',
-            style: t.bodyMedium,
+            style: t.bodyMedium?.copyWith(color: s.onSurfaceVariant),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: Spasi.xl),
           TextField(
             controller: _email,
             enabled: !_kodeTerkirim,
@@ -84,7 +86,7 @@ class _LupaSandiScreenState extends ConsumerState<LupaSandiScreen> {
             ),
           ),
           if (_kodeTerkirim) ...[
-            const SizedBox(height: jarak),
+            const SizedBox(height: Spasi.lg),
             TextField(
               controller: _otp,
               keyboardType: TextInputType.number,
@@ -93,7 +95,7 @@ class _LupaSandiScreenState extends ConsumerState<LupaSandiScreen> {
                 errorText: _galatIsian['otp'],
               ),
             ),
-            const SizedBox(height: jarak),
+            const SizedBox(height: Spasi.lg),
             TextField(
               controller: _sandi,
               obscureText: true,
@@ -105,12 +107,12 @@ class _LupaSandiScreenState extends ConsumerState<LupaSandiScreen> {
             ),
           ],
           if (_galat != null) ...[
-            const SizedBox(height: 12),
-            Text(_galat!, style: TextStyle(color: m.gagal)),
+            const SizedBox(height: Spasi.md),
+            Text(_galat!, style: TextStyle(color: s.error)),
           ],
-          const SizedBox(height: 20),
+          const SizedBox(height: Spasi.xl),
           if (!_kodeTerkirim)
-            SidikTombol(
+            TombolSidik(
               label: 'Kirim kode',
               ragam: RagamTombol.utama,
               penuh: true,
@@ -121,7 +123,7 @@ class _LupaSandiScreenState extends ConsumerState<LupaSandiScreen> {
               }),
             )
           else ...[
-            SidikTombol(
+            TombolSidik(
               label: 'Simpan sandi baru',
               ragam: RagamTombol.utama,
               penuh: true,
@@ -143,7 +145,7 @@ class _LupaSandiScreenState extends ConsumerState<LupaSandiScreen> {
                 Navigator.of(context).pop();
               }),
             ),
-            SidikTombol(
+            TombolSidik(
               label: 'Kirim ulang kode',
               ragam: RagamTombol.teks,
               onPressed: _sibuk

@@ -13,7 +13,7 @@ import 'package:http/testing.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
-import 'package:sidik_pelanggan/core/theme/sidik_theme.dart';
+import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/anggota.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/models/paket.dart';
@@ -25,9 +25,10 @@ import 'package:sidik_pelanggan/screens/akun/preferensi_notifikasi_screen.dart';
 import 'package:sidik_pelanggan/screens/paket/paket_detail_screen.dart';
 import 'package:sidik_pelanggan/screens/paket/paket_screen.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
-import 'package:sidik_pelanggan/widgets/sidik/sidik_tombol.dart';
+import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
 
 import 'dukungan/dukungan.dart';
+import 'dukungan/layar_uji.dart';
 
 // ── Fixture (bentuk mengikuti docs/kontrak-api-pelanggan.md) ──────────────
 
@@ -380,6 +381,8 @@ void main() {
     testWidgets(
       'PIC utama: tombol Nonaktifkan hanya untuk anggota aktif lain',
       (tester) async {
+        // Layar tinggi: daftar lazy tidak membangun kartu di luar jendela.
+        layarHp(tester, tinggi: 1600);
         final palsu = _Palsu();
         await tester.pumpWidget(_layar(const AnggotaScreen(), palsu));
         await tester.pumpAndSettle();
@@ -552,8 +555,8 @@ void main() {
 
     testWidgets('tombol mati sampai ketiga kolom terisi', (tester) async {
       await tester.pumpWidget(_layar(const GantiSandiScreen(), _Palsu()));
-      SidikTombol tombol() =>
-          tester.widget<SidikTombol>(find.byType(SidikTombol));
+      TombolSidik tombol() =>
+          tester.widget<TombolSidik>(find.byType(TombolSidik));
 
       expect(tombol().onPressed, isNull);
       await tester.enterText(
@@ -664,7 +667,7 @@ void main() {
         await tester.tap(find.text('ORD/2026/11/0001'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Perkembangan'.toUpperCase()), findsOneWidget);
+        expect(find.text('Perkembangan'), findsOneWidget);
         expect(find.text('Alat diterima lab'), findsOneWidget);
         expect(find.text('Sekarang'), findsOneWidget);
         expect(find.text('Jangka Sorong'), findsOneWidget);
@@ -816,7 +819,7 @@ void main() {
         ],
       ),
       child: MaterialApp(
-        theme: SidikTheme.terang,
+        theme: TemaSidik.terang,
         builder: (context, child) => MediaQuery.withClampedTextScaling(
           minScaleFactor: 1.3,
           maxScaleFactor: 1.3,

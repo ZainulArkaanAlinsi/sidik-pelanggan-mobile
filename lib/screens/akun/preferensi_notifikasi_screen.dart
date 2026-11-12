@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_sidik.dart';
+import '../../widgets/keadaan_galat.dart';
+import '../../widgets/kerangka.dart';
 
 /// Satu saklar yang ditampilkan. Hanya saklar yang SEKARANG mengatur sesuatu
 /// di server: `pesan_lab` (balasan di utas permintaan) tidak ditampilkan
@@ -68,20 +73,17 @@ class PreferensiNotifikasiScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(preferensiNotifikasiProvider);
     final aktif = ref.watch(sesiProvider).value?.keanggotaanAktif;
-    final t = Theme.of(context).textTheme;
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pengaturan notifikasi')),
-      body: async.when(
+    final t = context.teks;
+    return HalamanSidik(
+      judul: 'Pengaturan notifikasi',
+      isi: async.when(
         loading: () => const Memuat(),
         error: (e, _) => KeadaanGalat(
           galat: e,
           cobaLagi: () => ref.invalidate(preferensiNotifikasiProvider),
         ),
         data: (nilai) => ListView(
-          padding: denganTepiBawah(
-            context,
-            const EdgeInsets.fromLTRB(jarak, 8, jarak, 32),
-          ),
+          padding: Spasi.daftar(context),
           children: [
             Text(
               aktif == null
@@ -90,17 +92,25 @@ class PreferensiNotifikasiScreen extends ConsumerWidget {
                         'Perusahaan lain di akun Anda punya pengaturan sendiri.',
               style: t.bodyMedium,
             ),
-            const SizedBox(height: 8),
-            for (final s in daftarSaklarNotifikasi)
-              SwitchListTile(
-                key: ValueKey('saklar-${s.kunci}'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(s.judul),
-                subtitle: Text(s.keterangan),
-                value: nilai[s.kunci] ?? false,
-                onChanged: (v) => _ubah(context, ref, s.kunci, v),
+            const SizedBox(height: Spasi.lg),
+            KartuSidik(
+              padding: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (final (i, s) in daftarSaklarNotifikasi.indexed) ...[
+                    if (i > 0) const Divider(),
+                    SwitchListTile(
+                      key: ValueKey('saklar-${s.kunci}'),
+                      title: Text(s.judul),
+                      subtitle: Text(s.keterangan),
+                      value: nilai[s.kunci] ?? false,
+                      onChanged: (v) => _ubah(context, ref, s.kunci, v),
+                    ),
+                  ],
+                ],
               ),
-            const SizedBox(height: 8),
+            ),
+            const SizedBox(height: Spasi.lg),
             Text(
               'Saklar yang dimatikan berarti kabarnya tidak dikirim sama sekali. '
               'Notifikasi yang dimatikan lewat pengaturan HP tetap masuk ke '

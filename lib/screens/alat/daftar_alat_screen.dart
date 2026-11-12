@@ -1,15 +1,20 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/tema/spasi.dart';
+import '../../core/tema/warna_sidik.dart';
 import '../../models/data_pelanggan.dart';
 import '../../models/status_berlaku.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/koneksi_provider.dart';
 import '../../widgets/daftar_berhalaman.dart';
-import '../../widgets/umum.dart';
+import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_alat.dart';
+import '../../widgets/keadaan_galat.dart';
+import '../../widgets/keadaan_kosong.dart';
+import '../../widgets/kolom_cari.dart';
+import '../../widgets/kerangka.dart';
 import 'alat_detail_screen.dart';
 
 /// Kelompok jatuh tempo pada daftar alat. Dipakai juga oleh kotak ringkasan di
@@ -74,26 +79,8 @@ class DaftarAlatScreen extends ConsumerStatefulWidget {
 }
 
 class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
-  final _cari = TextEditingController();
   String _kata = '';
   late FilterAlat _filter = widget.filterAwal;
-  Timer? _tunda;
-
-  @override
-  void dispose() {
-    _tunda?.cancel();
-    _cari.dispose();
-    super.dispose();
-  }
-
-  void _ketik(String v) {
-    _tunda?.cancel();
-    // Tunggu jeda mengetik — satu permintaan per kata, bukan per huruf.
-    _tunda = Timer(
-      const Duration(milliseconds: 350),
-      () => setState(() => _kata = v.trim()),
-    );
-  }
 
   String get _judulKosong => _filter == FilterAlat.semua && _kata.isNotEmpty
       ? 'Tidak ada yang cocok'
@@ -109,30 +96,25 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Alat saya')),
-      body: Column(
+    return HalamanSidik(
+      judul: 'Alat saya',
+      isi: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(jarak, 8, jarak, 0),
-            child: TextField(
-              controller: _cari,
-              onChanged: _ketik,
-              textInputAction: TextInputAction.search,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Cari nama, merk, atau nomor seri',
-              ),
-            ),
+          KolomCari(
+            petunjuk: 'Cari nama, merk, atau nomor seri',
+            onCari: (kata) => setState(() => _kata = kata),
           ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: jarak, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+              horizontal: Spasi.lg,
+              vertical: Spasi.sm,
+            ),
             child: Row(
               children: [
                 for (final f in FilterAlat.values)
                   Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.only(right: Spasi.sm),
                     child: ChoiceChip(
                       label: Text(f.label),
                       selected: _filter == f,
@@ -154,7 +136,7 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
     final kunci = (cari: _kata, saring: _filter.saringServer);
     final async = ref.watch(daftarAlatProvider(kunci));
     final koneksi = ref.watch(koneksiProvider);
-    final t = Theme.of(context).textTheme;
+    final t = context.teks;
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(daftarAlatProvider(kunci));
@@ -163,10 +145,7 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
       child: DaftarBerhalaman<Alat>(
         async: async,
         namaButir: 'alat',
-        padding: denganTepiBawah(
-          context,
-          const EdgeInsets.fromLTRB(jarak, 4, jarak, 32),
-        ),
+        padding: Spasi.daftar(context),
         muatLagi: ({ulangiGalat = false}) => ref
             .read(daftarAlatProvider(kunci).notifier)
             .muatLagi(ulangiGalat: ulangiGalat),
@@ -174,7 +153,7 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
         kepala: [
           if (koneksi.offline && koneksi.dataTerakhir != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: Spasi.sm),
               child: Text(
                 'Terakhir diperbarui '
                 '${Format.jamAtauTanggal(koneksi.dataTerakhir!)}',
@@ -234,12 +213,9 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
           }
           return ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: denganTepiBawah(
-              context,
-              const EdgeInsets.fromLTRB(jarak, 4, jarak, 32),
-            ),
+            padding: Spasi.daftar(context),
             itemCount: alat.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            separatorBuilder: (_, _) => const SizedBox(height: Spasi.md),
             itemBuilder: (context, i) =>
                 KartuAlat(alat: alat[i], onTap: () => _bukaAlat(alat[i])),
           );
