@@ -314,6 +314,29 @@ abstract final class TemaSidik {
         shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: Spasi.xs),
       ),
+      // Pilihan tampilan (mis. Daftar | Arsip di tab Sertifikat): tinggi
+      // sentuh 48 dp, segmen terpilih berlatar kobalt tipis seperti chip.
+      // Latar tipis BUKAN penanda satu-satunya (kontras antar-keadaan <3:1):
+      // pemakai wajib menyalakan `showSelectedIcon` (centang).
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(
+            Size(0, AreaSentuh.minimum),
+          ),
+          side: WidgetStatePropertyAll(BorderSide(color: skema.outline)),
+          textStyle: WidgetStatePropertyAll(teks.labelLarge),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.selected)
+                ? skema.primaryContainer
+                : skema.surface,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.selected)
+                ? skema.onPrimaryContainer
+                : skema.onSurface,
+          ),
+        ),
+      ),
       listTileTheme: ListTileThemeData(
         iconColor: skema.onSurfaceVariant,
         textColor: skema.onSurface,

@@ -61,14 +61,15 @@ class KartuSertifikat extends StatelessWidget {
                     if (sr.serial != null) 'SN ${sr.serial}',
                   ].join(' · '),
                   style: t.bodySmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   'Terbit ${Format.tanggal(sr.diterbitkan)}'
                   '${sr.berlakuSampai == null ? '' : ' · berlaku s.d. ${Format.tanggal(sr.berlakuSampai)}'}',
                   style: t.bodySmall,
                 ),
+                // Hanya baris arsip yang membawa nomor order.
+                if (sr.nomorOrder != null)
+                  Text('Order ${sr.nomorOrder}', style: t.bodySmall),
                 if (tampilStatus || tampilVonis) ...[
                   const SizedBox(height: Spasi.sm),
                   Wrap(

@@ -205,3 +205,50 @@ Tidak mendesak: data produksi saat ini 48 pelanggan dengan 51 alat seluruhnya.
   `application/pdf` (disk `arsip` S3 tanpa metadata bisa mengirim octet-stream),
   pelonggaran ini bisa dicabut di `ApiPelanggan._jenisBolehPdf`.
 
+## 6. Arsip sertifikat (13 Nov 2026)
+
+Arsip (`GET /sertifikat/garis-waktu`) dan pencariannya sudah punya layar:
+segmen "Arsip" di tab Sertifikat.
+
+### a. "Satu sertifikat per instrumen": diterima apa adanya, terbuka untuk "terbaru per serial"
+
+Keputusan: perilaku server sekarang diterima. Revisi yang sudah digantikan
+disembunyikan (bawaan, sama dengan daftar Sertifikat); siklus kalibrasi yang
+berbeda pada nomor seri yang sama tampil masing-masing menurut tanggal
+terbitnya. Itu riwayat yang benar, bukan duplikat. Aplikasi TIDAK mengelompokkan
+atau menyaring per nomor seri (hitungan adalah tampilan server).
+
+Terbuka: bila pemilik kelak meminta "hanya yang terbaru per nomor seri", itu
+butuh parameter di server (mis. `?terbaru_per_serial=1`) pada garis waktu dan
+daftar sertifikat; sisi aplikasi cukup meneruskannya.
+
+### b. Pencarian Arsip = daftar datar lewat `GET /sertifikat?q=`
+
+Kolom cari di Arsip (minimal 2 karakter, jeda ketik 350 ms, maksimal 100
+karakter) memakai daftar sertifikat biasa, bukan `?q=` garis waktu, supaya
+hasilnya satu daftar datar dengan satu permintaan. Kata kosong kembali ke garis
+waktu. Hal yang perlu diketahui:
+
+- `GET /sertifikat?q=` mencocokkan SECARA HARFIAH (bukan format-agnostik):
+  `cal-2026-10-0001` tidak menemukan `CAL/2026/10/0001`. Pencocokan yang
+  menyamakan format hanya ada di `?q=` garis waktu (kontrak §4).
+- Cakupan `q` di `GET /sertifikat` tidak tertulis di kontrak Arsip & Pencarian
+  (hanya "tidak diubah"). Kode `SertifikatController::index` pada branch
+  `feat/arsip-cari-terpadu-20261112` mencocokkan nomor sertifikat, nama alat,
+  nomor seri TERDAFTAR, dan nomor order (`calibration_sessions.nomor_order`
+  serta `orders.nomor`); di `main` API belum ada nomor order. Nomor seri yang
+  hanya diketik teknisi di lembar kerja tidak tercakup di jalur ini.
+- Baris `GET /sertifikat` tidak memuat `nomor_order`, jadi kartu hasil tidak
+  menunjukkan order yang cocok.
+- **Permintaan ke API (pekerjaan terpisah, belum dikerjakan): normalisasi `q`
+  di `GET /sertifikat?q=`**, seperti `?q=` garis waktu: huruf besar-kecil, `/`,
+  `-`, dan spasi diabaikan (`CAL-2026-10-0001` = `CAL/2026/10/0001`), dan nomor
+  seri yang diketik teknisi ikut dicocokkan. Sampai itu ada, keputusan produk:
+  pencarian tetap harfiah dan aplikasi jujur soal itu. Petunjuk di bawah kolom
+  cari ("Tulis nomor persis seperti di sertifikat.") dan keadaan "Tidak ada yang
+  cocok" menyebutnya, dan keadaan kosong juga memberi tahu bahwa sertifikat yang
+  sudah direvisi ada di Daftar lewat sakelar "Tampilkan juga yang sudah
+  direvisi" (hasil cari Arsip tidak menyertakan revisi lama).
+- Penelusuran garis waktu memang tetap tanpa kata cari di aplikasi; bila
+  kelak butuh "persempit hitungan per periode", `?q=` garis waktu sudah ada
+  di server.

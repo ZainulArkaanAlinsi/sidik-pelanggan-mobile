@@ -6,6 +6,7 @@ import '../core/api_pelanggan.dart';
 import '../core/penyimpan_pratinjau.dart';
 import '../models/akun.dart';
 import '../models/anggota.dart';
+import '../models/arsip.dart';
 import '../models/data_pelanggan.dart';
 import '../models/paket.dart';
 
@@ -282,6 +283,26 @@ class LayananPelanggan {
 
   Future<Sertifikat> sertifikat(int id) async => Sertifikat.dariJson(
     (await api.get('/sertifikat/$id'))['data'] as Map<String, dynamic>,
+  );
+
+  /// Arsip sertifikat menurut tanggal terbit (`GET /sertifikat/garis-waktu`):
+  /// tahun, bulan, pekan, lalu hari beserta sertifikatnya. Pengelompokan,
+  /// label, dan jumlah dihitung SERVER; [parameter] hanya meneruskan
+  /// `telusuri` dari kelompok yang dibuka. Perusahaan dari header
+  /// `X-Perusahaan-Id`, bukan dari parameter. Sertifikat yang sudah digantikan
+  /// revisi disembunyikan server seperti di daftar Sertifikat.
+  ///
+  /// Tanpa kata cari: pencarian memakai [daftarSertifikat] (daftar datar).
+  /// Hanya membaca (`GET`). Perusahaan lain / rute yang belum ada = 404
+  /// ([GalatApi.tidakDitemukan]).
+  Future<HasilArsip> garisWaktuSertifikat(
+    ParameterArsip parameter, {
+    int halaman = 1,
+  }) async => HasilArsip.dariJson(
+    await api.get(
+      '/sertifikat/garis-waktu',
+      query: parameter.query(halaman: halaman),
+    ),
   );
 
   /// Byte PDF sertifikat untuk pratinjau di dalam aplikasi. Jalurnya sama

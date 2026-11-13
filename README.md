@@ -100,6 +100,8 @@ relatif terhadap `/api/pelanggan/v1`.
 | Tab Alat (Alat saya): semua alat dengan status, pencarian, saringan jatuh tempo | `GET /alat` |
 | Detail alat dan riwayat sertifikat (garis waktu) | `GET /alat/{id}` |
 | Sertifikat, Detail, Lihat PDF di aplikasi, Unduh PDF | `GET /sertifikat`, `GET /sertifikat/{id}`, `GET /sertifikat/{id}/unduh` |
+| Arsip sertifikat (segmen "Arsip" di tab Sertifikat): tahun → bulan → pekan → hari | `GET /sertifikat/garis-waktu` |
+| Cari di Arsip (nomor seri, nomor sertifikat, nomor order): daftar datar, bukan penelusuran | `GET /sertifikat?q=` (jalur yang sama dengan segmen Daftar) |
 | Notifikasi dan jumlah belum dibaca | `GET /notifikasi`, `GET /notifikasi/jumlah` |
 | Bantuan & kontak / privasi & ketentuan | `GET /app/info` (tautan dibuka di aplikasi luar/peramban) |
 

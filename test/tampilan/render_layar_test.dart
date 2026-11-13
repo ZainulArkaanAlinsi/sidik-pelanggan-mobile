@@ -28,6 +28,7 @@ import 'package:http/http.dart' as http;
 import 'package:sidik_pelanggan/core/konfigurasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
+import 'package:sidik_pelanggan/models/arsip.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/screens/akun/anggota_screen.dart';
 import 'package:sidik_pelanggan/screens/akun/bantuan_screen.dart';
@@ -38,9 +39,11 @@ import 'package:sidik_pelanggan/screens/auth/terima_undangan_screen.dart';
 import 'package:sidik_pelanggan/screens/gerbang.dart';
 import 'package:sidik_pelanggan/screens/paket/paket_detail_screen.dart';
 import 'package:sidik_pelanggan/screens/rangka.dart';
+import 'package:sidik_pelanggan/screens/sertifikat/arsip_screen.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_detail_screen.dart';
 import 'package:sidik_pelanggan/widgets/logo_sidik.dart';
 
+import '../dukungan/fixture_arsip.dart';
 import '../dukungan/fixture_fitur.dart';
 import '../dukungan/layar_uji.dart';
 
@@ -58,6 +61,18 @@ class _ServerRender extends ServerFitur {
   @override
   Future<http.Response> tangani(http.Request r) async {
     final jalur = r.url.path.replaceFirst(Konfigurasi.prefix, '');
+    if (jalur == '/sertifikat/garis-waktu') {
+      // Perusahaan 5 ("PT Kosong") belum punya sertifikat di arsip.
+      if (r.headers['X-Perusahaan-Id'] == '5') {
+        return _json(jawabanArsip(tingkat: 'tahun', total: 0));
+      }
+      return _json(switch (r.url.queryParameters['tingkat']) {
+        'bulan' => arsipBulan(),
+        'pekan' => arsipPekanNovember(),
+        'hari' => arsipHari(),
+        _ => arsipTahun(),
+      });
+    }
     if (jalur == '/notifikasi/jumlah') {
       return _json({
         'data': {'belum_dibaca': 2},
@@ -358,6 +373,8 @@ typedef _Layar = ({
   int? tab,
   int perusahaan,
   bool galat,
+  bool matriksPenuh,
+  Future<void> Function(WidgetTester tester)? sesudah,
 });
 
 _Layar _layar(
@@ -366,12 +383,19 @@ _Layar _layar(
   int? tab,
   int perusahaan = 3,
   bool galat = false,
+  // Selalu dijalankan di semua ukuran dan kedua tema, bukan hanya bila PNG
+  // diminta.
+  bool matriksPenuh = false,
+  // Langkah sesudah layar siap (mis. mengetuk segmen).
+  Future<void> Function(WidgetTester tester)? sesudah,
 }) => (
   nama: nama,
   bangun: bangun,
   tab: tab,
   perusahaan: perusahaan,
   galat: galat,
+  matriksPenuh: matriksPenuh,
+  sesudah: sesudah,
 );
 
 final _layarKunci = <_Layar>[
@@ -401,6 +425,25 @@ final _layarKunci = <_Layar>[
   ),
   _layar('alat_detail', () => const AlatDetailScreen(id: 1)),
   _layar('sertifikat', () => const Rangka(), tab: IndeksTab.sertifikat),
+  // Segmen Arsip terpilih di tab Sertifikat (centang di segmen terpilih).
+  _layar(
+    'sertifikat_arsip',
+    () => const Rangka(),
+    tab: IndeksTab.sertifikat,
+    matriksPenuh: true,
+    sesudah: (tester) => tester.tap(find.text('Arsip')),
+  ),
+  _layar('arsip', () => const ArsipScreen()),
+  _layar('arsip_kosong', () => const ArsipScreen(), perusahaan: 5),
+  _layar(
+    'arsip_hari',
+    () => ArsipScreen(
+      parameter: HasilArsip.dariJson(
+        arsipPekanNovember(),
+      ).kelompok.first.parameter,
+      judul: 'Pekan 46 (9–15 Nov 2026)',
+    ),
+  ),
   _layar('sertifikat_detail', () => const SertifikatDetailScreen(id: 12)),
   _layar('sertifikat_digantikan', () => const SertifikatDetailScreen(id: 9)),
   _layar('sertifikat_gagal', () => const SertifikatDetailScreen(id: 11)),
@@ -442,14 +485,14 @@ void main() {
   // Tanpa PNG cukup dua ukuran paling berisiko (HP sempit 1,3× dan tablet) di
   // tema terang: luapan tidak bergantung pada tema. Matriks penuh hanya bila
   // gambar diminta, supaya suite CI tidak berat.
-  final ukuranAktif = folder == null
-      ? [_Ukuran.sempit, _Ukuran.tablet]
-      : _Ukuran.values;
-  final temaAktif = folder == null ? [false] : [false, true];
-
-  for (final u in ukuranAktif) {
-    for (final gelap in temaAktif) {
+  // Layar `matriksPenuh` tetap dijalankan di semua ukuran dan kedua tema.
+  for (final u in _Ukuran.values) {
+    for (final gelap in const [false, true]) {
       for (final l in _layarKunci) {
+        final ringan = folder == null && !l.matriksPenuh;
+        if (ringan && (gelap || (u != _Ukuran.sempit && u != _Ukuran.tablet))) {
+          continue;
+        }
         final tema = gelap ? 'gelap' : 'terang';
         testWidgets('${l.nama} · ${u.nama} · $tema', (tester) async {
           layarHp(tester, lebar: u.lebar, tinggi: u.tinggi);
@@ -520,6 +563,10 @@ void main() {
             ProviderScope.containerOf(
               tester.element(find.byType(Rangka)),
             ).read(tabProvider.notifier).pilih(l.tab!);
+            await tester.pumpAndSettle();
+          }
+          if (l.sesudah != null) {
+            await l.sesudah!(tester);
             await tester.pumpAndSettle();
           }
           expect(tester.takeException(), isNull);
