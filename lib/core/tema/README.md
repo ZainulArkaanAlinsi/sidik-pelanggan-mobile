@@ -19,7 +19,7 @@ dingin, mode terang dan gelap.
 | `spasi.dart` | `Spasi.xs/sm/md/lg/xl/xxl` (4/8/12/16/24/32), `Spasi.sisi` (margin halaman 20), `Spasi.bagian` (32), `Spasi.batasKompak` (340 dp), `Spasi.daftar(context)`, batas tablet (600 dp) dan lebar isi (720 dp). |
 | `bentuk.dart` | `Bentuk.kecil/kontrol/kartu/utama/lembar/pil` (radius 4/10/16/16/20/999). |
 | `elevasi.dart` | `Elevasi.datar/rendah/lembar/garis`. Kedalaman dari garis halus, bukan bayangan tebal. |
-| `ukuran.dart` | `UkuranIkon` (16/24/32/48), `AreaSentuh.minimum` (48 dp), `UkuranBaris` (baris 72, tombol utama 56, kolom angka 56), `UkuranTik` (jejak). |
+| `ukuran.dart` | `UkuranIkon` (16/24/32/48), `AreaSentuh.minimum` (48 dp), `UkuranBaris` (baris 72, tombol utama 56, kolom angka 56), `UkuranTik` (jejak: tik 6/12, simpul 14/22, batang 2, lingkar 4, garis bawah 3, penanda 24, tik paket maksimum 24), `SkalaHuruf` (teks besar dijepit 1,15x; nomor tidak di bawah 12 sp efektif). |
 | `tipografi.dart` | Skala sembilan ukuran (Inter), `.tabular` untuk angka selebar tetap, `.nomor` untuk nomor (selebar tetap + nol bergaris). |
 | `tema_sidik.dart` | `TemaSidik.terang` / `TemaSidik.gelap`: `ThemeData` yang menema semua komponen Material. |
 

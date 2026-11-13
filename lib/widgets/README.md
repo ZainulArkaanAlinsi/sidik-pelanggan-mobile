@@ -37,6 +37,42 @@ ulang di sini. Lihat `lib/core/tema/README.md`.
 | `pemetaan_status.dart` | SATU pemetaan kode/status → `StatusTampil` (`statusAlat`, `statusSertifikat`, `statusPaket`, ...). Istilah dari `StatusBerlaku.label`: "Lewat jadwal", "Masa berlaku berakhir", bukan "kedaluwarsa". |
 | `chip_status.dart` | `ChipStatus`: ikon + teks pada latar tipis. |
 
+## Komponen "Jejak" (Paket 2, belum dipakai layar)
+
+Komponen bersama arah "Jejak" (`docs/standar-kualitas-desain.md`). Belum dipakai
+layar: Paket 3 menggantikan kartu, chip, dan `BarisInfo` per layar. Semuanya
+dari token, tanpa paket atau font baru; tiap komponen punya tes widget di
+`test/widgets/` dan masuk galeri render `test/tampilan/render_komponen_test.dart`
+(daftar: `test/dukungan/daftar_komponen.dart`).
+
+| Berkas | Komponen | Menggantikan |
+|---|---|---|
+| `panel_sidik.dart` | `PanelSidik`: satu panel, butir dipisah garis halus. Satu butir = satu baris. | `KartuSidik` per butir |
+| `baris_sidik.dart` | `BarisSidik` + `tataLetakKompak`: baris min 72 dp, slot angka/judul/keterangan/akhir, kompak di < 340 dp atau huruf > 1,15x, `gayaNomor`. | `KartuAlat`, `KartuPaket`, `KartuSertifikat`, `BarisMenu` |
+| `baris_alat.dart` | `BarisAlat`: sisa hari memimpin, nama dan merk paling banyak 2 baris, nomor seri sendiri, jejak tahap bila di lab; belum ada jadwal = satu baris di atas nama. | `KartuAlat` |
+| `angka_hari.dart` | `AngkaHari` (kolom, kompak, bintang 44) dan `AngkaKata`. | ikon kalender + `Format.sisaHari` |
+| `stempel.dart` | `Stempel`: persegi sudut 4, ikon + kata; `tenang` = tanpa latar. | `ChipStatus` |
+| `jejak_tahap.dart` | `JejakTahap` + `posisiTahap`: satu tik per langkah `garis_waktu`, kata wajib. | ikon radio/centang bawaan |
+| `tik_paket.dart` | `TikPaket`: satu tik per alat dalam paket, "N dari M alat selesai". | teks "N dari M" saja |
+| `garis_waktu_tahap.dart` | `GarisWaktuTahap`: garis waktu tegak + `menunggu()` ("Menunggu: A dan B"). | `_Langkah` di paket detail |
+| `skala_tempo.dart` | `SkalaTempo`: jendela 90 hari (keputusan desain), kata + dua label berpusat pada tiknya, ekor lewat jadwal paling sedikit 8%. | baris "Lewat 4 hari" |
+| `peta_jatuh_tempo.dart` | `PetaJatuhTempo` + `ZonaTempo`: satu penggaris, zona bisa diketuk. | `KartuKpi` x4 |
+| `kalimat_utama.dart` | `KalimatUtama` + `PotonganKalimat`: kalimat besar, frasa status berwarna (kata, bukan warna saja). | sapaan + nama PT |
+| `ringkasan_perhatian.dart` | `RingkasanPerhatian`: "Perlu perhatian" paling banyak 3 butir + tautan; kosong = tidak digambar. | empat ubin KPI |
+| `plat_nama.dart` | `PlatNama`: nomor seri sebagai identitas, hanya fakta terisi. | `BarisInfo` x7 di detail alat |
+| `fakta.dart` | `Fakta`: "label  nilai" yang membungkus di 320 dp. | `BarisInfo` |
+| `nomor_sidik.dart` | `NomorSidik`: nomor tidak putus di tengah (1 baris, mengecil sampai 12 sp, lalu membungkus di "/"). | nomor order yang putus |
+| `saringan_teks.dart` | `SaringanTeks` + `PilihanSaringan`: kata + jumlah, garis bawah terpilih, tepi memudar hanya bila bisa digeser. | `ChoiceChip` x5, `SegmentedButton` |
+| `kolom_cari_utuh.dart` | `KolomCariUtuh`: petunjuk membungkus (tidak terpotong "Cari nama, merk, at..."). | `KolomCari` |
+| `bagian.dart` | `Bagian`: judul 17/24, jumlah redup, tautan teks 48 dp. | `BagianSidik` |
+| `tautan_baris.dart` | `TautanBaris`: tautan teks + panah, 48 dp. | tombol outline lebar |
+| `keadaan_teks.dart` | `KeadaanTeks` (rata kiri, tanpa ikon) + `BannerDataTerakhir`. | `KeadaanKosong`, `KeadaanGalat` |
+
+Catatan a11y: komponen yang bisa diketuk memasang `onTap` pada `Semantics`
+pembungkusnya, bukan hanya pada `InkWell`: `excludeSemantics` membuang aksi
+ketuk milik `InkWell`, dan tombol berlabel tanpa aksi ketuk tidak bisa
+diaktifkan pembaca layar (`KartuSidik` lama memakai pola itu; lihat laporan PR).
+
 ## Aksi dan masukan
 
 | Berkas | Komponen |

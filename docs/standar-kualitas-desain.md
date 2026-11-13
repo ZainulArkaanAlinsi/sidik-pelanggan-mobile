@@ -177,7 +177,7 @@ antar-bagian `Spasi.bagian` 32, kolom angka pindah ke atas judul di bawah
 
 ## 7. Cara menjalankan gerbang
 
-Lima kelompok tes deterministik, semuanya ikut `flutter test` dan CI
+Enam kelompok tes deterministik, semuanya ikut `flutter test` dan CI
 (`.github/workflows/periksa.yml`).
 
 | Tes | Berkas | Gagal bila |
@@ -186,11 +186,14 @@ Lima kelompok tes deterministik, semuanya ikut `flutter test` dan CI
 | Kontras | `test/tema/kontras_tema_test.dart` | pasangan token, `ThemeData`, atau label `TombolSidik` (semua ragam) di bawah 4,5:1 (teks) atau 3:1 (komponen), terang atau gelap; atau lulus/gagal/awas selisih luminans <= 0,02 |
 | Token tema | `test/tema/token_tema_test.dart` + `tema_sidik_test.dart` | huruf < 12 sp atau di luar daftar izin, tinggi tombol bukan 56 (utama) / 48, radius di luar set, elevasi di kartu/app bar/navigasi, stempel tanpa ikon atau kata, istilah "kedaluwarsa" |
 | Anti-slop | `test/tema/anti_slop_test.dart` | di seluruh `lib/`: `KartuSidik(`, `ChipStatus(`, ` · ` pemisah, atau ubin ikon bertambah (atau berkurang tanpa angka diturunkan). Ratchet utang SIMBOL, bukan detektor slop: `Card(`, `Chip(`, atau pemisah lain tidak terlihat |
+| Komponen Jejak | `test/tema/komponen_jejak_test.dart` + `test/dukungan/daftar_komponen.dart` | berkas komponen di `lib/widgets` tak diimpor galeri render, tak punya tes widget, atau tak tercatat di README; ada angka mentah pada parameter ukuran (`width`, `height`, `dimension`, `EdgeInsets.*`), warna mentah, " · ", atau "kedaluwarsa"; berkas ber-`InkWell` tanpa tinggi sentuh dari token, `Semantics`, atau `onTap` pada `Semantics` |
 | Render | `test/tampilan/render_layar_test.dart` | layar kunci meluap (RenderFlex) atau galat saat render pada HP 392x852, 320 dp x huruf 1,3, tablet 840x1200, terang atau gelap; atau gagal pedoman sasaran sentuh 48 dp / label semantik di HP 392 dan HP sempit (viewport biasa, dan 3000 dp tinggi di tema terang agar butir di bawah lipatan ikut terbangun) |
+| Render komponen | `test/tampilan/render_komponen_test.dart` | galeri komponen (semua keadaan) meluap, kontras teks < 4,5:1 (dari pohon widget), sasaran sentuh < 48 dp atau tanpa label (HP 392 dan HP sempit), atau memuat "kedaluwarsa" / " · ", pada HP 392, 320 dp x huruf 1,3, tablet 840, terang atau gelap |
 
 ```bash
 flutter test test/tema
 flutter test test/tampilan/render_layar_test.dart
+flutter test test/tampilan/render_komponen_test.dart
 ```
 
 **Ratchet.** Pelanggaran lama dibekukan per berkas di
@@ -257,11 +260,26 @@ di perangkat tetap diperlukan; angka hijau saja tidak cukup.
 ## 9. Status migrasi
 
 - Paket 0 (gerbang) dan Paket 1 (nilai token baru di bawah nama lama): ada.
-- Berikutnya: Paket 2 komponen bersama (`PanelSidik`, `BarisSidik`, `Stempel`,
-  `JejakTahap`, `AngkaHari`, dan seterusnya), lalu layar satu per satu (detail
-  paket, Beranda, daftar alat, detail alat, sertifikat, notifikasi, akun).
+- Paket 2 (komponen bersama): ada, 20 berkas baru di `lib/widgets` (daftar di
+  `lib/widgets/README.md`): `PanelSidik`, `BarisSidik`, `BarisAlat`, `AngkaHari`,
+  `Stempel`, `JejakTahap`, `TikPaket`, `GarisWaktuTahap`, `SkalaTempo`,
+  `PetaJatuhTempo`, `KalimatUtama`, `RingkasanPerhatian`, `PlatNama`, `Fakta`,
+  `NomorSidik`, `SaringanTeks`, `KolomCariUtuh`, `Bagian`, `TautanBaris`,
+  `KeadaanTeks`. BELUM dipakai layar. Token geometri baru di `ukuran.dart`
+  (`UkuranTik.simpul/batang/...`, `SkalaHuruf`).
+- Berikutnya: layar satu per satu memakai komponen itu (detail paket, Beranda,
+  daftar alat, detail alat, sertifikat, notifikasi, akun); tiap layar menurunkan
+  angka ratchet `KartuSidik`/`ChipStatus`/" · ".
 - Yang masih memakai bentuk lama sampai paketnya tiba: 24 pemakaian `KartuSidik`,
   14 `ChipStatus` (pil, bukan stempel persegi), 10 pemisah ` · ` (satu di model
   `Alat.merkModel`), 3 widget berubin ikon (6 kemunculan rumus ubin),
   deretan chip saring yang terpotong, nomor order yang putus di 320 dp x 1,3
   (lihat tabel di `anti_slop_test.dart`).
+
+### Utang komponen Jejak (diketahui, belum dikerjakan)
+
+- Tablet: komponen mengisi lebar induk (tanpa batas lebar baca; `PlatNama` dan `Fakta` ikut melebar), belum ada varian dua kolom atau master-detail, dan `SaringanTeks` dengan tujuh pilihan masih menyisakan pilihan tergulir di 840 dp. Batas lebar baca dan dua kolom dikerjakan per layar di Paket 3 (Beranda 3a, daftar alat 3c); layar membungkus isi dengan `KontenTengah` (720 dp).
+- `SkalaTempo` di luar jendela (jadwal lebih dari 90 hari lagi): batang abu tanpa penanda "hari ini" selain label kiri; arti dibawa kata. Penanda hari ini bisa ditambahkan bila peninjau mata meminta.
+- `PetaJatuhTempo` tema gelap: batang bernada netral (tinta terang) lebih terang daripada batang status; dinilai mata di Paket 3a.
+- Ekor "lewat N hari" di `SkalaTempo` dilebarkan sampai 8% supaya terlihat (posisi sebenarnya tetap di `SkalaTempo.posisi`); angka tidak berubah karena batang bukan pembawa arti.
+- Pola `Semantics(excludeSemantics: true, child: InkWell)` di `KartuSidik`, `AksiBagian`, dan layar lama membuang aksi ketuk bagi pembaca layar: periksa per layar di Paket 3.
