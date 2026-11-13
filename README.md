@@ -139,13 +139,16 @@ oleh `test/guard_tulis_test.dart`:
 - **Tema sendiri, bukan salinan aplikasi lab.** Material 3 datar, kobalt
   `#043EA1`, netral dingin, terang dan gelap: token di `lib/core/tema/`
   (`README.md` di sana), komponen di `lib/widgets/` (`README.md` di sana).
-  Layar tidak menulis warna/jarak sendiri; `test/tema/tema_sidik_test.dart`
-  menolaknya. Gerak halaman (`lib/core/motion/`) masih sama dengan aplikasi lab.
+  Layar tidak menulis warna/jarak sendiri; gerbang desain di `test/tema/`
+  menolaknya (standar: `docs/standar-kualitas-desain.md`). Gerak halaman (`lib/core/motion/`) masih sama dengan aplikasi lab.
 - **Tampilan diperiksa tanpa emulator**: `SIDIK_PNG_DIR=<folder di luar repo>
-  flutter test test/tampilan/render_layar_test.dart` me-render 19 layar pada
-  HP 360×800, HP sempit 320×640 huruf 1,3×, dan tablet 840×1200, terang dan
-  gelap, ke PNG (font Inter dari aset). Tanpa variabelnya tes tetap memeriksa
-  luapan di HP sempit dan tablet (terang). Tidak ada golden baseline; gambar dari Windows bukan acuan.
+  flutter test test/tampilan/render_layar_test.dart` me-render layar kunci
+  pada HP 360×800 dan 392×852, HP sempit 320×640 huruf 1,3×, dan tablet
+  840×1200, terang dan gelap, ke PNG (font Inter dari aset). Tanpa variabelnya
+  tes tetap berjalan sebagai gerbang: layar kunci di HP 392, HP sempit, dan
+  tablet, terang dan gelap, gagal bila meluap atau melanggar sasaran sentuh 48
+  dp dan label semantik. Tidak ada golden baseline; gambar dari Windows bukan
+  acuan.
 - **Navigasi lima tab** (Beranda, Alat, Sertifikat, Notifikasi, Akun): bawah di
   HP, rel samping di lebar >= 600 dp, isi dibatasi ±720 dp.
 - **Ikon peluncur dan splash** dari logo resmi Lab: `tool/buat_aset_android.py`

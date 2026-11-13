@@ -19,8 +19,8 @@ enum RagamTombol {
 }
 
 /// Tombol aplikasi di atas `FilledButton`/`OutlinedButton`/`TextButton`:
-/// ripple standar, tinggi minimal 48 dp, tumbuh ke bawah bila label membungkus
-/// (huruf besar di layar sempit).
+/// ripple standar, tinggi minimal 48 dp (56 dp untuk [RagamTombol.utama], dari
+/// tema), tumbuh ke bawah bila label membungkus (huruf besar di layar sempit).
 ///
 /// [sibuk] mengganti ikon dengan pemutar dan mematikan tombol: per tombol,
 /// bukan satu penanda untuk seluruh layar. [penuh] membentang selebar induk.

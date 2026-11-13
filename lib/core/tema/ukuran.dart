@@ -17,3 +17,22 @@ abstract final class UkuranIkon {
 abstract final class AreaSentuh {
   static const double minimum = 48;
 }
+
+/// Tinggi baris dan tombol. Pelanggan lega: baris daftar 72 dp (Lab 64).
+abstract final class UkuranBaris {
+  /// Tinggi minimum baris daftar dua sampai empat baris teks.
+  static const double minimum = 72;
+
+  /// Tombol utama: satu per layar, dijangkau ibu jari.
+  static const double tombolUtama = 56;
+
+  /// Lebar kolom angka-hari di awal baris (diskalakan dengan huruf).
+  static const double kolomAngka = 56;
+}
+
+/// Tik pada jejak tahap dan peta jatuh tempo (motif skala, dipakai hemat).
+abstract final class UkuranTik {
+  static const double tinggi = 6;
+  static const double tinggiSekarang = 12;
+  static const double jarak = 4;
+}

@@ -1,5 +1,8 @@
 // Tema SIDIK Pelanggan: token tunggal (tanpa warna/ukuran liar di layar),
-// skala tipografi enam tingkat, dan kontras WCAG AA di terang dan gelap.
+// skala tipografi sembilan tingkat (daftar izin eksplisit), dan kontras WCAG AA
+// di terang dan gelap. Gerbang desain yang lebih lengkap ada di
+// token_only_test.dart, kontras_tema_test.dart, token_tema_test.dart, dan
+// anti_slop_test.dart (folder yang sama).
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -71,12 +74,12 @@ void main() {
     });
   });
 
-  group('tipografi: Inter, enam tingkat', () {
+  group('tipografi: Inter, sembilan tingkat', () {
     for (final (nama, tema) in [
       ('terang', TemaSidik.terang),
       ('gelap', TemaSidik.gelap),
     ]) {
-      test('tema $nama memakai Inter dan hanya enam ukuran huruf', () {
+      test('tema $nama memakai Inter dan hanya sembilan ukuran huruf', () {
         final t = tema.textTheme;
         final gaya = [
           t.displayLarge,
@@ -95,7 +98,16 @@ void main() {
           t.labelMedium,
           t.labelSmall,
         ];
-        expect({for (final g in gaya) g!.fontSize}, {28, 20, 16, 15, 13, 12});
+        // Daftar izin eksplisit (Paket 1, token "Jejak"): tiga tingkat baru
+        // masing-masing dipakai satu peran. 44 angka bintang (sisa hari di
+        // detail alat), 32 kalimat utama Beranda dan paket, 17 judul baris.
+        // Tingkat lama 15 dan 13 diganti 16 dan 14 (pembaca santai di meja);
+        // 22 menggantikan 20 untuk judul layar, 20 tinggal untuk app bar.
+        // Ukuran di luar daftar ini tetap tertolak; minimum 12 sp.
+        expect(
+          {for (final g in gaya) g!.fontSize},
+          {44, 32, 28, 22, 20, 17, 16, 14, 12},
+        );
         expect(gaya.every((g) => g!.fontFamily == 'Inter'), isTrue);
         expect(tema.useMaterial3, isTrue);
       });

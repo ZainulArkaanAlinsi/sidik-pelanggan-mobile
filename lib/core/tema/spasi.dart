@@ -21,6 +21,16 @@ abstract final class Spasi {
   /// 32 dp: ruang napas di layar sambutan dan keadaan kosong.
   static const double xxl = 32;
 
+  /// 20 dp: margin kiri-kanan halaman (Pelanggan lebih lega dari Lab: 16).
+  static const double sisi = 20;
+
+  /// 32 dp: jarak antar-bagian layar.
+  static const double bagian = 32;
+
+  /// Di bawah lebar ini (320-339 dp) baris daftar memindahkan kolom angka
+  /// ke atas judul.
+  static const double batasKompak = 340;
+
   /// Lebar isi maksimum di layar lebar (tablet): isi dipusatkan.
   static const double lebarKonten = 720;
 
