@@ -2,6 +2,8 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'tema/palet_sidik.dart';
+
 /// Tujuan laporan galat yang tidak tertangkap / galat non-fatal.
 ///
 /// Pola yang sama dengan aplikasi lab (`sidik-calibration-mobile`,
@@ -142,7 +144,10 @@ void pasangPenangkapGalat({
 ///
 /// Sengaja tidak bergantung pada Theme/Localizations/MediaQuery: dia bisa
 /// dibangun di titik pohon mana pun, termasuk di atas `MaterialApp`, dan
-/// yang paling buruk adalah kartu galat yang ikut galat.
+/// yang paling buruk adalah kartu galat yang ikut galat. Warnanya dari
+/// [PaletSidik] (konstanta statis, bukan Theme), selalu versi terang: tinta
+/// `teksTerang` di atas `awasLatarTerang` (kontras dijaga
+/// `test/tema/kontras_tema_test.dart`).
 class KartuGalatRamah extends StatelessWidget {
   const KartuGalatRamah({super.key});
 
@@ -155,7 +160,7 @@ class KartuGalatRamah extends StatelessWidget {
     return const Directionality(
       textDirection: TextDirection.ltr,
       child: ColoredBox(
-        color: Color(0xFFFFF4E5),
+        color: PaletSidik.awasLatarTerang,
         child: Padding(
           padding: EdgeInsets.all(12),
           child: Center(
@@ -163,7 +168,7 @@ class KartuGalatRamah extends StatelessWidget {
               pesan,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF5F3700),
+                color: PaletSidik.teksTerang,
                 fontSize: 14,
                 height: 1.3,
                 decoration: TextDecoration.none,

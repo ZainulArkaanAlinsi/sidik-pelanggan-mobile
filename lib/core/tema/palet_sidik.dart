@@ -53,9 +53,14 @@ abstract final class PaletSidik {
   static const Color garisHalusGelap = Color(0xFF2C3548);
 
   // ── Status, tema terang: tinta + latar tipis ────────────────────────────
+  // Lulus, awas, dan gagal harus beda TERANGNYA (luminans relatif > 0,02),
+  // bukan cuma beda rona: merah, hijau, dan amber duduk di sumbu yang hilang
+  // untuk mata deuteranopia dan fotokopi hitam-putih. Amber lama (`#7A4F08`,
+  // `#F2B655`) nyaris sama terangnya dengan merah (terang, beda 0,004) dan
+  // dengan hijau (gelap, beda 0,005). Amber di bawah sama dengan milik Lab.
   static const Color lulusTerang = Color(0xFF125739);
   static const Color lulusLatarTerang = Color(0xFFE1F0E8);
-  static const Color awasTerang = Color(0xFF7A4F08);
+  static const Color awasTerang = Color(0xFF8C5C0A);
   static const Color awasLatarTerang = Color(0xFFFBF0DA);
   static const Color gagalTerang = Color(0xFFA81B33);
   static const Color gagalLatarTerang = Color(0xFFFBE4E8);
@@ -65,7 +70,7 @@ abstract final class PaletSidik {
   // ── Status, tema gelap ──────────────────────────────────────────────────
   static const Color lulusGelap = Color(0xFF6FD3A0);
   static const Color lulusLatarGelap = Color(0xFF12301F);
-  static const Color awasGelap = Color(0xFFF2B655);
+  static const Color awasGelap = Color(0xFFDB9A2B);
   static const Color awasLatarGelap = Color(0xFF33260C);
   static const Color gagalGelap = Color(0xFFFF8FA0);
   static const Color gagalLatarGelap = Color(0xFF3A1720);

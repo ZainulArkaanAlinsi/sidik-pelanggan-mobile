@@ -168,10 +168,10 @@ abstract final class TemaSidik {
 
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(64, AreaSentuh.minimum),
+          minimumSize: const Size(64, UkuranBaris.tombolUtama),
           padding: const EdgeInsets.symmetric(horizontal: Spasi.xl),
           elevation: Elevasi.datar,
-          shape: bentukKontrol,
+          shape: RoundedRectangleBorder(borderRadius: Bentuk.sudutUtama),
           textStyle: teks.labelLarge,
         ),
       ),
@@ -227,31 +227,35 @@ abstract final class TemaSidik {
         height: 68,
         backgroundColor: skema.surface,
         surfaceTintColor: Colors.transparent,
-        indicatorColor: skema.primaryContainer,
+        // Tanpa pil penanda: tujuan aktif = ikon terisi + kobalt + kata tebal.
+        indicatorColor: Colors.transparent,
         elevation: Elevasi.datar,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         iconTheme: WidgetStateProperty.resolveWith(
           (s) => IconThemeData(
             size: UkuranIkon.sedang,
             color: s.contains(WidgetState.selected)
-                ? skema.onPrimaryContainer
+                ? skema.primary
                 : skema.onSurfaceVariant,
           ),
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (s) => teks.labelMedium?.copyWith(
             color: s.contains(WidgetState.selected)
-                ? skema.onSurface
+                ? skema.primary
                 : skema.onSurfaceVariant,
+            fontWeight: s.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
           ),
         ),
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: skema.surface,
-        indicatorColor: skema.primaryContainer,
+        indicatorColor: Colors.transparent,
         elevation: Elevasi.datar,
         selectedIconTheme: IconThemeData(
-          color: skema.onPrimaryContainer,
+          color: skema.primary,
           size: UkuranIkon.sedang,
         ),
         unselectedIconTheme: IconThemeData(
@@ -259,7 +263,8 @@ abstract final class TemaSidik {
           size: UkuranIkon.sedang,
         ),
         selectedLabelTextStyle: teks.labelMedium?.copyWith(
-          color: skema.onSurface,
+          color: skema.primary,
+          fontWeight: FontWeight.w700,
         ),
         unselectedLabelTextStyle: teks.labelMedium,
       ),

@@ -1,18 +1,35 @@
 // Harness tampilan: me-render layar kunci ke PNG tanpa emulator, dan sekaligus
-// menjadi tes "tidak meluap" untuk tiap layar utama pada tiga ukuran dan dua
-// tema.
+// menjadi GERBANG DESAIN bagian 3: tes "tidak meluap" untuk layar kunci pada
+// tiga ukuran dan dua tema.
 //
-// Ukuran: HP 360×800, HP sempit 320×640 dengan huruf 1,3×, tablet 840×1200.
+// Ukuran gerbang: HP 392×852, HP sempit 320×640 dengan huruf 1,3×, tablet
+// 840×1200. HP 360×800 (ukuran lama) ikut dirender bila PNG diminta, supaya
+// gambar bisa dibandingkan dengan bukti sebelumnya.
 // Tema: terang dan gelap. Font Inter dimuat dari aset (`siapkanTesFitur`),
 // jadi lebar teks sama dengan di HP, bukan kotak Ahem.
+//
+// Layar kunci (`kunci: true`) SELALU dijalankan di tiga ukuran gerbang x dua
+// tema, dengan PNG atau tanpa. Pada HP 392 dan HP sempit, layar kunci juga
+// diperiksa pedoman sasaran sentuh 48 dp dan label semantik (Flutter
+// `androidTapTargetGuideline` dan `labeledTapTargetGuideline`), di viewport
+// biasa dan (tema terang) di viewport 3000 dp supaya butir di bawah lipatan
+// ikut terbangun. Layar lain
+// hanya dijalankan di HP sempit dan tablet (terang) bila PNG tidak diminta.
+//
+// GAGAL bila ada luapan (RenderFlex overflowed) atau galat lain saat
+// build/layout/paint. Luapan lama yang diketahui dicatat di [_utangLuapan]
+// (batas px per `layar|ukuran`): tidak boleh bertambah parah, dan tes gagal
+// bila utangnya sudah lunas supaya daftarnya dibersihkan. Hari ini kosong.
 //
 // PNG hanya ditulis bila `SIDIK_PNG_DIR` diisi (folder di luar repo):
 //
 //   SIDIK_PNG_DIR=/tmp/desain flutter test test/tampilan/render_layar_test.dart
 //
-// Tanpa variabel itu tes tetap me-render dan memeriksa luapan (HP sempit 1,3×
-// dan tablet, tema terang), hanya tidak menyimpan gambar. TIDAK ada golden baseline: gambar dari Windows tidak boleh
-// dijadikan acuan (baseline hanya lahir lewat CI macOS bila konvensinya ada).
+// Beberapa layar saja: `SIDIK_LAYAR=beranda,alat flutter test ...`.
+//
+// TIDAK ada golden baseline: gambar dari Windows tidak boleh dijadikan acuan
+// (baseline hanya lahir lewat CI macOS bila konvensinya ada; repo ini belum
+// punya golden maupun workflow `golden-baru`).
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -355,16 +372,31 @@ Sesi _sesi(int aktif) => Sesi(
 );
 
 enum _Ukuran {
-  hp('hp', 360, 800, 1.0, 2.0),
+  // Ukuran lama; hanya dirender bila PNG diminta.
+  hp('hp', 360, 800, 1.0, 2.0, gerbang: false),
+  hp392('hp392', 392, 852, 1.0, 2.0),
   sempit('sempit', 320, 640, 1.3, 2.0),
   tablet('tablet', 840, 1200, 1.0, 1.5);
 
-  const _Ukuran(this.nama, this.lebar, this.tinggi, this.skala, this.piksel);
+  const _Ukuran(
+    this.nama,
+    this.lebar,
+    this.tinggi,
+    this.skala,
+    this.piksel, {
+    this.gerbang = true,
+  });
   final String nama;
   final double lebar;
   final double tinggi;
   final double skala;
   final double piksel;
+
+  /// Ikut gerbang (selalu dijalankan untuk layar kunci).
+  final bool gerbang;
+
+  /// Pedoman sentuh dan label diperiksa di ukuran ini (layar kunci).
+  bool get periksaPedoman => this == hp392 || this == sempit;
 }
 
 typedef _Layar = ({
@@ -373,7 +405,7 @@ typedef _Layar = ({
   int? tab,
   int perusahaan,
   bool galat,
-  bool matriksPenuh,
+  bool kunci,
   Future<void> Function(WidgetTester tester)? sesudah,
 });
 
@@ -383,9 +415,9 @@ _Layar _layar(
   int? tab,
   int perusahaan = 3,
   bool galat = false,
-  // Selalu dijalankan di semua ukuran dan kedua tema, bukan hanya bila PNG
-  // diminta.
-  bool matriksPenuh = false,
+  // Layar kunci: selalu dijalankan di tiga ukuran gerbang dan kedua tema (dan
+  // diperiksa pedoman sentuh + label), bukan hanya bila PNG diminta.
+  bool kunci = false,
   // Langkah sesudah layar siap (mis. mengetuk segmen).
   Future<void> Function(WidgetTester tester)? sesudah,
 }) => (
@@ -394,13 +426,74 @@ _Layar _layar(
   tab: tab,
   perusahaan: perusahaan,
   galat: galat,
-  matriksPenuh: matriksPenuh,
+  kunci: kunci,
   sesudah: sesudah,
 );
 
+/// Tinggi viewport (dp) untuk lintasan pedoman sentuh yang memuat butir di bawah
+/// lipatan daftar. Butir lebih jauh dari ini (mis. daftar sangat panjang) tetap
+/// tidak terperiksa: lihat `docs/standar-kualitas-desain.md` bagian 8.
+const _tinggiPanjang = 3000.0;
+
+/// UTANG SENTUH di viewport tinggi: jumlah target < 48 dp yang SUDAH ada di
+/// bawah lipatan sebelum lintasan itu ada, per `layar|ukuran`. Boleh mengecil,
+/// tidak boleh bertambah, dan tes gagal bila utangnya sudah lunas.
+///
+/// - `akun|hp392`: kaki Akun (versi + build + ID pengguna, S17) adalah
+///   `SelectableText` dengan aksi tekan-lama 360x40 dp di HP 392. Di HP sempit
+///   (huruf 1,3x) teksnya membungkus lebih tinggi dan lolos. Dibereskan di
+///   paket layar Akun, bukan di PR gerbang.
+const _utangSentuhPanjang = <String, int>{'akun|hp392': 1};
+
+/// Bandingkan jumlah target < 48 dp di [alasan] (teks `Evaluation.reason` dari
+/// `androidTapTargetGuideline`, `null` bila lolos) dengan [utang]. Mengembalikan
+/// daftar pelanggaran; kosong berarti lolos.
+List<String> periksaSentuhPanjang(String? alasan, int utang) {
+  final n = 'expected tap target size'.allMatches(alasan ?? '').length;
+  if (n > utang) {
+    return ['$n target < 48 dp (utang tercatat $utang):\n$alasan'];
+  }
+  if (n < utang) {
+    return [
+      'hanya $n target < 48 dp, utang tercatat $utang: perbarui '
+          '_utangSentuhPanjang',
+    ];
+  }
+  return const [];
+}
+
+/// UTANG LUAPAN: kombinasi `layar|ukuran` yang SUDAH meluap sebelum gerbang
+/// ini ada. Nilainya batas luapan (px) yang diizinkan. Hari ini KOSONG: 138
+/// render sebelum redesain semuanya tanpa luapan. Bila nanti perlu diisi, itu
+/// utang yang harus disebut di PR, hanya boleh mengecil, dan tes gagal bila
+/// utangnya sudah lunas supaya daftar ini dibersihkan.
+const _utangLuapan = <String, double>{};
+
+/// Periksa galat render [unik] terhadap [utang] (batas px, atau `null` bila
+/// kombinasi ini tidak punya utang). Mengembalikan daftar pelanggaran; kosong
+/// berarti lolos.
+List<String> periksaLuapan(List<String> unik, double? utang) {
+  if (utang == null) {
+    return [for (final g in unik) 'galat saat render: $g'];
+  }
+  if (unik.isEmpty) {
+    return ['sudah tidak meluap: hapus dari _utangLuapan'];
+  }
+  final hasil = <String>[];
+  for (final g in unik) {
+    final cocok = RegExp(r'overflowed by ([0-9.]+) pixels').firstMatch(g);
+    if (cocok == null) {
+      hasil.add('galat bukan luapan: $g');
+    } else if (double.parse(cocok.group(1)!) > utang + 0.05) {
+      hasil.add('meluap lebih parah dari $utang px: $g');
+    }
+  }
+  return hasil;
+}
+
 final _layarKunci = <_Layar>[
   _layar('sambutan', () => const SambutanScreen()),
-  _layar('masuk', () => const MasukScreen()),
+  _layar('masuk', () => const MasukScreen(), kunci: true),
   _layar('terima_undangan', () => const TerimaUndanganScreen()),
   _layar(
     'pemeliharaan',
@@ -409,28 +502,35 @@ final _layarKunci = <_Layar>[
     ),
   ),
   _layar('pilih_perusahaan', () => const PilihPerusahaanScreen()),
-  _layar('beranda', () => const Rangka(), tab: IndeksTab.beranda),
+  _layar('beranda', () => const Rangka(), tab: IndeksTab.beranda, kunci: true),
   _layar(
     'beranda_galat',
     () => const Rangka(),
     tab: IndeksTab.beranda,
     galat: true,
+    kunci: true,
   ),
-  _layar('alat', () => const Rangka(), tab: IndeksTab.alat),
+  _layar('alat', () => const Rangka(), tab: IndeksTab.alat, kunci: true),
   _layar(
     'alat_kosong',
     () => const Rangka(),
     tab: IndeksTab.alat,
     perusahaan: 5,
+    kunci: true,
   ),
-  _layar('alat_detail', () => const AlatDetailScreen(id: 1)),
-  _layar('sertifikat', () => const Rangka(), tab: IndeksTab.sertifikat),
+  _layar('alat_detail', () => const AlatDetailScreen(id: 1), kunci: true),
+  _layar(
+    'sertifikat',
+    () => const Rangka(),
+    tab: IndeksTab.sertifikat,
+    kunci: true,
+  ),
   // Segmen Arsip terpilih di tab Sertifikat (centang di segmen terpilih).
   _layar(
     'sertifikat_arsip',
     () => const Rangka(),
     tab: IndeksTab.sertifikat,
-    matriksPenuh: true,
+    kunci: true,
     sesudah: (tester) => tester.tap(find.text('Arsip')),
   ),
   _layar('arsip', () => const ArsipScreen()),
@@ -444,13 +544,22 @@ final _layarKunci = <_Layar>[
       judul: 'Pekan 46 (9–15 Nov 2026)',
     ),
   ),
-  _layar('sertifikat_detail', () => const SertifikatDetailScreen(id: 12)),
+  _layar(
+    'sertifikat_detail',
+    () => const SertifikatDetailScreen(id: 12),
+    kunci: true,
+  ),
   _layar('sertifikat_digantikan', () => const SertifikatDetailScreen(id: 9)),
   _layar('sertifikat_gagal', () => const SertifikatDetailScreen(id: 11)),
-  _layar('notifikasi', () => const Rangka(), tab: IndeksTab.notifikasi),
-  _layar('akun', () => const Rangka(), tab: IndeksTab.akun),
+  _layar(
+    'notifikasi',
+    () => const Rangka(),
+    tab: IndeksTab.notifikasi,
+    kunci: true,
+  ),
+  _layar('akun', () => const Rangka(), tab: IndeksTab.akun, kunci: true),
   _layar('bantuan', () => const BantuanScreen()),
-  _layar('paket_detail', () => const PaketDetailScreen(id: 21)),
+  _layar('paket_detail', () => const PaketDetailScreen(id: 21), kunci: true),
   _layar('anggota', () => const AnggotaScreen()),
 ];
 
@@ -481,111 +590,178 @@ void main() {
 
   final folder = Platform.environment['SIDIK_PNG_DIR'];
   if (folder != null) Directory(folder).createSync(recursive: true);
+  // `SIDIK_LAYAR=beranda,alat` membatasi ke layar bernama (untuk memotret ulang).
+  final hanya = Platform.environment['SIDIK_LAYAR']?.split(',').toSet();
 
-  // Tanpa PNG cukup dua ukuran paling berisiko (HP sempit 1,3× dan tablet) di
-  // tema terang: luapan tidak bergantung pada tema. Matriks penuh hanya bila
-  // gambar diminta, supaya suite CI tidak berat.
-  // Layar `matriksPenuh` tetap dijalankan di semua ukuran dan kedua tema.
+  // Layar kunci: selalu tiga ukuran gerbang x dua tema. Layar lain tanpa PNG
+  // cukup dua ukuran paling berisiko (HP sempit 1,3× dan tablet) di tema
+  // terang: luapan tidak bergantung pada tema. Matriks penuh (semua layar,
+  // semua ukuran termasuk HP 360, kedua tema) hanya bila gambar diminta,
+  // supaya suite CI tidak berat.
   for (final u in _Ukuran.values) {
     for (final gelap in const [false, true]) {
       for (final l in _layarKunci) {
-        final ringan = folder == null && !l.matriksPenuh;
-        if (ringan && (gelap || (u != _Ukuran.sempit && u != _Ukuran.tablet))) {
-          continue;
-        }
+        if (hanya != null && !hanya.contains(l.nama)) continue;
+        final jalan = folder != null
+            ? true
+            : l.kunci
+            ? u.gerbang
+            : !gelap && (u == _Ukuran.sempit || u == _Ukuran.tablet);
+        if (!jalan) continue;
         final tema = gelap ? 'gelap' : 'terang';
         testWidgets('${l.nama} · ${u.nama} · $tema', (tester) async {
           layarHp(tester, lebar: u.lebar, tinggi: u.tinggi);
-          final kunci = GlobalKey();
-          final server = _ServerRender(_data());
-          if (l.galat) server.gagal.add('/beranda');
-          final override = <Override>[
-            ...overrideFitur(
-              server,
-              perusahaan: l.perusahaan,
-              sesi: _sesi(l.perusahaan),
-            ),
-            infoAplikasiProvider.overrideWith(
-              (ref) async => InfoAplikasi.dariJson({
-                'organisasi': {
-                  'nama': 'PT Sistem Dirgantara Inovasi Teknologi',
-                  'alamat': 'Jl. Kalibrasi No. 285, Jakarta',
-                },
-                'kontak': {
-                  'whatsapp': '+62 812-0000-0285',
-                  'whatsapp_url': 'https://wa.me/628120000285',
-                  'email': 'lab@ptsidik.example',
-                  'jam_layanan': 'Senin–Jumat, 08.00–16.00 WIB',
-                },
-                'dokumen': {
-                  'kebijakan_privasi': {
-                    'url': 'https://ptsidik.example/privasi',
-                    'versi': '1.0',
-                  },
-                  'syarat_ketentuan': {
-                    'url': 'https://ptsidik.example/syarat',
-                    'versi': '1.0',
-                  },
-                },
-              }),
-            ),
-          ];
+          // Galat render dikumpulkan sendiri (bukan hanya `takeException`)
+          // supaya beberapa luapan sekaligus terhitung dan bisa dibandingkan
+          // dengan [_utangLuapan].
+          final galat = <String>[];
+          final periksa = l.kunci && u.periksaPedoman;
+          final semantik = periksa ? tester.ensureSemantics() : null;
+          try {
+            final bawaan = FlutterError.onError;
+            FlutterError.onError = (d) =>
+                galat.add(d.exceptionAsString().split('\n').first);
+            try {
+              final kunci = GlobalKey();
+              final server = _ServerRender(_data());
+              if (l.galat) server.gagal.add('/beranda');
+              final override = <Override>[
+                ...overrideFitur(
+                  server,
+                  perusahaan: l.perusahaan,
+                  sesi: _sesi(l.perusahaan),
+                ),
+                infoAplikasiProvider.overrideWith(
+                  (ref) async => InfoAplikasi.dariJson({
+                    'organisasi': {
+                      'nama': 'PT Sistem Dirgantara Inovasi Teknologi',
+                      'alamat': 'Jl. Kalibrasi No. 285, Jakarta',
+                    },
+                    'kontak': {
+                      'whatsapp': '+62 812-0000-0285',
+                      'whatsapp_url': 'https://wa.me/628120000285',
+                      'email': 'lab@ptsidik.example',
+                      'jam_layanan': 'Senin–Jumat, 08.00–16.00 WIB',
+                    },
+                    'dokumen': {
+                      'kebijakan_privasi': {
+                        'url': 'https://ptsidik.example/privasi',
+                        'versi': '1.0',
+                      },
+                      'syarat_ketentuan': {
+                        'url': 'https://ptsidik.example/syarat',
+                        'versi': '1.0',
+                      },
+                    },
+                  }),
+                ),
+              ];
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: override,
-              child: MaterialApp(
-                debugShowCheckedModeBanner: false,
-                theme: TemaSidik.terang,
-                darkTheme: TemaSidik.gelap,
-                themeMode: gelap ? ThemeMode.dark : ThemeMode.light,
-                builder: (context, child) => RepaintBoundary(
-                  key: kunci,
-                  child: MediaQuery.withClampedTextScaling(
-                    minScaleFactor: u.skala,
-                    maxScaleFactor: u.skala,
-                    child: child!,
+              await tester.pumpWidget(
+                ProviderScope(
+                  overrides: override,
+                  child: MaterialApp(
+                    debugShowCheckedModeBanner: false,
+                    theme: TemaSidik.terang,
+                    darkTheme: TemaSidik.gelap,
+                    themeMode: gelap ? ThemeMode.dark : ThemeMode.light,
+                    builder: (context, child) => RepaintBoundary(
+                      key: kunci,
+                      child: MediaQuery.withClampedTextScaling(
+                        minScaleFactor: u.skala,
+                        maxScaleFactor: u.skala,
+                        child: child!,
+                      ),
+                    ),
+                    home: l.bangun(),
                   ),
                 ),
-                home: l.bangun(),
-              ),
-            ),
-          );
-          // Logo: gambar didekode di luar waktu palsu `testWidgets`.
-          await tester.runAsync(
-            () => precacheImage(
-              const AssetImage(LogoSidik.aset),
-              tester.element(find.byType(MaterialApp)),
-            ),
-          );
-          await tester.pumpAndSettle();
-          if (l.tab != null) {
-            ProviderScope.containerOf(
-              tester.element(find.byType(Rangka)),
-            ).read(tabProvider.notifier).pilih(l.tab!);
-            await tester.pumpAndSettle();
-          }
-          if (l.sesudah != null) {
-            await l.sesudah!(tester);
-            await tester.pumpAndSettle();
-          }
-          expect(tester.takeException(), isNull);
-
-          if (folder != null) {
-            final batas = tester.renderObject<RenderRepaintBoundary>(
-              find.byKey(kunci),
-            );
-            await tester.runAsync(() async {
-              final gambar = await batas.toImage(pixelRatio: u.piksel);
-              final data = await gambar.toByteData(
-                format: ui.ImageByteFormat.png,
               );
-              File(
-                '$folder/${l.nama}_${u.nama}_$tema.png',
-              ).writeAsBytesSync(data!.buffer.asUint8List());
-            });
+              // Logo: gambar didekode di luar waktu palsu `testWidgets`.
+              await tester.runAsync(
+                () => precacheImage(
+                  const AssetImage(LogoSidik.aset),
+                  tester.element(find.byType(MaterialApp)),
+                ),
+              );
+              await tester.pumpAndSettle();
+              if (l.tab != null) {
+                ProviderScope.containerOf(
+                  tester.element(find.byType(Rangka)),
+                ).read(tabProvider.notifier).pilih(l.tab!);
+                await tester.pumpAndSettle();
+              }
+              if (l.sesudah != null) {
+                await l.sesudah!(tester);
+                await tester.pumpAndSettle();
+              }
+              if (folder != null) {
+                final batas = tester.renderObject<RenderRepaintBoundary>(
+                  find.byKey(kunci),
+                );
+                await tester.runAsync(() async {
+                  final gambar = await batas.toImage(pixelRatio: u.piksel);
+                  final data = await gambar.toByteData(
+                    format: ui.ImageByteFormat.png,
+                  );
+                  File(
+                    '$folder/${l.nama}_${u.nama}_$tema.png',
+                  ).writeAsBytesSync(data!.buffer.asUint8List());
+                });
+              }
+            } finally {
+              // Kembalikan SEBELUM expect() apa pun. Bila expect() gagal selagi
+              // `onError` masih diganti, flutter_test menegaskan dan tes
+              // MENGGANTUNG (tidak gagal) sampai CI habis waktu.
+              FlutterError.onError = bawaan;
+            }
+            expect(tester.takeException(), isNull);
+            final luapan = periksaLuapan(
+              galat.toSet().toList(),
+              _utangLuapan['${l.nama}|${u.nama}'],
+            );
+            expect(
+              luapan,
+              isEmpty,
+              reason: '${l.nama} · ${u.nama} · $tema:\n${luapan.join('\n')}',
+            );
+            if (periksa) {
+              await expectLater(
+                tester,
+                meetsGuideline(androidTapTargetGuideline),
+              );
+              await expectLater(
+                tester,
+                meetsGuideline(labeledTapTargetGuideline),
+              );
+              if (!gelap) {
+                // Lintasan viewport TINGGI: `ListView` membangun butir secara
+                // malas, jadi target di bawah lipatan tidak ada di pohon
+                // semantik viewport biasa dan lolos tak terperiksa. Ukuran
+                // target tidak bergantung tema, jadi cukup satu tema.
+                tester.view.physicalSize = Size(u.lebar, _tinggiPanjang);
+                await tester.pumpAndSettle();
+                final sentuh = await androidTapTargetGuideline.evaluate(tester);
+                final pelanggaranSentuh = periksaSentuhPanjang(
+                  sentuh.reason,
+                  _utangSentuhPanjang['${l.nama}|${u.nama}'] ?? 0,
+                );
+                expect(
+                  pelanggaranSentuh,
+                  isEmpty,
+                  reason:
+                      '${l.nama} · ${u.nama} (viewport tinggi):\n'
+                      '${pelanggaranSentuh.join('\n')}',
+                );
+                await expectLater(
+                  tester,
+                  meetsGuideline(labeledTapTargetGuideline),
+                );
+              }
+            }
+          } finally {
+            semantik?.dispose();
           }
-
           // Lepas pohon: pewaktu layar (mis. periksa ulang pemeliharaan) ikut
           // dibuang.
           await tester.pumpWidget(const SizedBox());
@@ -593,4 +769,49 @@ void main() {
       }
     }
   }
+
+  group('periksaSentuhPanjang: utang sentuh tercatat', () {
+    const satu =
+        'SemanticsNode#1: expected tap target size of at least Size(48.0, 48.0)';
+    const dua = '$satu\n$satu';
+
+    test('tanpa utang: bersih lolos, satu target kecil gagal', () {
+      expect(periksaSentuhPanjang(null, 0), isEmpty);
+      expect(periksaSentuhPanjang(satu, 0), isNotEmpty);
+    });
+
+    test('dengan utang: sama lolos, lebih banyak gagal, lunas gagal', () {
+      expect(periksaSentuhPanjang(satu, 1), isEmpty);
+      expect(periksaSentuhPanjang(dua, 1), isNotEmpty);
+      final lunas = periksaSentuhPanjang(null, 1);
+      expect(lunas, isNotEmpty);
+      expect(lunas.single, contains('perbarui _utangSentuhPanjang'));
+    });
+  });
+
+  group('periksaLuapan: utang luapan tercatat', () {
+    const luap = 'A RenderFlex overflowed by 8.3 pixels on the right.';
+    const luapParah = 'A RenderFlex overflowed by 12.0 pixels on the right.';
+
+    test('tanpa utang: bersih lolos, luapan sekecil apa pun gagal', () {
+      expect(periksaLuapan(const [], null), isEmpty);
+      expect(periksaLuapan(const [luap], null), isNotEmpty);
+      expect(periksaLuapan(const ['Bad state: No element'], null), isNotEmpty);
+    });
+
+    test('dengan utang: sama atau lebih ringan lolos, lebih parah gagal', () {
+      expect(periksaLuapan(const [luap], 8.3), isEmpty);
+      expect(periksaLuapan(const [luapParah], 8.3), isNotEmpty);
+    });
+
+    test('dengan utang: galat selain luapan gagal', () {
+      expect(periksaLuapan(const ['Bad state: No element'], 8.3), isNotEmpty);
+    });
+
+    test('dengan utang: utang lunas (tidak meluap lagi) gagal', () {
+      final p = periksaLuapan(const [], 8.3);
+      expect(p, isNotEmpty);
+      expect(p.single, contains('hapus dari _utangLuapan'));
+    });
+  });
 }
