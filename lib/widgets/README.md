@@ -21,6 +21,7 @@ ulang di sini. Lihat `lib/core/tema/README.md`.
 | `kartu_sidik.dart` | `KartuSidik`: kartu datar; diketuk = ripple standar. |
 | `kartu_kpi.dart` | `KartuKpi`: angka ringkasan (ikon, angka, label). |
 | `kartu_alat.dart`, `kartu_sertifikat.dart`, `kartu_paket.dart` | Kartu domain di daftar dan Beranda. |
+| `kartu_kelompok_arsip.dart` | `KartuKelompokArsip`: satu tahun, bulan, atau pekan di Arsip sertifikat (label dan jumlah dari server, panah buka). |
 | `garis_waktu_sertifikat.dart` | Riwayat sertifikat satu alat. |
 | `baris_info.dart` | `BarisInfo`: label dan nilai di lembar detail. |
 | `baris_menu.dart` | `BarisMenu` + `KelompokBaris`: menu berikon dalam satu kartu. |

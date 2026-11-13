@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/api_pelanggan.dart';
 import '../models/anggota.dart';
+import '../models/arsip.dart';
 import '../models/data_pelanggan.dart';
 import '../models/paket.dart';
 import '../models/status_berlaku.dart';
@@ -14,6 +16,17 @@ export 'paginasi.dart' show DataBerhalaman, PaginasiController;
 /// (akun anggota dua PT), seluruh provider di bawah ini dibangun ulang dan
 /// tidak ada angka PT lama yang tertinggal di layar.
 int? _perusahaan(Ref ref) => ref.watch(sesiProvider).value?.perusahaanId;
+
+/// Galat 4xx dari server (tidak ditemukan, parameter salah, terlalu banyak
+/// permintaan) tidak berubah dengan diulang, jadi TIDAK dicoba ulang
+/// otomatis. Bawaan Riverpod 3 mengulang sampai 10× dengan jeda: layar
+/// berkedip antara "Tidak ditemukan" dan kerangka puluhan detik dan server
+/// dipukul berulang. Galat jaringan dan 5xx tetap memakai bawaan. Dipakai
+/// provider sertifikat (daftar/cari dan arsip).
+Duration? _ulangiBilaMungkin(int percobaan, Object galat) =>
+    galat is GalatApi && galat.status >= 400 && galat.status < 500
+    ? null
+    : ProviderContainer.defaultRetry(percobaan, galat);
 
 /// Daftar berhalaman yang diambil lewat [LayananPelanggan]. Satu kelas untuk
 /// semua daftar; yang berbeda cuma cara mengambil satu halaman.
@@ -105,6 +118,7 @@ final daftarSertifikatProvider = AsyncNotifierProvider.autoDispose
         ),
         (s) => s.id,
       ),
+      retry: _ulangiBilaMungkin,
     );
 
 final detailSertifikatProvider = FutureProvider.autoDispose
@@ -112,6 +126,24 @@ final detailSertifikatProvider = FutureProvider.autoDispose
       _perusahaan(ref);
       return ref.watch(layananProvider).sertifikat(id);
     });
+
+/// Satu tampilan arsip sertifikat (tahun, bulan, pekan, atau hari) menurut
+/// [ParameterArsip]. Kelompok dan sertifikat datang sebagai baris-baris satu
+/// daftar berhalaman; halaman berikut hanya ada di tingkat hari. Diikat ke
+/// perusahaan aktif seperti daftar lain.
+final garisWaktuProvider = AsyncNotifierProvider.autoDispose
+    .family<
+      DaftarController<BarisArsip>,
+      DataBerhalaman<BarisArsip>,
+      ParameterArsip
+    >(
+      (p) => DaftarController(
+        (l, h) async =>
+            (await l.garisWaktuSertifikat(p, halaman: h)).sebagaiHalaman,
+        (b) => b.kunci,
+      ),
+      retry: _ulangiBilaMungkin,
+    );
 
 final notifikasiProvider =
     AsyncNotifierProvider.autoDispose<

@@ -230,12 +230,18 @@ class Sertifikat {
     this.status = StatusDokumen.berlaku,
     this.dibatalkanPada,
     this.catatanPelanggan,
+    this.nomorOrder,
   });
 
   final int id;
   final String nomor;
   final DateTime? diterbitkan;
   final DateTime? berlakuSampai;
+
+  /// Nomor order yang tercetak di PDF. Hanya dikirim baris arsip
+  /// (`GET /sertifikat/garis-waktu`, kunci `nomor_order`); baris `/sertifikat`
+  /// memuatnya di `rincian` pada detail saja, jadi di sana `null`.
+  final String? nomorOrder;
 
   /// `PASS` / `FAIL` / null (alat yang memang tidak divonis).
   final String? keputusan;
@@ -301,6 +307,7 @@ class Sertifikat {
               : StatusDokumen.berlaku),
       dibatalkanPada: Format.baca(j['dibatalkan_pada'] as String?),
       catatanPelanggan: _teksBersih(j['catatan_pelanggan']),
+      nomorOrder: _teksBersih(j['nomor_order']),
       bisaDiunduh: j['bisa_diunduh'] == true,
       tautanVerifikasi: j['tautan_verifikasi'] as String?,
       rincian: rincian,
