@@ -182,6 +182,19 @@ class ApiPelanggan {
     }
   }
 
+  /// Catat [isi] sebagai jawaban `GET` [jalur] terakhir di cache (tanpa
+  /// permintaan jaringan). Dipakai pemanggil yang SUDAH tahu keadaan terkini
+  /// sesudah menulis (mis. `PUT` yang dikonfirmasi server), supaya tampilan
+  /// offline tidak bertentangan dengan tulisan terakhir di HP ini. Tanpa cache
+  /// atau pemilik cache, tidak berbuat apa-apa; kegagalan menulis diabaikan.
+  Future<void> catatJawabanGet(String jalur, Object isi) async {
+    final kunci = _kunciCache(_uri(jalur));
+    if (kunci == null) return;
+    try {
+      await cache!.simpan(kunci, jsonEncode(isi));
+    } catch (_) {}
+  }
+
   Future<Map<String, dynamic>> post(String jalur, [Object? badan]) {
     final id = IdUnik.uuid4();
     return _kirim(

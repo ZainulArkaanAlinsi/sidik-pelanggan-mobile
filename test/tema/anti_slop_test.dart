@@ -40,7 +40,6 @@ void main() {
         'lib/screens/akun/akun_screen.dart': 1,
         'lib/screens/akun/anggota_screen.dart': 2,
         'lib/screens/akun/bantuan_screen.dart': 1,
-        'lib/screens/akun/preferensi_notifikasi_screen.dart': 1,
         'lib/screens/alat/alat_detail_screen.dart': 2,
         'lib/screens/beranda/beranda_screen.dart': 2,
         'lib/screens/gerbang.dart': 1,

@@ -49,6 +49,7 @@ import 'package:sidik_pelanggan/models/arsip.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/screens/akun/anggota_screen.dart';
 import 'package:sidik_pelanggan/screens/akun/bantuan_screen.dart';
+import 'package:sidik_pelanggan/screens/akun/preferensi_notifikasi_screen.dart';
 import 'package:sidik_pelanggan/screens/alat/alat_detail_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/masuk_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/sambutan_screen.dart';
@@ -69,9 +70,9 @@ import '../dukungan/layar_uji.dart';
 class _ServerRender extends ServerFitur {
   _ServerRender(super.data);
 
-  http.Response _json(Object isi) => http.Response(
+  http.Response _json(Object isi, [int status = 200]) => http.Response(
     jsonEncode(isi),
-    200,
+    status,
     headers: {'content-type': 'application/json'},
   );
 
@@ -90,6 +91,7 @@ class _ServerRender extends ServerFitur {
         _ => arsipTahun(),
       });
     }
+    if (jalur == '/preferensi-notifikasi') return _preferensi(r);
     if (jalur == '/notifikasi/jumlah') {
       return _json({
         'data': {'belum_dibaca': 2},
@@ -246,6 +248,35 @@ class _ServerRender extends ServerFitur {
       });
     }
     return super.tangani(r);
+  }
+
+  /// Saklar notifikasi (kontrak §14.4). Perusahaan 6: GET 500 (galat muat);
+  /// 4: PUT 403 (baca-saja); 5: PUT 500 (gagal simpan); lainnya normal.
+  http.Response _preferensi(http.Request r) {
+    final pt = r.headers['X-Perusahaan-Id'];
+    if (r.method == 'GET' && pt == '6') {
+      return _json({'message': 'Terjadi kendala di server.'}, 500);
+    }
+    if (r.method == 'PUT' && pt == '4') {
+      return _json({
+        'message': 'Akun ini belum boleh membuka bagian ini.',
+      }, 403);
+    }
+    if (r.method == 'PUT' && pt == '5') {
+      return _json({'message': 'Terjadi kendala di server.'}, 500);
+    }
+    return _json({
+      'data': {
+        'pengingat_jadwal': true,
+        'status_permintaan': true,
+        'pesan_lab': true,
+        'ringkasan_email_mingguan': false,
+        'tahap_alat': true,
+        ...?(r.method == 'PUT'
+            ? jsonDecode(r.body) as Map<String, dynamic>
+            : null),
+      },
+    });
   }
 
   static Map<String, dynamic> _notif(
@@ -491,6 +522,19 @@ List<String> periksaLuapan(List<String> unik, double? utang) {
   return hasil;
 }
 
+/// Ketuk saklar "Perubahan tahap alat" (server palsu menolaknya).
+Future<void> _ketukSaklarTahap(WidgetTester tester) async {
+  final saklar = find.descendant(
+    of: find.byKey(const ValueKey('saklar-tahap_alat')),
+    matching: find.byType(Switch),
+  );
+  // Di HP sempit baris ini di bawah lipatan: gulirkan dulu supaya hasilnya
+  // (alasan gagal / panel baca-saja) ikut terpotret.
+  await tester.ensureVisible(saklar);
+  await tester.pumpAndSettle();
+  await tester.tap(saklar);
+}
+
 final _layarKunci = <_Layar>[
   _layar('sambutan', () => const SambutanScreen()),
   _layar('masuk', () => const MasukScreen(), kunci: true),
@@ -561,6 +605,29 @@ final _layarKunci = <_Layar>[
   _layar('bantuan', () => const BantuanScreen()),
   _layar('paket_detail', () => const PaketDetailScreen(id: 21), kunci: true),
   _layar('anggota', () => const AnggotaScreen()),
+  // Pengaturan notifikasi (Akun > Pengaturan notifikasi). Perusahaan 4/5/6
+  // memicu baca-saja, gagal simpan, dan galat muat di server palsu.
+  _layar('preferensi', () => const PreferensiNotifikasiScreen(), kunci: true),
+  _layar(
+    'preferensi_galat',
+    () => const PreferensiNotifikasiScreen(),
+    perusahaan: 6,
+    kunci: true,
+  ),
+  _layar(
+    'preferensi_gagal',
+    () => const PreferensiNotifikasiScreen(),
+    perusahaan: 5,
+    kunci: true,
+    sesudah: _ketukSaklarTahap,
+  ),
+  _layar(
+    'preferensi_baca_saja',
+    () => const PreferensiNotifikasiScreen(),
+    perusahaan: 4,
+    kunci: true,
+    sesudah: _ketukSaklarTahap,
+  ),
 ];
 
 /// Font ikon Material dari SDK Flutter. Tanpa ini ikon tampil sebagai kotak di

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/models/status_berlaku.dart';
+import 'package:sidik_pelanggan/screens/paket/paket_detail_screen.dart';
 import 'package:sidik_pelanggan/screens/tautan.dart';
 
 /// Model dibaca dari bentuk respons yang SAMA dengan resource di API
@@ -168,6 +169,10 @@ void main() {
       expect(n.tautanId, 9);
       expect(layarUntukTautan('pelanggan_permintaan', 3), isNull);
       expect(layarUntukTautan('pelanggan_sertifikat', 9), isNotNull);
+      // Kabar tahap alat (kontrak §14.4): tautan ke paketnya, bukan ke kotak
+      // masuk; tanpa id tetap null (pemanggil yang memutuskan).
+      expect(layarUntukTautan('pelanggan_paket', 21), isA<PaketDetailScreen>());
+      expect(layarUntukTautan('pelanggan_paket', null), isNull);
     },
   );
 }
