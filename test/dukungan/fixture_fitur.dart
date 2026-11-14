@@ -64,18 +64,62 @@ Map<String, dynamic> alatJson(
   String? merk = 'Mitutoyo',
   List<Map<String, dynamic>> riwayat = const [],
   Map<String, dynamic>? terakhir,
+  String? model,
+  String? serial,
+  // `sedang_dikerjakan` (kontrak API §14.2). `null` = kuncinya tidak dikirim
+  // (server lama); kirim `{}`-peta untuk objeknya.
+  Map<String, dynamic>? sedangDikerjakan,
+  bool kunciSedangDikerjakan = false,
 }) => {
   'id': id,
   'nama': nama,
   'merk': merk,
-  'model': null,
-  'serial': 'SN-$id',
+  'model': model,
+  'serial': serial ?? 'SN-$id',
   'lokasi': 'Gudang $id',
   'tanggal_jatuh_tempo': hari == null ? null : tanggalUji(hari),
   'hari_ke_jatuh_tempo': hari,
   'status_alat': status,
   'sertifikat_terakhir': terakhir,
   if (riwayat.isNotEmpty) 'riwayat_sertifikat': riwayat,
+  if (sedangDikerjakan != null || kunciSedangDikerjakan)
+    'sedang_dikerjakan': sedangDikerjakan,
+};
+
+/// `sedang_dikerjakan` seperti yang dikirim server (lima kunci).
+Map<String, dynamic> sedangDikerjakanJson({
+  int paketId = 21,
+  int itemId = 981,
+  String nomorOrder = 'ORD/ALFA/2026/0021',
+  String tahap = 'dikalibrasi',
+  String label = 'Sedang dikalibrasi',
+}) => {
+  'paket_id': paketId,
+  'order_item_id': itemId,
+  'nomor_order': nomorOrder,
+  'tahap': tahap,
+  'tahap_label': label,
+};
+
+/// Item `alat[]` di paket (kunci `equipment_id` ikut bila [equipmentId]).
+Map<String, dynamic> alatPaketJson(
+  int itemId,
+  String nama, {
+  String tahap = 'dikalibrasi',
+  String label = 'Sedang dikalibrasi',
+  int? equipmentId,
+  String? merk = 'Mitutoyo',
+  String? serial,
+}) => {
+  'id': itemId,
+  'equipment_id': ?equipmentId,
+  'nama': nama,
+  'merk': merk,
+  'serial': serial ?? 'SN-$itemId',
+  'tahap': tahap,
+  'tahap_label': label,
+  'diserahkan_kepada': null,
+  'sertifikat_id': null,
 };
 
 Map<String, dynamic> sertifikatJson(
@@ -116,17 +160,21 @@ Map<String, dynamic> paketJson(
   String nomor, {
   String tahap = 'dikalibrasi',
   String label = 'Sedang dikalibrasi',
+  List<Map<String, dynamic>> alat = const [],
+  int? jumlahAlat,
+  int? jumlahSelesai,
+  bool terlambat = false,
 }) => {
   'id': id,
   'nomor': nomor,
   'tanggal_masuk': tanggalUji(-3),
   'tanggal_janji_selesai': tanggalUji(4),
-  'terlambat': false,
+  'terlambat': terlambat,
   'tahap': tahap,
   'tahap_label': label,
-  'jumlah_alat': 3,
-  'jumlah_selesai': 1,
-  'alat': <Object>[],
+  'jumlah_alat': jumlahAlat ?? (alat.isEmpty ? 3 : alat.length),
+  'jumlah_selesai': jumlahSelesai ?? 1,
+  'alat': alat,
 };
 
 /// Satu perusahaan di server palsu.
@@ -137,6 +185,7 @@ class DataPerusahaan {
     this.sertifikat = const [],
     this.paket = const [],
     this.jumlahPaketBerjalan,
+    this.ringkasanTambahan = const {},
   });
 
   final String nama;
@@ -144,6 +193,10 @@ class DataPerusahaan {
   final List<Map<String, dynamic>> sertifikat;
   final List<Map<String, dynamic>> paket;
   final int? jumlahPaketBerjalan;
+
+  /// Kunci tambahan di `data.ringkasan` (mis. `paket_siap_diambil`,
+  /// `alat_berlaku`), yang tidak dikirim server lama.
+  final Map<String, dynamic> ringkasanTambahan;
 
   bool _aktif(Map<String, dynamic> a) => a['status_alat'] != 'nonaktif';
 
@@ -258,6 +311,7 @@ class ServerFitur {
             'segera_jatuh_tempo': p.segera,
             'paket_berjalan': p.jumlahPaketBerjalan ?? p.paket.length,
             'notifikasi_belum_dibaca': 0,
+            ...p.ringkasanTambahan,
           },
           'perlu_perhatian': <Object>[],
           'sertifikat_terbaru': p.sertifikat.take(5).toList(),

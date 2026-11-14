@@ -42,7 +42,6 @@ void main() {
         'lib/screens/akun/bantuan_screen.dart': 1,
         'lib/screens/akun/preferensi_notifikasi_screen.dart': 1,
         'lib/screens/alat/alat_detail_screen.dart': 2,
-        'lib/screens/beranda/beranda_screen.dart': 2,
         'lib/screens/gerbang.dart': 1,
         'lib/screens/notifikasi/notifikasi_screen.dart': 1,
         'lib/screens/paket/paket_detail_screen.dart': 3,
@@ -51,7 +50,6 @@ void main() {
         'lib/widgets/garis_waktu_sertifikat.dart': 1,
         'lib/widgets/kartu_alat.dart': 1,
         'lib/widgets/kartu_kelompok_arsip.dart': 1,
-        'lib/widgets/kartu_kpi.dart': 1,
         'lib/widgets/kartu_paket.dart': 1,
         'lib/widgets/kartu_sertifikat.dart': 1,
         'lib/widgets/kerangka.dart': 2,
@@ -98,7 +96,6 @@ void main() {
       dikecualikan: '',
       baseline: const {
         'lib/widgets/kartu_kelompok_arsip.dart': 2,
-        'lib/widgets/kartu_kpi.dart': 2,
         'lib/widgets/kartu_sertifikat.dart': 2,
       },
     ),

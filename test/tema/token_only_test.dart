@@ -27,11 +27,11 @@ import '../dukungan/pemindai_token.dart';
 /// - `lib/core/penyimpan_cache.dart`: empat literal `0x...` yang BUKAN warna
 ///   (konstanta hash FNV-1a). Positif palsu yang dibekukan; pengecualian
 ///   per-jalur akan membuka lubang, jadi dibiarkan di baseline.
-/// - `lib/widgets/kerangka.dart`: `BorderRadius.circular(radius ?? Bentuk.kecil)`
-///   (ekspresi campuran, bukan nama token murni). Utang nyata.
 ///
 /// (`pelapor_galat.dart` dulu punya dua `Color(0x...)`; sudah dilunasi dengan
-/// `PaletSidik`, yang konstanta statis dan tidak butuh Theme.)
+/// `PaletSidik`, yang konstanta statis dan tidak butuh Theme. `kerangka.dart`
+/// dulu punya `BorderRadius.circular(radius ?? Bentuk.kecil)`; lunas di Paket
+/// 3a: `BalokKerangka` memakai `Bentuk.sudutKecil`/`sudutPil`.)
 ///
 /// ## Kalau tes ini merah
 ///

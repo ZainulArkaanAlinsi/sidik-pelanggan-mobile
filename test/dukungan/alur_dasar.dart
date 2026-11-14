@@ -307,7 +307,9 @@ Future<HasilAlur> jalankanAlurDasar(
 
   // 3. Masuk ke Rangka (Beranda).
   expect(find.byType(NavigationBar), findsOneWidget);
-  expect(find.text('PT Contoh Pelanggan'), findsWidgets);
+  // Beranda terbuka (kalimat utama; nama PT hanya tampil untuk akun
+  // multi-perusahaan, jadi bukan penandanya).
+  expect(find.text('Tidak ada alat yang lewat jadwal.'), findsOneWidget);
 
   // 4. Daftar sertifikat.
   await tester.tap(

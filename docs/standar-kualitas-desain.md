@@ -211,8 +211,9 @@ Tes tidak bisa membandingkan dengan `origin/main`: baseline dan `_ringkasan`
 bisa dinaikkan dengan suntingan tangan dan tes tetap hijau, jadi diff pada
 `token_only_baseline.json` (dan angka di `anti_slop_test.dart`) harus dibaca
 orang di tiap PR. Isi baseline hari ini: `penyimpan_cache.dart` (empat
-konstanta hash FNV-1a yang bukan warna, positif palsu) dan `kerangka.dart`
-(satu radius ekspresi, utang nyata). Pemindai membaca teks, bukan pohon
+konstanta hash FNV-1a yang bukan warna, positif palsu); utang radius
+ekspresi di `kerangka.dart` sudah lunas (`BalokKerangka` memakai token
+`Bentuk.sudut*`). Pemindai membaca teks, bukan pohon
 sintaks; ia menangkap bentuk yang umum, bukan semua cara menyelipkan angka
 (mis. tombol yang dibungkus `Center` di dalam `SizedBox`, atau nilai yang
 disusun lewat pemanggilan fungsi).
@@ -265,21 +266,30 @@ di perangkat tetap diperlukan; angka hijau saja tidak cukup.
   `Stempel`, `JejakTahap`, `TikPaket`, `GarisWaktuTahap`, `SkalaTempo`,
   `PetaJatuhTempo`, `KalimatUtama`, `RingkasanPerhatian`, `PlatNama`, `Fakta`,
   `NomorSidik`, `SaringanTeks`, `KolomCariUtuh`, `Bagian`, `TautanBaris`,
-  `KeadaanTeks`. BELUM dipakai layar. Token geometri baru di `ukuran.dart`
+  `KeadaanTeks`. Token geometri baru di `ukuran.dart`
   (`UkuranTik.simpul/batang/...`, `SkalaHuruf`).
-- Berikutnya: layar satu per satu memakai komponen itu (detail paket, Beranda,
+- Paket 3a (Beranda): ada. `BerandaScreen` memakai `KalimatUtama`,
+  `RingkasanPerhatian`, `BarisAlat` + `JejakTahap`, `BarisSidik`, `TikPaket`,
+  `PetaJatuhTempo`, `Bagian`, `TautanBaris`, `KeadaanTeks`, `BannerDataTerakhir`.
+  `KartuKpi` dan `KotakJatuhTempo` dipensiunkan (tidak ada pemakai lain);
+  `Spasi.lebarLebar` (1040) dan `HalamanSidik.lebarMaks` dipakai untuk dua kolom
+  di tablet.
+- Berikutnya: layar satu per satu memakai komponen itu (detail paket,
   daftar alat, detail alat, sertifikat, notifikasi, akun); tiap layar menurunkan
   angka ratchet `KartuSidik`/`ChipStatus`/" · ".
-- Yang masih memakai bentuk lama sampai paketnya tiba: 24 pemakaian `KartuSidik`,
+- Yang masih memakai bentuk lama sampai paketnya tiba: 22 pemakaian `KartuSidik`,
   14 `ChipStatus` (pil, bukan stempel persegi), 10 pemisah ` · ` (satu di model
-  `Alat.merkModel`), 3 widget berubin ikon (6 kemunculan rumus ubin),
+  `Alat.merkModel`), 2 widget berubin ikon (4 kemunculan rumus ubin),
   deretan chip saring yang terpotong, nomor order yang putus di 320 dp x 1,3
   (lihat tabel di `anti_slop_test.dart`).
 
 ### Utang komponen Jejak (diketahui, belum dikerjakan)
 
-- Tablet: komponen mengisi lebar induk (tanpa batas lebar baca; `PlatNama` dan `Fakta` ikut melebar), belum ada varian dua kolom atau master-detail, dan `SaringanTeks` dengan tujuh pilihan masih menyisakan pilihan tergulir di 840 dp. Batas lebar baca dan dua kolom dikerjakan per layar di Paket 3 (Beranda 3a, daftar alat 3c); layar membungkus isi dengan `KontenTengah` (720 dp).
+- Tablet: komponen mengisi lebar induk (tanpa batas lebar baca; `PlatNama` dan `Fakta` ikut melebar), belum ada varian dua kolom atau master-detail, dan `SaringanTeks` dengan tujuh pilihan masih menyisakan pilihan tergulir di 840 dp. Batas lebar baca dan dua kolom dikerjakan per layar di Paket 3 (Beranda 3a, daftar alat 3c); layar membungkus isi dengan `KontenTengah` (720 dp). Beranda sudah dua kolom di area isi >= 680 dp (`HalamanSidik.lebarMaks: Spasi.lebarLebar`); layar lain belum.
 - `SkalaTempo` di luar jendela (jadwal lebih dari 90 hari lagi): batang abu tanpa penanda "hari ini" selain label kiri; arti dibawa kata. Penanda hari ini bisa ditambahkan bila peninjau mata meminta.
-- `PetaJatuhTempo` tema gelap: batang bernada netral (tinta terang) lebih terang daripada batang status; dinilai mata di Paket 3a.
+- `PetaJatuhTempo` tema gelap: batang zona netral memakai garis tegas (abu), tidak lebih terang dari batang status; dinilai mata di Beranda (PNG `beranda_*_gelap`), belum dinilai di perangkat.
+- Jejak tahap per alat di Beranda memakai SALINAN KLIEN urutan tahap (`lib/models/garis_tahap_pelanggan.dart`), karena `GET /beranda` dan `GET /alat` hanya mengirim `tahap` + `tahap_label` per alat (`sedang_dikerjakan`), bukan `garis_waktu` (hanya di `GET /paket/{id}`). Dijaga tes paritas terhadap `TahapPaket::garisWaktu` (API `d8dc320a`); kode tahap yang tidak dikenal tidak mendapat tik "sekarang". Penggantinya: server mengirim `garis_waktu`/`posisi` per alat (A5). Layar alat (3c, 3d) memakai fungsi yang sama.
+- Beranda: "paket siap diambil", "sertifikat baru", dan klaim "berlaku" hanya sejujur data `GET /beranda` yang ada: `paket_berjalan` dibatasi tiga dan `sertifikat_terbaru` lima, dan `jumlah_alat` ikut menghitung alat yang belum pernah dikalibrasi. Tanpa hitungan baru dari server: kalimat tidak menyebut angka bila daftar terpotong ("Ada paket siap diambil.", "Ada sertifikat baru terbit."), tenang = "Tidak ada alat yang lewat jadwal." (tanpa "berlaku"), dan bila paket berjalan lebih banyak dari daftar tampil tautan "Lihat semua paket (N)". Aplikasi sudah membaca `ringkasan.paket_siap_diambil`, `alat_berlaku`, `alat_belum_pernah`, `sertifikat_baru_7_hari`, dan `sedang_dikerjakan.garis_waktu` bila ada; permintaan API dan usul tes penjaga ada di `docs/kebutuhan-api-pelanggan.md` §7.
+- Beranda tablet: dua kolom (kiri: kalimat, perhatian, peta jadwal; kanan: lab dan sertifikat); keadaan tenang tanpa peta.
 - Ekor "lewat N hari" di `SkalaTempo` dilebarkan sampai 8% supaya terlihat (posisi sebenarnya tetap di `SkalaTempo.posisi`); angka tidak berubah karena batang bukan pembawa arti.
 - Pola `Semantics(excludeSemantics: true, child: InkWell)` di `KartuSidik`, `AksiBagian`, dan layar lama membuang aksi ketuk bagi pembaca layar: periksa per layar di Paket 3.

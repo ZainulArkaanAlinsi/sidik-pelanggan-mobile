@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/screens/rangka.dart';
 
@@ -104,9 +105,10 @@ void main() {
         reason: nama,
       );
     }
-    // Daftar tab Beranda (yang aktif) tidak melebar melewati 720 dp.
-    final daftar = find.byType(ListView).hitTestable().first;
-    expect(tester.getSize(daftar).width, lessThanOrEqualTo(720));
+    // Beranda (yang aktif) dua kolom di tablet: boleh selebar Spasi.lebarLebar,
+    // tetapi tidak melewatinya.
+    final beranda = find.byType(ListView).hitTestable().first;
+    expect(tester.getSize(beranda).width, lessThanOrEqualTo(Spasi.lebarLebar));
 
     await tester.tap(
       find.descendant(
@@ -116,6 +118,9 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('CAL/ALFA/0001'), findsOneWidget);
+    // Layar daftar lain tetap tidak melebar melewati 720 dp.
+    final daftar = find.byType(ListView).hitTestable().first;
+    expect(tester.getSize(daftar).width, lessThanOrEqualTo(Spasi.lebarKonten));
   });
 
   testWidgets('batas ganti bentuk: 599 dp bawah, 600 dp rel', (tester) async {

@@ -34,6 +34,10 @@ abstract final class Spasi {
   /// Lebar isi maksimum di layar lebar (tablet): isi dipusatkan.
   static const double lebarKonten = 720;
 
+  /// Lebar isi maksimum untuk layar dua kolom di tablet (Beranda): isi tetap
+  /// dipusatkan, tetapi dua kolom tidak dipaksa masuk 720 dp.
+  static const double lebarLebar = 1040;
+
   /// Lebar layar mulai mana tata letak berganti ke rel navigasi samping.
   static const double batasLebar = 600;
 

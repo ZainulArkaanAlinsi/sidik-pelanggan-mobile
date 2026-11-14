@@ -282,7 +282,10 @@ void main() {
     await tester.pumpWidget(_bungkus(const BerandaScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text(_perusahaan), findsWidgets);
+    // Akun satu perusahaan: nama PT tidak tampil; kalimat utama dari angka
+    // server (120 lewat jadwal, 340 segera).
+    expect(find.text(_perusahaan), findsNothing);
+    expect(find.text('120 alat lewat jadwal.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

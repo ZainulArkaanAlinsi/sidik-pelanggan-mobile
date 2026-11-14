@@ -46,6 +46,7 @@ import 'package:sidik_pelanggan/core/konfigurasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/arsip.dart';
+import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/screens/akun/anggota_screen.dart';
 import 'package:sidik_pelanggan/screens/akun/bantuan_screen.dart';
@@ -275,6 +276,9 @@ Map<int, DataPerusahaan> _data() => {
         'Jangka Sorong Digital',
         hari: -4,
         status: 'lewat_jadwal',
+        model: 'CD-15CPX',
+        serial: '2201-0457',
+        sedangDikerjakan: sedangDikerjakanJson(),
         riwayat: [
           sertifikatJson(
             2,
@@ -293,7 +297,15 @@ Map<int, DataPerusahaan> _data() => {
           ),
         ],
       ),
-      alatJson(2, 'Timbangan Analitik', hari: 12, status: 'mendekati_jadwal'),
+      alatJson(
+        2,
+        'Timbangan Analitik',
+        hari: 12,
+        status: 'mendekati_jadwal',
+        merk: 'Mettler Toledo',
+        model: 'XPR205',
+        serial: 'B419223017',
+      ),
       alatJson(3, 'Termometer Digital', hari: 45),
       alatJson(4, 'Manometer 0–10 bar', hari: 75),
       alatJson(5, 'Mikrometer Sekrup', hari: 200),
@@ -338,17 +350,89 @@ Map<int, DataPerusahaan> _data() => {
       ),
     ],
     paket: [
-      paketJson(21, 'ORD/ALFA/2026/0021'),
+      paketJson(
+        21,
+        'ORD/ALFA/2026/0021',
+        jumlahSelesai: 1,
+        alat: [
+          // Tahap paket (Sedang dikalibrasi) = alat paling tertinggal.
+          alatPaketJson(1, 'Jangka Sorong Digital', equipmentId: 1),
+          alatPaketJson(
+            2,
+            'Timbangan Analitik',
+            tahap: 'sertifikat_terbit',
+            label: 'Sertifikat sudah terbit',
+            equipmentId: 2,
+          ),
+          alatPaketJson(3, 'Termometer Digital', equipmentId: 3),
+          alatPaketJson(
+            4,
+            'Manometer 0–10 bar',
+            tahap: 'menunggu_pemeriksaan',
+            label: 'Hasil sedang diperiksa',
+            equipmentId: 4,
+          ),
+        ],
+      ),
       paketJson(
         22,
         'ORD/ALFA/2026/0020',
         tahap: 'siap_diambil',
         label: 'Siap diambil',
+        jumlahSelesai: 2,
+        alat: [
+          alatPaketJson(
+            5,
+            'Timbangan Platform 300 kg',
+            tahap: 'siap_diambil',
+            label: 'Siap diambil',
+            equipmentId: 5,
+          ),
+          alatPaketJson(
+            6,
+            'Anak Timbangan F1',
+            tahap: 'siap_diambil',
+            label: 'Siap diambil',
+            equipmentId: 6,
+          ),
+        ],
       ),
     ],
   ),
   4: DataPerusahaan(nama: 'PT Beta Teknik'),
   5: DataPerusahaan(nama: 'PT Kosong'),
+  // Keadaan tenang: tidak ada yang lewat jadwal atau segera, tidak ada paket.
+  6: DataPerusahaan(
+    nama: 'PT Tenang Sentosa',
+    alat: [
+      alatJson(31, 'Manometer 0–10 bar', hari: 45),
+      alatJson(32, 'Termometer Digital', hari: 120),
+      alatJson(33, 'Mikrometer Sekrup', hari: 200),
+    ],
+    sertifikat: [
+      sertifikatJson(
+        41,
+        'CAL/TENANG/2026/0041',
+        namaAlat: 'Manometer 0–10 bar',
+        diterbitkan: -60,
+      ),
+    ],
+  ),
+  // Server lama: tanpa `sedang_dikerjakan` di alat dan tanpa `alat[]` di paket.
+  7: DataPerusahaan(
+    nama: 'PT Server Lama',
+    alat: [
+      alatJson(51, 'Jangka Sorong Digital', hari: -4, status: 'lewat_jadwal'),
+      alatJson(52, 'Timbangan Analitik', hari: 12, status: 'mendekati_jadwal'),
+    ],
+    sertifikat: [
+      sertifikatJson(61, 'CAL/LAMA/2026/0061', namaAlat: 'Timbangan Analitik'),
+    ],
+    paket: [
+      Map<String, dynamic>.of(paketJson(71, 'ORD/LAMA/2026/0071'))
+        ..remove('alat'),
+    ],
+  ),
 };
 
 Sesi _sesi(int aktif) => Sesi(
@@ -366,6 +450,22 @@ Sesi _sesi(int aktif) => Sesi(
         'peran': 'pic_utama',
       },
       {'customer_id': 4, 'nama_perusahaan': 'PT Beta Teknik', 'peran': 'staf'},
+    ],
+  }),
+  perusahaanId: aktif,
+);
+
+/// Akun anggota SATU perusahaan (nama PT tidak tampil di Beranda).
+Sesi _sesiSatu(int aktif) => Sesi(
+  akun: Akun.dariJson({
+    'id': 7,
+    'nama': 'Rina Wulandari',
+    'email': 'rina@majusejahtera.example',
+    'jabatan': 'Manajer Mutu',
+    'status': 'aktif',
+    'butuh_verifikasi': false,
+    'keanggotaan': [
+      {'customer_id': aktif, 'nama_perusahaan': 'PT Satu', 'peran': 'staf'},
     ],
   }),
   perusahaanId: aktif,
@@ -405,6 +505,7 @@ typedef _Layar = ({
   int? tab,
   int perusahaan,
   bool galat,
+  bool satuPt,
   bool kunci,
   Future<void> Function(WidgetTester tester)? sesudah,
 });
@@ -415,6 +516,8 @@ _Layar _layar(
   int? tab,
   int perusahaan = 3,
   bool galat = false,
+  // Akun anggota satu perusahaan (tanpa nama PT di Beranda).
+  bool satuPt = false,
   // Layar kunci: selalu dijalankan di tiga ukuran gerbang dan kedua tema (dan
   // diperiksa pedoman sentuh + label), bukan hanya bila PNG diminta.
   bool kunci = false,
@@ -426,6 +529,7 @@ _Layar _layar(
   tab: tab,
   perusahaan: perusahaan,
   galat: galat,
+  satuPt: satuPt,
   kunci: kunci,
   sesudah: sesudah,
 );
@@ -509,6 +613,36 @@ final _layarKunci = <_Layar>[
     tab: IndeksTab.beranda,
     galat: true,
     kunci: true,
+  ),
+  // Tenang: kalimat "Semua alat Anda berlaku.", jadwal terdekat, satu PT.
+  _layar(
+    'beranda_tenang',
+    () => const Rangka(),
+    tab: IndeksTab.beranda,
+    perusahaan: 6,
+    satuPt: true,
+    kunci: true,
+  ),
+  // Server lama tanpa field baru: tanpa tahap per alat, tik dari jumlah.
+  _layar(
+    'beranda_server_lama',
+    () => const Rangka(),
+    tab: IndeksTab.beranda,
+    perusahaan: 7,
+    satuPt: true,
+    kunci: true,
+  ),
+  // Offline: banner data terakhir di atas isi yang tetap terbaca.
+  _layar(
+    'beranda_offline',
+    () => const Rangka(),
+    tab: IndeksTab.beranda,
+    kunci: true,
+    sesudah: (tester) async {
+      ProviderScope.containerOf(
+        tester.element(find.byType(Rangka)),
+      ).read(koneksiProvider.notifier).offline(DateTime(2026, 11, 12, 8, 12));
+    },
   ),
   _layar('alat', () => const Rangka(), tab: IndeksTab.alat, kunci: true),
   _layar(
@@ -629,7 +763,9 @@ void main() {
                 ...overrideFitur(
                   server,
                   perusahaan: l.perusahaan,
-                  sesi: _sesi(l.perusahaan),
+                  sesi: l.satuPt
+                      ? _sesiSatu(l.perusahaan)
+                      : _sesi(l.perusahaan),
                 ),
                 infoAplikasiProvider.overrideWith(
                   (ref) async => InfoAplikasi.dariJson({

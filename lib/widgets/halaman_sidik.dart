@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/tema/spasi.dart';
 import 'konten_tengah.dart';
 
 /// Kerangka satu layar: `Scaffold` + `AppBar` bertema + isi yang dipusatkan dan
@@ -8,7 +9,8 @@ import 'konten_tengah.dart';
 ///
 /// [judul] teks sederhana; [judulKustom] untuk judul berupa widget (mis. logo
 /// + nama). Tanpa keduanya, layar tidak punya app bar (layar penuh seperti
-/// Sambutan dan Masuk).
+/// Sambutan dan Masuk). [lebarMaks] melebarkan batas isi untuk layar yang
+/// punya dua kolom di tablet (bawaannya [Spasi.lebarKonten]).
 class HalamanSidik extends StatelessWidget {
   const HalamanSidik({
     super.key,
@@ -18,6 +20,7 @@ class HalamanSidik extends StatelessWidget {
     this.otomatisKembali = true,
     this.latarPutih = false,
     this.bawah,
+    this.lebarMaks = Spasi.lebarKonten,
     required this.isi,
   });
 
@@ -31,6 +34,9 @@ class HalamanSidik extends StatelessWidget {
 
   /// Widget di bawah isi (mis. bilah aksi), di luar area bergulir.
   final Widget? bawah;
+
+  /// Lebar isi paling besar sebelum dipusatkan.
+  final double lebarMaks;
   final Widget isi;
 
   @override
@@ -47,7 +53,7 @@ class HalamanSidik extends StatelessWidget {
               automaticallyImplyLeading: otomatisKembali,
             )
           : null,
-      body: KontenTengah(child: isi),
+      body: KontenTengah(lebarMaks: lebarMaks, child: isi),
       bottomNavigationBar: bawah,
     );
   }

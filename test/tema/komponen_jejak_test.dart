@@ -82,7 +82,6 @@ void main() {
         'halaman_sidik',
         'kartu_alat',
         'kartu_kelompok_arsip',
-        'kartu_kpi',
         'kartu_paket',
         'kartu_sertifikat',
         'kartu_sidik',

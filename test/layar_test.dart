@@ -202,7 +202,7 @@ void main() {
     await inter.load();
   });
 
-  testWidgets('Beranda: kotak jatuh tempo dan alat paling mendesak', (
+  testWidgets('Beranda: kalimat utama dan alat paling mendesak', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(800, 2400);
@@ -212,14 +212,16 @@ void main() {
     await tester.pumpWidget(_bungkus(const BerandaScreen(), _Palsu()));
     await tester.pumpAndSettle();
 
-    expect(find.text('PT Contoh'), findsOneWidget);
-    // Kotak: lewat jadwal 1, dalam 30 hari 2 (angka server).
-    expect(find.text('Lewat jadwal'), findsWidgets);
+    // Tanpa sesi (satu perusahaan): nama PT tidak tampil di Beranda.
+    expect(find.text('PT Contoh'), findsNothing);
+    // Kalimat utama dari angka server: lewat jadwal 1, segera 2.
+    expect(find.text('1 alat lewat jadwal.'), findsOneWidget);
+    expect(find.text('2 alat segera jatuh tempo.'), findsOneWidget);
     expect(find.text('Dalam 30 hari'), findsOneWidget);
-    // Alat yang butuh perhatian, dengan hitung mundur.
+    // Alat yang butuh perhatian, dengan hitung mundur sebagai angka.
     expect(find.text('Jangka Sorong'), findsOneWidget);
-    expect(find.textContaining('Lewat 3 hari'), findsOneWidget);
-    expect(find.textContaining('12 hari lagi'), findsOneWidget);
+    expect(find.text('hari lewat'), findsOneWidget);
+    expect(find.text('hari lagi'), findsOneWidget);
     // Fitur yang dibuang tidak ada lagi di layar.
     expect(find.textContaining('Ajukan'), findsNothing);
     expect(find.textContaining('Permintaan'), findsNothing);
