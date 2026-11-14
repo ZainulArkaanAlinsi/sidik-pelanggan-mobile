@@ -8,7 +8,7 @@ ulang di sini. Lihat `lib/core/tema/README.md`.
 
 | Berkas | Komponen |
 |---|---|
-| `halaman_sidik.dart` | `HalamanSidik`: Scaffold + AppBar bertema + isi dipusatkan. Dipakai semua layar. |
+| `halaman_sidik.dart` | `HalamanSidik`: Scaffold + AppBar bertema + isi dipusatkan (`lebarMaks` untuk layar dua kolom). Dipakai semua layar. |
 | `konten_tengah.dart` | `KontenTengah`: isi dibatasi ±720 dp dan dipusatkan di layar lebar. |
 | `kolom_formulir.dart` | `KolomFormulir`: kolom sempit (440 dp) bergulir untuk Sambutan, Masuk, dan layar keadaan penuh. |
 | `navigasi_utama.dart` | `NavigasiUtama` + `TujuanNavigasi`: navigasi bawah di HP, rel samping di >= 600 dp (`LayoutBuilder`, tanpa paket). |
@@ -19,7 +19,6 @@ ulang di sini. Lihat `lib/core/tema/README.md`.
 | Berkas | Komponen |
 |---|---|
 | `kartu_sidik.dart` | `KartuSidik`: kartu datar; diketuk = ripple standar. |
-| `kartu_kpi.dart` | `KartuKpi`: angka ringkasan (ikon, angka, label). |
 | `kartu_alat.dart`, `kartu_sertifikat.dart`, `kartu_paket.dart` | Kartu domain di daftar dan Beranda. |
 | `kartu_kelompok_arsip.dart` | `KartuKelompokArsip`: satu tahun, bulan, atau pekan di Arsip sertifikat (label dan jumlah dari server, panah buka). |
 | `garis_waktu_sertifikat.dart` | Riwayat sertifikat satu alat. |
@@ -37,10 +36,11 @@ ulang di sini. Lihat `lib/core/tema/README.md`.
 | `pemetaan_status.dart` | SATU pemetaan kode/status → `StatusTampil` (`statusAlat`, `statusSertifikat`, `statusPaket`, ...). Istilah dari `StatusBerlaku.label`: "Lewat jadwal", "Masa berlaku berakhir", bukan "kedaluwarsa". |
 | `chip_status.dart` | `ChipStatus`: ikon + teks pada latar tipis. |
 
-## Komponen "Jejak" (Paket 2, belum dipakai layar)
+## Komponen "Jejak" (Paket 2; dipakai Beranda sejak Paket 3a)
 
-Komponen bersama arah "Jejak" (`docs/standar-kualitas-desain.md`). Belum dipakai
-layar: Paket 3 menggantikan kartu, chip, dan `BarisInfo` per layar. Semuanya
+Komponen bersama arah "Jejak" (`docs/standar-kualitas-desain.md`). Dipakai
+Beranda (Paket 3a); layar lain menyusul di Paket 3 (menggantikan kartu, chip,
+dan `BarisInfo` per layar). Semuanya
 dari token, tanpa paket atau font baru; tiap komponen punya tes widget di
 `test/widgets/` dan masuk galeri render `test/tampilan/render_komponen_test.dart`
 (daftar: `test/dukungan/daftar_komponen.dart`).
@@ -56,7 +56,7 @@ dari token, tanpa paket atau font baru; tiap komponen punya tes widget di
 | `tik_paket.dart` | `TikPaket`: satu tik per alat dalam paket, "N dari M alat selesai". | teks "N dari M" saja |
 | `garis_waktu_tahap.dart` | `GarisWaktuTahap`: garis waktu tegak + `menunggu()` ("Menunggu: A dan B"). | `_Langkah` di paket detail |
 | `skala_tempo.dart` | `SkalaTempo`: jendela 90 hari (keputusan desain), kata + dua label berpusat pada tiknya, ekor lewat jadwal paling sedikit 8%. | baris "Lewat 4 hari" |
-| `peta_jatuh_tempo.dart` | `PetaJatuhTempo` + `ZonaTempo`: satu penggaris, zona bisa diketuk. | `KartuKpi` x4 |
+| `peta_jatuh_tempo.dart` | `PetaJatuhTempo` + `ZonaTempo`: satu penggaris, zona bisa diketuk. | empat ubin KPI (`KartuKpi`, sudah dihapus) |
 | `kalimat_utama.dart` | `KalimatUtama` + `PotonganKalimat`: kalimat besar, frasa status berwarna (kata, bukan warna saja). | sapaan + nama PT |
 | `ringkasan_perhatian.dart` | `RingkasanPerhatian`: "Perlu perhatian" paling banyak 3 butir + tautan; kosong = tidak digambar. | empat ubin KPI |
 | `plat_nama.dart` | `PlatNama`: nomor seri sebagai identitas, hanya fakta terisi. | `BarisInfo` x7 di detail alat |

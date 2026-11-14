@@ -252,3 +252,42 @@ waktu. Hal yang perlu diketahui:
 - Penelusuran garis waktu memang tetap tanpa kata cari di aplikasi; bila
   kelak butuh "persempit hitungan per periode", `?q=` garis waktu sudah ada
   di server.
+
+## 7. Beranda "Jejak": hitungan yang kurang (14 Nov 2026, Paket 3a)
+
+Beranda baru (kalimat utama, "Perlu perhatian", "Sedang dikerjakan di lab")
+dibangun dari data yang ADA di `GET /beranda` (API `d8dc320a`). Tiga hal tidak
+bisa dijawab dengan jujur dari data itu. Aplikasi sudah membaca field di bawah
+BILA ADA dan jatuh ke perilaku sekarang bila tidak. Semuanya additive; tidak ada
+yang dihapus atau diganti nama.
+
+### a. Hitungan di `data.ringkasan` (semuanya angka >= 0, kunci boleh hilang)
+
+| Field | Isi | Dipakai untuk | Tanpa field (perilaku sekarang) |
+|---|---|---|---|
+| `paket_siap_diambil` | Semua paket berjalan perusahaan yang tahap paketnya `siap_diambil` | "N paket siap diambil." dan tautan "Lihat semua paket" bila lebih banyak dari yang terlihat | `paket_berjalan` dipotong tiga terbaru (`BerandaController` `limit(3)`): kalimat hanya "Ada paket siap diambil." bila daftar terpotong, dan paket siap yang lebih lama tersingkir; bila tidak ada paket siap yang terlihat tetapi paket berjalan lebih banyak dari daftar, tampil tautan "Lihat semua paket (N)" |
+| `alat_berlaku` | Alat aktif yang jadwal kalibrasinya berlaku (`status_alat` = `terkalibrasi`) | "Semua alat Anda berlaku." hanya bila `alat_berlaku` = `jumlah_alat` | "Tidak ada alat yang lewat jadwal." (tanpa klaim "berlaku": `jumlah_alat` ikut menghitung alat `belum_pernah`, `AlatPelangganResource`) |
+| `alat_belum_pernah` | Alat aktif yang belum pernah dikalibrasi (`status_alat` = `belum_pernah`) | Kalimat "N alat belum pernah dikalibrasi." | tidak ada kalimat itu |
+| `sertifikat_baru_7_hari` | Sertifikat terbit (berlaku, belum digantikan) 7 hari terakhir | "N sertifikat baru terbit." | dihitung dari `sertifikat_terbaru`, yang dibatasi lima (`BATAS`): bila semua lima baru, kalimat jadi "Ada sertifikat baru terbit." (tanpa angka) |
+
+### b. `garis_waktu` per alat (A5 di brief desain)
+
+`sedang_dikerjakan` (di `GET /beranda` `perlu_perhatian[]`, `GET /alat`, dan
+`GET /alat/{id}`) diusulkan memuat `garis_waktu` yang sama dengan
+`GET /paket/{id}`: `[{kode, label, lewat, sekarang}, ...]`, hasil
+`TahapPaket::garisWaktu($tahap, true)` untuk TAHAP ALAT itu. Aplikasi memakainya
+untuk `JejakTahap` (satu tik per langkah). Tanpa itu aplikasi memakai SALINAN
+urutan tahap di `lib/models/garis_tahap_pelanggan.dart` (enam tik, tujuh saat
+"Sedang dikerjakan ulang"), yang harus diubah bersama server tiap `TahapPaket`
+berubah. Alternatif yang lebih sempit: `posisi` (indeks 0 dari `garis_waktu`
+paket yang sama), tetapi `garis_waktu` menghapus salinan seluruhnya.
+
+### c. Usul tes penjaga di API
+
+Salinan klien itu aman selama urutan dan label tahap di server tidak berubah
+diam-diam. Usul: satu tes di API yang membekukan `TahapPaket::URUTAN` dan
+`TahapPaket::LABEL_PELANGGAN` (daftar kode, urutan, dan label pelanggan) beserta
+keluaran `garisWaktu($t, true)` untuk delapan kode, dengan pesan gagal yang
+menyebut `sidik-pelanggan-mobile` `lib/models/garis_tahap_pelanggan.dart` dan
+`test/beranda_jejak_test.dart` (portasi `_garisServer`) sebagai tempat yang ikut
+diubah.

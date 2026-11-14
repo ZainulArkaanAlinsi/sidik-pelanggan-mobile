@@ -2,7 +2,7 @@
 //
 // - model: kelompok 30/60/90 hari, status masa berlaku, bentuk `GET /beranda`;
 // - layanan: paging `GET /alat` untuk hitungan 31–90 hari;
-// - layar: kotak jatuh tempo, alat mendesak, sertifikat terbaru, paket;
+// - layar: kalimat utama, perlu perhatian, lab, peta jadwal, sertifikat;
 //   keadaan kosong/galat/muat, tarik-untuk-segarkan, ganti perusahaan/akun,
 //   dan skala huruf 1,3× di layar 320 dp.
 import 'package:flutter/material.dart';
@@ -22,7 +22,8 @@ import 'package:sidik_pelanggan/screens/alat/daftar_alat_screen.dart';
 import 'package:sidik_pelanggan/screens/beranda/beranda_screen.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
 import 'package:sidik_pelanggan/widgets/status_tampil.dart';
-import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
+import 'package:sidik_pelanggan/widgets/baris_alat.dart';
+import 'package:sidik_pelanggan/widgets/tautan_baris.dart';
 import 'package:sidik_pelanggan/widgets/pemetaan_status.dart';
 import 'package:sidik_pelanggan/widgets/kartu_alat.dart';
 
@@ -312,50 +313,46 @@ void main() {
 
   group('layar Beranda', () {
     testWidgets(
-      'ringkasan: kotak 30/60/90, tiga alat mendesak, sertifikat, paket',
+      'ringkasan: kalimat utama, perlu perhatian, lab, peta, sertifikat',
       (tester) async {
         final semantik = tester.ensureSemantics();
         _layar(tester);
         await tester.pumpWidget(_app(const BerandaScreen(), _server()));
         await tester.pumpAndSettle();
 
-        expect(find.text('PT Alfa'), findsOneWidget, reason: 'judul app bar');
-        // Empat kotak, label bahasa awam.
+        // Akun dua perusahaan: nama PT tampil (dengan "Ganti").
+        expect(find.text('PT Alfa'), findsOneWidget);
+        // Kalimat utama: jawaban dulu, kata statusnya yang berwarna.
+        expect(find.text('1 alat lewat jadwal.'), findsOneWidget);
+        expect(find.text('1 alat segera jatuh tempo.'), findsOneWidget);
+        // Peta jadwal: empat zona, label bahasa awam.
         expect(find.bySemanticsLabel('Lewat jadwal: 1 alat'), findsOneWidget);
         expect(find.bySemanticsLabel('Dalam 30 hari: 1 alat'), findsOneWidget);
-        expect(
-          find.bySemanticsLabel('Dalam 31–60 hari: 1 alat'),
-          findsOneWidget,
-        );
-        expect(
-          find.bySemanticsLabel('Dalam 61–90 hari: 1 alat'),
-          findsOneWidget,
-        );
+        expect(find.bySemanticsLabel('31–60 hari: 1 alat'), findsOneWidget);
+        expect(find.bySemanticsLabel('61–90 hari: 1 alat'), findsOneWidget);
 
-        // Tiga alat paling mendesak, urut; yang jauh / nonaktif tidak ikut.
-        final kartu = find.byType(KartuAlat);
-        expect(kartu, findsNWidgets(3));
+        // "Perlu perhatian": lewat jadwal lebih dulu, lalu segera; alat 31 hari
+        // ke atas dan yang nonaktif tidak ikut.
+        final baris = find.byType(BarisAlat);
+        expect(baris, findsNWidgets(2));
         expect(
-          [for (final w in tester.widgetList<KartuAlat>(kartu)) w.alat.nama],
-          ['Jangka Sorong', 'Timbangan Analitik', 'Termometer'],
+          [for (final w in tester.widgetList<BarisAlat>(baris)) w.nama],
+          ['Jangka Sorong', 'Timbangan Analitik'],
         );
         expect(find.text('Manometer'), findsNothing);
         expect(find.text('Alat Nonaktif'), findsNothing);
-        // Status memakai kata rencana, bukan kode API.
-        expect(find.text('Lewat jadwal'), findsWidgets);
-        expect(find.text('Segera jatuh tempo'), findsOneWidget);
         expect(find.textContaining('valid_until'), findsNothing);
 
         expect(find.text('CAL/ALFA/0002'), findsOneWidget);
         expect(find.text('CAL/ALFA/0001'), findsOneWidget);
+        expect(find.text('Sedang dikerjakan di lab'), findsOneWidget);
         expect(find.text('ORD/ALFA/0001'), findsOneWidget);
-        expect(find.text('Sedang dikalibrasi'), findsOneWidget);
         expect(find.text('Lihat semua alat (7)'), findsOneWidget);
         semantik.dispose();
       },
     );
 
-    testWidgets('ketuk kotak 31–60 hari: daftar hanya alat di rentang itu', (
+    testWidgets('ketuk zona 31–60 hari: daftar hanya alat di rentang itu', (
       tester,
     ) async {
       final semantik = tester.ensureSemantics();
@@ -364,7 +361,7 @@ void main() {
       await tester.pumpWidget(_app(const BerandaScreen(), server));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.bySemanticsLabel('Dalam 31–60 hari: 1 alat'));
+      await tester.tap(find.bySemanticsLabel('31–60 hari: 1 alat'));
       await tester.pumpAndSettle();
 
       expect(find.byType(DaftarAlatScreen), findsOneWidget);
@@ -375,7 +372,7 @@ void main() {
       semantik.dispose();
     });
 
-    testWidgets('ketuk kotak Dalam 30 hari: server disaring saring=segera', (
+    testWidgets('ketuk zona Dalam 30 hari: server disaring saring=segera', (
       tester,
     ) async {
       final semantik = tester.ensureSemantics();
@@ -409,13 +406,14 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Belum ada alat'), findsOneWidget);
-      expect(find.text('Belum ada sertifikat yang terbit.'), findsOneWidget);
+      expect(find.text('Belum ada alat.'), findsOneWidget);
       expect(
-        find.text('Tidak ada paket yang sedang dikerjakan.'),
+        find.text('Alat yang pernah dikalibrasi di PT Sidik muncul di sini.'),
         findsOneWidget,
       );
-      expect(find.byType(KartuAlat), findsNothing);
+      expect(find.text('Belum ada sertifikat yang terbit.'), findsOneWidget);
+      expect(find.byType(BarisAlat), findsNothing);
+      expect(find.text('Sedang dikerjakan di lab'), findsNothing);
     });
 
     testWidgets('galat server: pesan jelas, Coba lagi memulihkan', (
@@ -426,6 +424,7 @@ void main() {
       await tester.pumpWidget(_app(const BerandaScreen(), server));
       await tester.pumpAndSettle();
 
+      expect(find.text('Beranda belum bisa dimuat'), findsOneWidget);
       expect(find.textContaining('Terjadi kendala di server'), findsOneWidget);
       expect(find.text('Coba lagi'), findsOneWidget);
 
@@ -433,27 +432,28 @@ void main() {
       await tester.tap(find.text('Coba lagi'));
       await tester.pumpAndSettle();
       expect(find.text('PT Alfa'), findsOneWidget);
-      expect(find.byType(KartuAlat), findsNWidgets(3));
+      expect(find.byType(BarisAlat), findsNWidgets(2));
     });
 
-    testWidgets('hitungan 31–90 hari gagal: dua kotak server tetap tampil', (
-      tester,
-    ) async {
-      final semantik = tester.ensureSemantics();
-      _layar(tester);
-      final server = _server()..gagal.add('/alat');
-      await tester.pumpWidget(_app(const BerandaScreen(), server));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'daftar alat gagal: dua zona server tetap tampil, ada catatan',
+      (tester) async {
+        final semantik = tester.ensureSemantics();
+        _layar(tester);
+        final server = _server()..gagal.add('/alat');
+        await tester.pumpWidget(_app(const BerandaScreen(), server));
+        await tester.pumpAndSettle();
 
-      expect(find.bySemanticsLabel('Lewat jadwal: 1 alat'), findsOneWidget);
-      expect(find.bySemanticsLabel('Dalam 30 hari: 1 alat'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Dalam 31–60 hari: belum tersedia'),
-        findsOneWidget,
-      );
-      expect(find.textContaining('belum bisa dimuat'), findsOneWidget);
-      semantik.dispose();
-    });
+        expect(find.text('1 alat lewat jadwal.'), findsOneWidget);
+        expect(find.bySemanticsLabel('Lewat jadwal: 1 alat'), findsOneWidget);
+        expect(find.bySemanticsLabel('Dalam 30 hari: 1 alat'), findsOneWidget);
+        // Dua zona terakhir tidak digambar: tidak ada angka karangan.
+        expect(find.textContaining('31–60'), findsNothing);
+        expect(find.textContaining('belum bisa dimuat'), findsOneWidget);
+        expect(find.byType(BarisAlat), findsNothing);
+        semantik.dispose();
+      },
+    );
 
     testWidgets('tarik untuk segarkan memuat ulang beranda dan hitungan', (
       tester,
@@ -487,7 +487,8 @@ void main() {
       await tester.pumpWidget(_app(const BerandaScreen(), server));
       await tester.pumpAndSettle();
       expect(find.text('PT Alfa'), findsOneWidget);
-      expect(find.text('Jangka Sorong'), findsOneWidget);
+      // Nama alat juga muncul di baris sertifikat: cari barisnya.
+      expect(find.widgetWithText(BarisAlat, 'Jangka Sorong'), findsOneWidget);
       expect(find.text('CAL/ALFA/0001'), findsOneWidget);
 
       // Data perusahaan baru datang lambat: selama menunggu, TIDAK BOLEH ada
@@ -502,7 +503,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('PT Beta'), findsOneWidget);
-      expect(find.text('Barometer Beta'), findsOneWidget);
+      expect(find.widgetWithText(BarisAlat, 'Barometer Beta'), findsOneWidget);
       expect(find.text('CAL/BETA/0001'), findsOneWidget);
       expect(find.text('ORD/BETA/0001'), findsOneWidget);
       // Tidak satu pun milik perusahaan sebelumnya tertinggal di layar.
@@ -558,10 +559,11 @@ void main() {
       expect(find.text('PT Alfa'), findsNothing, reason: 'saat memuat');
       await tester.pumpAndSettle();
 
-      expect(find.text('PT Kosong'), findsOneWidget);
+      // Akun baru anggota SATU perusahaan: nama PT tidak tampil di Beranda.
+      expect(find.text('PT Kosong'), findsNothing);
       expect(find.text('Jangka Sorong'), findsNothing);
       expect(find.text('CAL/ALFA/0001'), findsNothing);
-      expect(find.text('Belum ada alat'), findsOneWidget);
+      expect(find.text('Belum ada alat.'), findsOneWidget);
       // Permintaan perusahaan lama yang masih terbang selesai tanpa efek.
       await tester.pump(const Duration(seconds: 5));
       expect(find.text('Jangka Sorong'), findsNothing);
@@ -583,6 +585,11 @@ void main() {
               hari: -365,
               status: 'lewat_jadwal',
               merk: 'Fluke Calibration International',
+              serial: 'SN-2026-0000000000000001',
+              sedangDikerjakan: sedangDikerjakanJson(
+                tahap: 'menunggu_pemeriksaan',
+                label: 'Hasil sedang diperiksa oleh penyelia laboratorium',
+              ),
             ),
             alatJson(2, 'Timbangan', hari: 12, status: 'mendekati_jadwal'),
             alatJson(3, 'Termometer', hari: 45),
@@ -592,15 +599,26 @@ void main() {
               9,
               'CAL/2026/09/000123-REV.2',
               namaAlat: 'Digital Pressure Calibrator Multifungsi',
-              status: 'digantikan',
-              digantikanOleh: {'id': 10, 'nomor': 'CAL/2026/10/000456-REV.3'},
+              keputusan: 'FAIL',
+              diterbitkan: -2,
             ),
           ],
           paket: [
             paketJson(
               21,
               'ORD/2026/11/000777-PANJANG',
-              label: 'Menunggu pemeriksaan oleh penyelia laboratorium',
+              tahap: 'diterima',
+              label: 'Alat diterima lab dan menunggu giliran kalibrasi',
+              terlambat: true,
+              alat: [
+                alatPaketJson(
+                  1,
+                  'Digital Pressure Calibrator',
+                  tahap: 'diterima',
+                ),
+                alatPaketJson(2, 'Timbangan', tahap: 'sertifikat_terbit'),
+                alatPaketJson(3, 'Termometer', tahap: 'siap_diambil'),
+              ],
             ),
           ],
           jumlahPaketBerjalan: 6,
@@ -613,27 +631,21 @@ void main() {
       expect(tester.takeException(), isNull);
 
       // Seluruh isi digulir pelan-pelan: luapan di bagian mana pun ketahuan.
-      for (var i = 0; i < 12; i++) {
+      for (var i = 0; i < 14; i++) {
         await tester.drag(find.byType(ListView).first, const Offset(0, -300));
         await tester.pump();
         expect(tester.takeException(), isNull, reason: 'gulir ke-$i');
       }
       await tester.pumpAndSettle();
-      expect(find.text('dan 5 paket lainnya'), findsOneWidget);
 
-      // Target sentuh ≥ 48 dp: tombol utama, tombol teks, dan kotak ringkasan.
-      await tester.scrollUntilVisible(
-        find.widgetWithText(TombolSidik, 'Lihat semua alat (3)'),
-        -300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(
-        tester
-            .getSize(find.widgetWithText(TombolSidik, 'Lihat semua alat (3)'))
-            .height,
-        greaterThanOrEqualTo(48),
-      );
+      // Target sentuh >= 48 dp: tombol teks dan tautan baris.
       for (final e in find.byType(TextButton).evaluate()) {
+        expect(
+          tester.getSize(find.byWidget(e.widget)).height,
+          greaterThanOrEqualTo(48),
+        );
+      }
+      for (final e in find.byType(TautanBaris).evaluate()) {
         expect(
           tester.getSize(find.byWidget(e.widget)).height,
           greaterThanOrEqualTo(48),

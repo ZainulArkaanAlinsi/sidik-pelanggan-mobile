@@ -5,6 +5,14 @@ import 'paket.dart';
 
 int? _int(Object? v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}');
 
+/// Hitungan ringkasan dari server: `null` bila tidak dikirim atau bukan angka
+/// yang masuk akal (negatif). Server lama tidak mengirim hitungan baru; layar
+/// jatuh ke perilaku lama, bukan ke angka 0 yang dikarang.
+int? _hitungan(Object? v) {
+  final n = _int(v);
+  return n == null || n < 0 ? null : n;
+}
+
 /// Angka dari server bisa datang sebagai string desimal (`"0.01000000"` dari
 /// MySQL). Untuk ditampilkan/diedit: buang nol di belakang koma, pakai koma.
 String? angkaRapi(Object? v) {
@@ -89,6 +97,66 @@ class RingkasSertifikat {
   }
 }
 
+/// `sedang_dikerjakan` pada objek alat (`GET /alat`, `GET /alat/{id}`,
+/// `GET /beranda` `perlu_perhatian[]`; kontrak API §14.2): paket berjalan
+/// tempat alat ini sedang berada, dengan tahap versi pelanggan. Tahap dan
+/// labelnya DIHITUNG SERVER; aplikasi tidak menerjemahkan kode sendiri.
+///
+/// Server lama tidak mengirim kuncinya, dan server baru mengirim `null` untuk
+/// alat yang tidak sedang di lab: dua-duanya jadi `null` di sini, tanpa galat.
+/// Tanpa `tahap` atau `tahap_label` yang terbaca, objeknya dianggap tidak ada
+/// (tidak ada label yang dikarang dari kode).
+class SedangDikerjakan {
+  const SedangDikerjakan({
+    required this.tahap,
+    required this.tahapLabel,
+    this.paketId,
+    this.orderItemId,
+    this.nomorOrder,
+    this.garisWaktu,
+  });
+
+  /// Kode tahap (`dikalibrasi`, `menunggu_pemeriksaan`, ...).
+  final String tahap;
+
+  /// Label versi pelanggan ("Sedang dikalibrasi"): yang ditampilkan.
+  final String tahapLabel;
+
+  /// Kunci teknis untuk membuka paketnya; jangan ditampilkan.
+  final int? paketId;
+  final int? orderItemId;
+
+  /// Order Number: pengait kedua di bawah identitas alat.
+  final String? nomorOrder;
+
+  /// `garis_waktu` dari server (permintaan API: kontrak
+  /// `docs/kebutuhan-api-pelanggan.md` §7): urutan tahap yang dilihat
+  /// pelanggan dengan penanda lewat/sekarang. `null` bila server belum
+  /// mengirimnya; layar jatuh ke `garisWaktuPelanggan`.
+  final List<LangkahPaket>? garisWaktu;
+
+  static SedangDikerjakan? dariJson(Object? j) {
+    if (j is! Map) return null;
+    final tahap = _teksBersih(j['tahap']);
+    final label = _teksBersih(j['tahap_label']);
+    if (tahap == null || label == null) return null;
+    final garis = j['garis_waktu'];
+    final langkah = [
+      if (garis is List)
+        for (final l in garis)
+          if (l is Map) LangkahPaket.dariJson(Map<String, dynamic>.from(l)),
+    ];
+    return SedangDikerjakan(
+      tahap: tahap,
+      tahapLabel: label,
+      paketId: _int(j['paket_id']),
+      orderItemId: _int(j['order_item_id']),
+      nomorOrder: _teksBersih(j['nomor_order']),
+      garisWaktu: langkah.isEmpty ? null : langkah,
+    );
+  }
+}
+
 class Alat {
   const Alat({
     required this.id,
@@ -106,6 +174,7 @@ class Alat {
     this.sertifikatTerakhir,
     this.riwayat = const [],
     this.catatan,
+    this.sedangDikerjakan,
   });
 
   final int id;
@@ -125,6 +194,10 @@ class Alat {
   /// Riwayat kalibrasi alat ini (sertifikat, terbaru di atas) — hanya di detail.
   final List<Sertifikat> riwayat;
   final String? catatan;
+
+  /// Paket berjalan tempat alat ini sedang berada; `null` bila tidak di lab
+  /// (atau server belum mengirim kuncinya).
+  final SedangDikerjakan? sedangDikerjakan;
 
   /// "Hari ini" menurut SERVER saat data alat ini dikirim: tanggal jatuh tempo
   /// dikurangi `hari_ke_jatuh_tempo` (keduanya dihitung server di zona
@@ -182,6 +255,7 @@ class Alat {
       sertifikatTerakhir: sertifikatTerakhir,
       riwayat: riwayat,
       catatan: _teksBersih(j['catatan']),
+      sedangDikerjakan: SedangDikerjakan.dariJson(j['sedang_dikerjakan']),
     );
   }
 }
@@ -331,6 +405,10 @@ class Beranda {
     this.jumlahPaketBerjalan = 0,
     this.sertifikatTerbaru = const [],
     this.paketBerjalan = const [],
+    this.paketSiapDiambil,
+    this.alatBerlaku,
+    this.alatBelumPernah,
+    this.sertifikatBaru7Hari,
   });
 
   final String namaPerusahaan;
@@ -350,6 +428,23 @@ class Beranda {
 
   /// `paket_berjalan[]` — paket (order) yang masih dikerjakan lab.
   final List<Paket> paketBerjalan;
+
+  /// Hitungan tambahan di `ringkasan` (permintaan API, kontrak
+  /// `docs/kebutuhan-api-pelanggan.md` §7). Semuanya `null` bila server belum
+  /// mengirimnya; Beranda lalu memakai yang bisa dihitung dari daftar yang
+  /// dipotong server (tiga paket, lima sertifikat) dan tidak mengklaim lebih.
+  ///
+  /// `paket_siap_diambil`: semua paket berjalan yang siap diambil.
+  final int? paketSiapDiambil;
+
+  /// `alat_berlaku`: alat aktif yang masa kalibrasinya berlaku.
+  final int? alatBerlaku;
+
+  /// `alat_belum_pernah`: alat aktif yang belum pernah dikalibrasi.
+  final int? alatBelumPernah;
+
+  /// `sertifikat_baru_7_hari`: sertifikat berlaku yang terbit 7 hari terakhir.
+  final int? sertifikatBaru7Hari;
 
   /// Alat yang jadwalnya aman = sisanya (server tidak punya saringan `aman`).
   int get aman {
@@ -377,6 +472,10 @@ class Beranda {
         for (final p in (d['paket_berjalan'] as List? ?? const []))
           Paket.dariJson(p as Map<String, dynamic>),
       ],
+      paketSiapDiambil: _hitungan(r['paket_siap_diambil']),
+      alatBerlaku: _hitungan(r['alat_berlaku']),
+      alatBelumPernah: _hitungan(r['alat_belum_pernah']),
+      sertifikatBaru7Hari: _hitungan(r['sertifikat_baru_7_hari']),
     );
   }
 }

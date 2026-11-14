@@ -1,4 +1,4 @@
-// Komponen bersama di lib/widgets: kartu KPI, chip status, tombol, lencana KAN,
+// Komponen bersama di lib/widgets: chip status, tombol, lencana KAN,
 // bagian, dan pemusat isi. Diuji di terang dan gelap, dan pada 320 dp dengan
 // huruf 1,3× (batas yang dihormati aplikasi).
 import 'package:flutter/material.dart';
@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/widgets/bagian_sidik.dart';
 import 'package:sidik_pelanggan/widgets/chip_status.dart';
-import 'package:sidik_pelanggan/widgets/kartu_kpi.dart';
 import 'package:sidik_pelanggan/widgets/konten_tengah.dart';
 import 'package:sidik_pelanggan/widgets/lencana_kan.dart';
 import 'package:sidik_pelanggan/widgets/status_tampil.dart';
@@ -31,80 +30,6 @@ Widget _app(Widget anak, {bool gelap = false, double skala = 1.0}) =>
 
 void main() {
   setUpAll(siapkanTesFitur);
-
-  group('KartuKpi', () {
-    testWidgets('menampilkan angka dan label, bisa diketuk, ada label baca', (
-      tester,
-    ) async {
-      var diketuk = 0;
-      final semantik = tester.ensureSemantics();
-      await tester.pumpWidget(
-        _app(
-          KartuKpi(
-            angka: 4,
-            label: 'Lewat jadwal',
-            ikon: Icons.event_busy_outlined,
-            nada: NadaStatus.gagal,
-            onTap: () => diketuk++,
-          ),
-        ),
-      );
-      expect(find.text('4'), findsOneWidget);
-      expect(find.text('Lewat jadwal'), findsOneWidget);
-      expect(find.bySemanticsLabel('Lewat jadwal: 4 alat'), findsOneWidget);
-      await tester.tap(find.byType(KartuKpi));
-      expect(diketuk, 1);
-      semantik.dispose();
-    });
-
-    testWidgets('angka null tampil strip dan "belum tersedia" untuk pembaca', (
-      tester,
-    ) async {
-      final semantik = tester.ensureSemantics();
-      await tester.pumpWidget(
-        _app(
-          KartuKpi(
-            angka: null,
-            label: 'Dalam 31–60 hari',
-            ikon: Icons.date_range_outlined,
-            onTap: () {},
-          ),
-        ),
-      );
-      expect(find.text('–'), findsOneWidget);
-      expect(
-        find.bySemanticsLabel('Dalam 31–60 hari: belum tersedia'),
-        findsOneWidget,
-      );
-      semantik.dispose();
-    });
-
-    for (final gelap in [false, true]) {
-      testWidgets('2 kolom di 320 dp, huruf 1,3×, tanpa luapan '
-          '(${gelap ? 'gelap' : 'terang'})', (tester) async {
-        layarHp(tester, lebar: 320, tinggi: 640);
-        Widget kartu(String l, int? n) =>
-            KartuKpi(angka: n, label: l, ikon: Icons.schedule, onTap: () {});
-        await tester.pumpWidget(
-          _app(
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(child: kartu('Dalam 31–60 hari', 128)),
-                  const SizedBox(width: 12),
-                  Expanded(child: kartu('Lewat jadwal', null)),
-                ],
-              ),
-            ),
-            gelap: gelap,
-            skala: 1.3,
-          ),
-        );
-        expect(tester.takeException(), isNull);
-      });
-    }
-  });
 
   group('ChipStatus dan LencanaKan', () {
     testWidgets('chip: ikon + teks, dan label status untuk pembaca layar', (

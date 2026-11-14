@@ -56,7 +56,7 @@ class KerangkaKartu extends StatelessWidget {
           SizedBox(height: Spasi.sm),
           BalokKerangka(tinggi: 12, lebar: 220),
           SizedBox(height: Spasi.md),
-          BalokKerangka(tinggi: 24, lebar: 96, radius: Bentuk.pil),
+          BalokKerangka(tinggi: 24, lebar: 96, pil: true),
         ],
       ),
     ),
@@ -105,13 +105,19 @@ class KerangkaDetail extends StatelessWidget {
   );
 }
 
-/// Satu balok abu-abu berdenyut.
+/// Satu balok abu-abu berdenyut. Sudutnya dari token (`Bentuk.sudutKecil`,
+/// atau `Bentuk.sudutPil` bila [pil]), bukan angka radius.
 class BalokKerangka extends StatefulWidget {
-  const BalokKerangka({super.key, this.tinggi = 12, this.lebar, this.radius});
+  const BalokKerangka({
+    super.key,
+    this.tinggi = 12,
+    this.lebar,
+    this.pil = false,
+  });
 
   final double tinggi;
   final double? lebar;
-  final double? radius;
+  final bool pil;
 
   @override
   State<BalokKerangka> createState() => _BalokKerangkaState();
@@ -153,7 +159,7 @@ class _BalokKerangkaState extends State<BalokKerangka>
         width: widget.lebar,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(widget.radius ?? Bentuk.kecil),
+          borderRadius: widget.pil ? Bentuk.sudutPil : Bentuk.sudutKecil,
         ),
       ),
     );
