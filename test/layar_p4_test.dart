@@ -142,13 +142,11 @@ class _Palsu extends LayananUji {
   _Palsu({
     this.peranSaya = 'pic_utama',
     this.galatNonaktifkan,
-    this.galatSimpanPreferensi,
     this.galatGantiSandi,
   });
 
   final String peranSaya;
   final GalatApi? galatNonaktifkan;
-  final GalatApi? galatSimpanPreferensi;
   final GalatApi? galatGantiSandi;
 
   int muatAnggota = 0;
@@ -161,6 +159,7 @@ class _Palsu extends LayananUji {
     'status_permintaan': true,
     'pesan_lab': true,
     'ringkasan_email_mingguan': false,
+    'tahap_alat': true,
   };
 
   @override
@@ -183,7 +182,6 @@ class _Palsu extends LayananUji {
     Map<String, bool> sebagian,
   ) async {
     disimpan.add(sebagian);
-    if (galatSimpanPreferensi != null) throw galatSimpanPreferensi!;
     saklar = {...saklar, ...sebagian};
     return saklar;
   }
@@ -471,52 +469,8 @@ void main() {
     });
   });
 
-  group('Pengaturan notifikasi', () {
-    bool nilai(WidgetTester t, String kunci) =>
-        t.widget<SwitchListTile>(find.byKey(ValueKey('saklar-$kunci'))).value;
-
-    testWidgets('menampilkan saklar yang berfungsi, menyimpan satu kunci', (
-      tester,
-    ) async {
-      final palsu = _Palsu();
-      await tester.pumpWidget(
-        _layar(const PreferensiNotifikasiScreen(), palsu),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('PT Contoh Pelanggan'), findsOneWidget);
-      expect(find.byType(SwitchListTile), findsNWidgets(3));
-      expect(find.byKey(const ValueKey('saklar-pesan_lab')), findsNothing);
-      expect(nilai(tester, 'ringkasan_email_mingguan'), isFalse);
-
-      await tester.tap(
-        find.byKey(const ValueKey('saklar-ringkasan_email_mingguan')),
-      );
-      await tester.pumpAndSettle();
-
-      expect(palsu.disimpan, [
-        {'ringkasan_email_mingguan': true},
-      ]);
-      expect(nilai(tester, 'ringkasan_email_mingguan'), isTrue);
-      expect(nilai(tester, 'pengingat_jadwal'), isTrue);
-    });
-
-    testWidgets('gagal simpan: saklar kembali dan pesan tampil', (
-      tester,
-    ) async {
-      final palsu = _Palsu(galatSimpanPreferensi: GalatApi.jaringan());
-      await tester.pumpWidget(
-        _layar(const PreferensiNotifikasiScreen(), palsu),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const ValueKey('saklar-pengingat_jadwal')));
-      await tester.pumpAndSettle();
-
-      expect(nilai(tester, 'pengingat_jadwal'), isTrue, reason: 'dikembalikan');
-      expect(find.textContaining('Tidak bisa terhubung'), findsOneWidget);
-    });
-  });
+  // Isi dan perilaku layar Pengaturan notifikasi diuji di
+  // `preferensi_notifikasi_{layanan,provider,layar}_test.dart`.
 
   group('Ganti sandi', () {
     Future<void> isi(

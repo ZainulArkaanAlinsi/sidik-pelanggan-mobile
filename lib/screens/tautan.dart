@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import 'alat/alat_detail_screen.dart';
+import 'paket/paket_detail_screen.dart';
 import 'sertifikat/sertifikat_detail_screen.dart';
 
 /// `tautan.tipe` (kotak notifikasi) / `tautan_tipe` (data push) → layar
@@ -13,5 +14,7 @@ import 'sertifikat/sertifikat_detail_screen.dart';
 Widget? layarUntukTautan(String? tipe, int? id) => switch (tipe) {
   'pelanggan_sertifikat' when id != null => SertifikatDetailScreen(id: id),
   'pelanggan_alat' when id != null => AlatDetailScreen(id: id),
+  // Kabar perubahan tahap alat (kontrak API §14.4): id = id PAKET.
+  'pelanggan_paket' when id != null => PaketDetailScreen(id: id),
   _ => null,
 };
