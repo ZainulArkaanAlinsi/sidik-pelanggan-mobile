@@ -373,8 +373,18 @@ class LayananPelanggan {
     Map<String, bool> sebagian,
   ) async => _saklar(await api.put('/preferensi-notifikasi', sebagian));
 
+  /// Catat set saklar terkonfirmasi sebagai jawaban `GET` terakhir di cache HP
+  /// ini: `PUT` tidak menyegarkan cache `GET`, jadi tanpa ini layar yang dibuka
+  /// offline menampilkan pilihan sebelum ketukan terakhir. Bentuknya sama dengan
+  /// jawaban server (`{data: {kunci: bool}}`).
+  Future<void> catatPreferensiNotifikasi(Map<String, bool> set) =>
+      api.catatJawabanGet('/preferensi-notifikasi', {'data': set});
+
+  /// Hanya nilai boolean yang diambil: `data` yang bukan objek (PHP mengirim
+  /// `[]` untuk larik kosong) atau nilai bukan boolean tidak menjatuhkan layar.
   Map<String, bool> _saklar(Map<String, dynamic> badan) {
-    final d = (badan['data'] as Map?) ?? const {};
+    final d = badan['data'];
+    if (d is! Map) return {};
     return {
       for (final e in d.entries)
         if (e.value is bool) '${e.key}': e.value as bool,

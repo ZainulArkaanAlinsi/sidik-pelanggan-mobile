@@ -13,7 +13,7 @@ Bagian 3 dan 4 adalah yang BELUM ada di server; isinya usulan, bukan kontrak.
 | Rute | Layar | Catatan |
 |---|---|---|
 | `POST /saya/ganti-sandi` | Akun > Ganti sandi | `sandi_lama_salah` ditampilkan di kolomnya; sesi di HP ini tetap hidup |
-| `GET`/`PUT /preferensi-notifikasi` | Akun > Pengaturan notifikasi | Hanya tiga saklar yang masih punya pengirim; `pesan_lab` tidak ditampilkan (lihat 4.b) |
+| `GET`/`PUT /preferensi-notifikasi` | Akun > Pengaturan notifikasi | Empat saklar yang masih punya pengirim (termasuk `tahap_alat`); `pesan_lab` tidak ditampilkan (lihat 4.b dan 7) |
 | `GET /anggota` | Akun > Anggota perusahaan | Semua peran. Telepon rekan tidak dibaca; daftar undangan hanya dirender untuk PIC utama |
 | `POST /anggota/{id}/nonaktifkan` | tombol di layar yang sama | Hanya tampil bila `data.saya.peran = pic_utama`, tidak untuk baris milik sendiri |
 | `GET /paket`, `GET /paket/{id}` | Akun > Pelacakan paket | Hanya baca. `?q=` nomor order dan `?selesai=1` dipakai |
@@ -291,3 +291,29 @@ keluaran `garisWaktu($t, true)` untuk delapan kode, dengan pesan gagal yang
 menyebut `sidik-pelanggan-mobile` `lib/models/garis_tahap_pelanggan.dart` dan
 `test/beranda_jejak_test.dart` (portasi `_garisServer`) sebagai tempat yang ikut
 diubah.
+
+## 8. Saklar notifikasi (14 Nov 2026)
+
+Layar Pengaturan notifikasi memakai `GET` dan `PUT /preferensi-notifikasi`
+(kontrak §14.4): satu `PUT` sebagian per saklar, sebanyak satu permintaan
+berjalan per kunci. Dua kunci berbeda bisa terkirim bersamaan.
+
+- **Permintaan ke API (tindak lanjut additive, belum dikerjakan): upsert di
+  `PreferensiNotifikasi::simpan`.** Sekarang `firstOrNew` + `save()` tanpa
+  transaksi, dengan `unique(customer_member_id)` di tabelnya. Pada tulis
+  PERTAMA seorang anggota yang mengetuk dua saklar dalam satu waktu tempuh,
+  kedua `PUT` bisa sama-sama melihat "belum ada baris" dan sama-sama `INSERT`;
+  yang kalah mendapat 500. Aplikasi menjawabnya dengan benar (saklar itu
+  dikembalikan dan tertulis "Belum tersimpan", bisa diketuk lagi), tetapi 500 itu
+  tidak perlu ada: `updateOrCreate` atau `upsert` menutupnya. Baris yang sudah
+  ada tidak terpengaruh.
+- 403 di rute ini hanya `akun_belum_diverifikasi` (`PelangganAktif`); anggota
+  yang dinonaktifkan atau header perusahaan yang salah dijawab 404
+  (`KonteksPerusahaan`). Aplikasi menerjemahkan 403 sebagai "hanya bisa dibaca,
+  hubungi PT Sidik" dan 404 sebagai kegagalan simpan biasa.
+- Tautan notifikasi `pelanggan_paket` (kontrak §14.4) kini dipetakan
+  (`lib/screens/tautan.dart`) ke detail paket `GET /paket/{id}`, dipakai bersama
+  oleh ketukan baris kotak masuk dan ketukan push.
+- Cache `GET /preferensi-notifikasi` ditulis ulang aplikasi sesudah tiap simpan
+  yang dikonfirmasi server (keadaan lokal, bukan jawaban `PUT`: jawaban untuk
+  satu kunci bisa tiba sesudah jawaban kunci lain dan membawa nilai usang).

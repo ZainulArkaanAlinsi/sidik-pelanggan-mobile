@@ -186,39 +186,3 @@ final detailPaketProvider = FutureProvider.autoDispose.family<DetailPaket, int>(
     return ref.watch(layananProvider).paket(id);
   },
 );
-
-/// Saklar notifikasi anggota ini di perusahaan aktif (per anggota per
-/// perusahaan di server). Mengubah satu saklar langsung terlihat, lalu
-/// disimpan; gagal simpan mengembalikan saklar itu dan melempar galatnya.
-final preferensiNotifikasiProvider =
-    AsyncNotifierProvider.autoDispose<
-      PreferensiNotifikasiController,
-      Map<String, bool>
-    >(PreferensiNotifikasiController.new);
-
-class PreferensiNotifikasiController extends AsyncNotifier<Map<String, bool>> {
-  @override
-  Future<Map<String, bool>> build() {
-    _perusahaan(ref);
-    return ref.watch(layananProvider).preferensiNotifikasi();
-  }
-
-  Future<void> setel(String kunci, bool nilai) async {
-    final sebelum = state.value;
-    if (sebelum == null) return;
-    final lama = sebelum[kunci];
-    state = AsyncData({...sebelum, kunci: nilai});
-    try {
-      final baru = await ref.read(layananProvider).simpanPreferensiNotifikasi({
-        kunci: nilai,
-      });
-      state = AsyncData(baru);
-    } catch (_) {
-      // Hanya saklar ini yang dikembalikan; saklar lain yang sempat diketuk
-      // selama permintaan berjalan tidak ikut terhapus.
-      final kini = state.value ?? sebelum;
-      state = AsyncData({...kini, kunci: ?lama});
-      rethrow;
-    }
-  }
-}
