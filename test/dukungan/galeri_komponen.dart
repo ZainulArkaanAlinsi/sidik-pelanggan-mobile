@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
 
 import 'package:sidik_pelanggan/core/tema/spasi.dart';
+import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/models/status_berlaku.dart';
 import 'package:sidik_pelanggan/widgets/angka_hari.dart';
@@ -24,12 +25,19 @@ import 'package:sidik_pelanggan/widgets/pemetaan_status.dart';
 import 'package:sidik_pelanggan/widgets/peta_jatuh_tempo.dart';
 import 'package:sidik_pelanggan/widgets/plat_nama.dart';
 import 'package:sidik_pelanggan/widgets/ringkasan_perhatian.dart';
+import 'package:sidik_pelanggan/widgets/saringan_pil.dart';
 import 'package:sidik_pelanggan/widgets/saringan_teks.dart';
+import 'package:sidik_pelanggan/widgets/segmen_pil.dart';
 import 'package:sidik_pelanggan/widgets/skala_tempo.dart';
 import 'package:sidik_pelanggan/widgets/status_tampil.dart';
 import 'package:sidik_pelanggan/widgets/stempel.dart';
 import 'package:sidik_pelanggan/widgets/tautan_baris.dart';
 import 'package:sidik_pelanggan/widgets/tik_paket.dart';
+import 'package:sidik_pelanggan/widgets/tombol_bulat.dart';
+import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
+import 'package:sidik_pelanggan/widgets/ubin_alat.dart';
+import 'package:sidik_pelanggan/widgets/ubin_menu.dart';
+import 'package:sidik_pelanggan/widgets/ubin_ringkas.dart';
 
 import 'fixture_komponen.dart';
 
@@ -431,9 +439,236 @@ Widget galeriTeks() => Column(
   ],
 );
 
+/// Pengganti gambar alat (P3 menyediakan `VisualAlat`): ikon besar polos.
+class _VisualUji extends StatelessWidget {
+  const _VisualUji(this.ikon);
+  final IconData ikon;
+
+  @override
+  Widget build(BuildContext context) => FittedBox(
+    // Ubin tetap pastel di dua tema: gambar alat memakai tinta ubin (navy).
+    child: Icon(ikon, color: context.warna.tintaUbin),
+  );
+}
+
+/// Dua ubin berdampingan; satu kolom di lebar < [Spasi.batasKompak] (aturan
+/// UKURAN.md untuk ubin pasangan dan ubin menu).
+class _Pasangan extends StatelessWidget {
+  const _Pasangan(this.a, this.b);
+  final Widget a;
+  final Widget b;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width < Spasi.batasKompak) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [a, const SizedBox(height: Spasi.antarUbin), b],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: a),
+        const SizedBox(width: Spasi.antarUbin),
+        Expanded(child: b),
+      ],
+    );
+  }
+}
+
+/// Halaman D (Bento Lab, P2): tombol, saringan, segmen, stempel, dan ubin.
+Widget galeriBento() {
+  const jarak = SizedBox(height: Spasi.antarUbin);
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const _Catatan('TombolSidik: utama + lencana, sekunder, teks'),
+      TombolSidik(
+        label: 'Periksa alat',
+        ragam: RagamTombol.utama,
+        jumlah: 2,
+        penuh: true,
+        onPressed: () {},
+      ),
+      jarak,
+      TombolSidik(label: 'Unduh sertifikat', penuh: true, onPressed: () {}),
+      jarak,
+      TombolSidik(
+        label: 'Lupa sandi',
+        ragam: RagamTombol.teks,
+        onPressed: () {},
+      ),
+      // Keadaan mati TIDAK masuk galeri kontras: warna mati sengaja redup
+      // (pengecualian WCAG untuk kontrol nonaktif); diuji di widget test.
+      const _Catatan('TombolBulat: cari 44, kembali 48, aksi 52'),
+      Wrap(
+        spacing: Spasi.md,
+        runSpacing: Spasi.md,
+        children: [
+          TombolBulat.cari(onTap: () {}),
+          TombolBulat.kembali(onTap: () {}),
+          TombolBulat.aksi(semantik: 'Buka alat', onTap: () {}),
+          TombolBulat.aksi(
+            semantik: 'Buka paket',
+            nada: NadaTombolBulat.navy,
+            onTap: () {},
+          ),
+        ],
+      ),
+      const _Catatan('SaringanPil dan SegmenPil'),
+      _TepiPenuh(
+        child: SaringanPil(
+          terpilih: 0,
+          onPilih: (_) {},
+          pilihan: const [
+            PilihanPil('Semua', jumlah: 9),
+            PilihanPil('Lewat jadwal', jumlah: 1, nada: NadaStatus.gagal),
+            PilihanPil('Dalam 30 hari', jumlah: 1, nada: NadaStatus.awas),
+            PilihanPil('31 sampai 60 hari', jumlah: 128),
+            PilihanPil('Berlaku', nada: NadaStatus.lulus),
+          ],
+        ),
+      ),
+      jarak,
+      SegmenPil(
+        pilihan: const ['Daftar', 'Arsip'],
+        terpilih: 1,
+        onPilih: (_) {},
+      ),
+      const _Catatan('Stempel pil: pengecualian, normal, diproses, netral'),
+      Wrap(
+        spacing: Spasi.sm,
+        runSpacing: Spasi.sm,
+        children: [
+          Stempel(statusAlat(StatusKalibrasi.lewat)),
+          Stempel(statusBerlaku(StatusBerlaku.berlaku)),
+          Stempel(statusBerlaku(StatusBerlaku.diproses)),
+          Stempel(statusBerlaku(StatusBerlaku.segera)),
+          Stempel(statusBerlaku(StatusBerlaku.tidakAktif)),
+        ],
+      ),
+      const _Catatan('UbinAlat: gagal, awas, lulus, tunggu, tanpa jadwal'),
+      UbinAlat(
+        nama: 'Oven Memmert',
+        status: statusAlat(StatusKalibrasi.lewat),
+        merkTipe: 'Memmert UF55',
+        serial: 'SN-0457-2201',
+        hari: -4,
+        tanggal: '9 Nov 2026',
+        visual: const _VisualUji(Icons.thermostat),
+        onTap: () {},
+      ),
+      jarak,
+      UbinAlat(
+        nama: 'Timbangan Analitik',
+        status: statusBerlaku(StatusBerlaku.segera),
+        merkTipe: 'Mettler Toledo XPR205',
+        serial: 'B419223017',
+        hari: 12,
+        tanggal: '25 Nov 2026',
+        visual: const _VisualUji(Icons.scale_outlined),
+        onTap: () {},
+      ),
+      jarak,
+      UbinAlat(
+        nama: 'Jangka Sorong Digital',
+        status: statusBerlaku(StatusBerlaku.berlaku),
+        merkTipe: 'Mitutoyo CD-15CPX',
+        serial: '2201-0457',
+        hari: 200,
+        tanggal: '1 Jun 2027',
+        visual: const _VisualUji(Icons.straighten),
+        onTap: () {},
+      ),
+      jarak,
+      UbinAlat(
+        nama: 'Manometer 0 sampai 10 bar',
+        status: statusPaket('dikalibrasi', 'Sedang dikalibrasi'),
+        merkTipe: 'WIKA 232.50',
+        serial: 'M-77012',
+        hari: 75,
+        tanggal: '29 Jan 2027',
+        onTap: () {},
+      ),
+      jarak,
+      UbinAlat(
+        nama: namaAlatPanjang,
+        status: statusBerlaku(StatusBerlaku.tidakAktif),
+        merkTipe: 'Merk Dengan Nama Sangat Panjang Sekali',
+        serial: 'SN-0000-1111-2222-3333',
+        hari: null,
+        // Ubin netral = permukaan tema (gelap di tema gelap): tanpa visual
+        // contoh, supaya ikon contoh bertinta navy tidak dinilai di atas gelap.
+        onTap: () {},
+      ),
+      const _Catatan('UbinAlat varian Beranda (232, angka 64)'),
+      UbinAlat(
+        nama: 'Oven Memmert',
+        status: statusAlat(StatusKalibrasi.lewat),
+        merkTipe: 'Memmert UF55',
+        serial: 'SN-0457-2201',
+        hari: -88,
+        tanggal: '9 Nov 2026',
+        beranda: true,
+        visual: const _VisualUji(Icons.thermostat),
+        onTap: () {},
+      ),
+      const _Catatan('UbinRingkas dan UbinMenu (dua kolom)'),
+      _Pasangan(
+        UbinRingkas(
+          judul: 'Sertifikat terbaru',
+          kalimat: 'Belum ada sertifikat yang terbit.',
+          aksi: 'Lihat semua',
+          nada: NadaStatus.awas,
+          visual: const _VisualUji(Icons.workspace_premium_outlined),
+          onTap: () {},
+        ),
+        UbinRingkas(
+          judul: 'Paket di lab',
+          kalimat: '3 paket sedang dikerjakan.',
+          aksi: 'Lihat semua',
+          nada: NadaStatus.tunggu,
+          visual: const _VisualUji(Icons.inventory_2_outlined),
+          onTap: () {},
+        ),
+      ),
+      jarak,
+      _Pasangan(
+        UbinMenu(
+          judul: 'Pelacakan paket',
+          nada: NadaStatus.lulus,
+          visual: const _VisualUji(Icons.local_shipping_outlined),
+          onTap: () {},
+        ),
+        UbinMenu(
+          judul: 'Anggota tim',
+          nada: NadaStatus.awas,
+          inisial: const ['AR', 'BS', 'CD'],
+          onTap: () {},
+        ),
+      ),
+      const _Catatan('PanelSidik: padding 6 (baris) dan 18 (isi)'),
+      PanelSidik(
+        padding: PanelSidik.paddingBaris,
+        anak: [
+          _alat(hari: 45),
+          _alat(nama: 'Mikrometer Sekrup', hari: 200),
+        ],
+      ),
+      jarak,
+      const PanelSidik(
+        padding: PanelSidik.paddingIsi,
+        anak: [Text('Isi bebas di dalam panel bersudut 28.')],
+      ),
+    ],
+  );
+}
+
 /// Semua halaman galeri menurut nama (dipakai harness dan tes pendaftaran).
 final galeriHalaman = <String, Widget Function()>{
   'baris': galeriBaris,
   'jejak': galeriJejak,
   'teks': galeriTeks,
+  'bento': galeriBento,
 };

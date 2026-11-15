@@ -272,7 +272,7 @@ void main() {
     }
   });
 
-  group('Stempel: persegi sudut 4, ikon + kata', () {
+  group('Stempel: pil sudut 15, ikon + kata', () {
     final semua = <StatusTampil>[
       for (final s in StatusBerlaku.values) statusBerlaku(s),
       statusKeputusan('PASS')!,
@@ -328,8 +328,12 @@ void main() {
       );
     }
 
+    // Bento Lab (P2) menggantikan persegi sudut 4 dengan pil 30 (sudut 15,
+    // KOMPONEN.md §Status). Hanya BENTUKNYA yang diubah di tes ini; semua
+    // pernyataan lain (latar status, tenang tanpa latar, ikon + kata) tetap.
     testWidgets(
-      'bentuk: sudut 4 (bukan pil), berlatar tipis; tenang tanpa latar',
+      'bentuk: pil sudut 15 (bukan persegi 4), berlatar status; tenang tanpa '
+      'latar',
       (tester) async {
         final status = statusAlat(StatusKalibrasi.lewat);
         await tester.pumpWidget(aplikasiUji(Stempel(status)));
@@ -340,8 +344,8 @@ void main() {
           ),
         );
         var dekor = kotak.decoration as BoxDecoration;
-        expect(dekor.borderRadius, Bentuk.sudutKecil);
-        expect(dekor.borderRadius, isNot(Bentuk.sudutPil));
+        expect(dekor.borderRadius, Bentuk.sudutStempel);
+        expect(dekor.borderRadius, isNot(Bentuk.sudutKecil));
         expect(
           dekor.color,
           TemaSidik.terang.extension<WarnaSidik>()!.gagalLatar,

@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../core/motion/gerak_bento.dart';
+import '../core/tema/bentuk.dart';
 import '../core/tema/spasi.dart';
+import '../core/tema/tipografi.dart';
 import '../core/tema/ukuran.dart';
+import '../core/tema/warna_sidik.dart';
+import 'dasar/cincin_fokus.dart';
 
 /// Ragam tombol. Satu layar cuma boleh punya SATU [RagamTombol.utama].
 enum RagamTombol {
-  /// Isi kobalt. Aksi utama layar.
+  /// Isi navy, pil 56. Aksi utama layar.
   utama,
 
-  /// Garis tipis. Aksi pendamping.
+  /// Putih bergaris tegas, pil 48. Aksi pendamping.
   sekunder,
 
   /// Hanya teks. Aksi tersier (Lupa sandi, Lewati).
@@ -18,12 +23,20 @@ enum RagamTombol {
   bahaya,
 }
 
-/// Tombol aplikasi di atas `FilledButton`/`OutlinedButton`/`TextButton`:
-/// ripple standar, tinggi minimal 48 dp (56 dp untuk [RagamTombol.utama], dari
-/// tema), tumbuh ke bawah bila label membungkus (huruf besar di layar sempit).
+/// Tombol aplikasi Bento Lab di atas `FilledButton`/`OutlinedButton`/`TextButton`:
+/// pil, ripple standar, tinggi minimal 48 dp (56 dp untuk [RagamTombol.utama],
+/// dari tema), tumbuh ke bawah bila label membungkus (huruf besar di layar
+/// sempit). Ditekan: skala 0,97 selama 120 ms ([TekanSkala], mati bila tombol
+/// mati atau "kurangi gerak" menyala). Papan ketik: cincin fokus di luar pil
+/// ([CincinFokus]).
 ///
 /// [sibuk] mengganti ikon dengan pemutar dan mematikan tombol: per tombol,
 /// bukan satu penanda untuk seluruh layar. [penuh] membentang selebar induk.
+///
+/// [jumlah] (hanya [RagamTombol.utama]): lencana bulat 40 kuning di ujung
+/// kanan, mis. "Periksa alat" dengan 2 alat menunggu; padding 22 kiri dan 8
+/// kanan. Pembaca layar menerima "label, jumlah". Angka SELALU ditemani label,
+/// jadi tombolnya tetap bermakna tanpa warna.
 class TombolSidik extends StatelessWidget {
   const TombolSidik({
     super.key,
@@ -33,6 +46,7 @@ class TombolSidik extends StatelessWidget {
     this.ikon,
     this.sibuk = false,
     this.penuh = false,
+    this.jumlah,
   });
 
   final String label;
@@ -41,11 +55,20 @@ class TombolSidik extends StatelessWidget {
   final IconData? ikon;
   final bool sibuk;
   final bool penuh;
+  final int? jumlah;
 
   @override
   Widget build(BuildContext context) {
     final aksi = sibuk ? null : onPressed;
-    final isiTeks = Text(label, textAlign: TextAlign.center);
+    final adaJumlah = jumlah != null && ragam == RagamTombol.utama;
+    final isiTeks = adaJumlah
+        ? _IsiDenganJumlah(
+            label: label,
+            jumlah: jumlah!,
+            aktif: aksi != null,
+            penuh: penuh,
+          )
+        : Text(label, textAlign: TextAlign.center);
     final Widget? penanda = sibuk
         ? const SizedBox.square(
             dimension: UkuranIkon.kecil + Spasi.xs,
@@ -53,16 +76,39 @@ class TombolSidik extends StatelessWidget {
           )
         : (ikon == null ? null : Icon(ikon, size: UkuranIkon.sedang - 4));
 
+    const paddingSekunder = EdgeInsets.symmetric(
+      horizontal: UkuranKontrol.tombolSekunder,
+    );
+    final gayaUtama = adaJumlah
+        ? FilledButton.styleFrom(
+            padding: const EdgeInsetsDirectional.only(
+              start: UkuranKontrol.tombolUtamaAwal,
+              end: Spasi.sm,
+            ),
+          )
+        : null;
+    final gayaSekunder = OutlinedButton.styleFrom(padding: paddingSekunder);
+
     final Widget tombol = switch (ragam) {
       RagamTombol.utama =>
         penanda == null
-            ? FilledButton(onPressed: aksi, child: isiTeks)
-            : FilledButton.icon(onPressed: aksi, icon: penanda, label: isiTeks),
+            ? FilledButton(onPressed: aksi, style: gayaUtama, child: isiTeks)
+            : FilledButton.icon(
+                onPressed: aksi,
+                style: gayaUtama,
+                icon: penanda,
+                label: isiTeks,
+              ),
       RagamTombol.sekunder =>
         penanda == null
-            ? OutlinedButton(onPressed: aksi, child: isiTeks)
+            ? OutlinedButton(
+                onPressed: aksi,
+                style: gayaSekunder,
+                child: isiTeks,
+              )
             : OutlinedButton.icon(
                 onPressed: aksi,
+                style: gayaSekunder,
                 icon: penanda,
                 label: isiTeks,
               ),
@@ -73,7 +119,11 @@ class TombolSidik extends StatelessWidget {
       RagamTombol.bahaya => _tombolBahaya(context, aksi, isiTeks, penanda),
     };
 
-    return penuh ? SizedBox(width: double.infinity, child: tombol) : tombol;
+    final bungkus = CincinFokus(
+      sudut: Bentuk.sudutPil,
+      child: TekanSkala(aktif: aksi != null, child: tombol),
+    );
+    return penuh ? SizedBox(width: double.infinity, child: bungkus) : bungkus;
   }
 
   Widget _tombolBahaya(
@@ -86,6 +136,9 @@ class TombolSidik extends StatelessWidget {
     final gaya = OutlinedButton.styleFrom(
       foregroundColor: galat,
       side: BorderSide(color: galat),
+      padding: const EdgeInsets.symmetric(
+        horizontal: UkuranKontrol.tombolSekunder,
+      ),
     );
     return penanda == null
         ? OutlinedButton(onPressed: aksi, style: gaya, child: isiTeks)
@@ -96,4 +149,73 @@ class TombolSidik extends StatelessWidget {
             label: isiTeks,
           );
   }
+}
+
+/// Isi tombol utama berlencana: label di kiri, lencana jumlah di kanan (rata
+/// ujung bila [penuh]). Keluar dari semantik anaknya dan menyatukan satu
+/// kalimat "label, jumlah".
+class _IsiDenganJumlah extends StatelessWidget {
+  const _IsiDenganJumlah({
+    required this.label,
+    required this.jumlah,
+    required this.aktif,
+    required this.penuh,
+  });
+
+  final String label;
+  final int jumlah;
+  final bool aktif;
+  final bool penuh;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.skema;
+    final t = context.teks;
+    final isi = aktif ? s.secondary : s.onSurface.withValues(alpha: _alfaIsi);
+    final tinta = aktif
+        ? s.onSecondary
+        : s.onSurface.withValues(alpha: _alfaTinta);
+    return Semantics(
+      label: '$label, $jumlah',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: penuh ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(child: Text(label)),
+          const SizedBox(width: Spasi.sm),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: isi,
+              borderRadius: Bentuk.sudutPil,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minWidth: UkuranKontrol.lencanaTombol,
+                minHeight: UkuranKontrol.lencanaTombol,
+              ),
+              child: Center(
+                widthFactor: 1,
+                heightFactor: 1,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Spasi.sm),
+                  child: Text(
+                    '$jumlah',
+                    style: t.labelLarge?.tabular.copyWith(
+                      color: tinta,
+                      fontWeight: TipografiSidik.beratTebal,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Opasitas isi dan tinta lencana saat tombol mati (12 % dan 38 %).
+  static const double _alfaIsi = 0.12;
+  static const double _alfaTinta = 0.38;
 }

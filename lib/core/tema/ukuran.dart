@@ -11,6 +11,15 @@ abstract final class UkuranIkon {
 
   /// Ilustrasi keadaan kosong dan galat.
   static const double ilustrasi = 48;
+
+  /// Ikon di dalam stempel status (Bento Lab).
+  static const double stempel = 14;
+
+  /// Ikon di tombol bulat 44 dan 48 dan di kolom cari (Bento Lab).
+  static const double tombol = 20;
+
+  /// Ikon di tombol bulat 52, aksi di ubin (Bento Lab).
+  static const double tombolBesar = 22;
 }
 
 /// Ukuran minimum area sentuh (pedoman Material dan WCAG 2.5.8: 48 dp).
@@ -108,6 +117,47 @@ abstract final class UkuranKontrol {
 
   /// Stempel status: pil setinggi 30 (radius [Bentuk.stempel]).
   static const double stempel = 30;
+
+  /// Jarak ikon ke kata di stempel (6).
+  static const double stempelJarak = 6;
+
+  /// Tombol bulat di ubin menu dan lencana jumlah di tombol utama (40).
+  static const double tombolBulatUbin = 40;
+  static const double lencanaTombol = 40;
+
+  /// Tombol utama dengan lencana: padding awal 22 (akhir [Spasi.sm]).
+  static const double tombolUtamaAwal = 22;
+
+  /// Tombol sekunder: padding mendatar 20.
+  static const double tombolSekunder = 20;
+
+  /// Saringan pil: padding akhir 6 (awal [Spasi.lg]); jarak antar-saringan
+  /// [Spasi.sm].
+  static const double saringanAkhir = 6;
+
+  /// Segmen: padding luar dan jarak antar-segmen 6.
+  static const double segmenPadding = 6;
+
+  /// Kolom cari: padding awal 20 dan akhir 6 (tombol bulat 44 di kanan).
+  static const double kolomCariAwal = 20;
+  static const double kolomCariAkhir = 6;
+
+  /// Panel berisi baris: padding 6 di semua sisi.
+  static const double panelBaris = 6;
+}
+
+/// Cincin fokus papan ketik: di LUAR isi, dengan celah, supaya tidak menutupi
+/// isi dan tidak menggeser tata letak. Warnanya `ColorScheme.primary` (navy di
+/// terang, biru muda di gelap): jauh di atas 3:1 terhadap halaman di dua tema.
+abstract final class UkuranFokus {
+  /// Celah antara isi dan cincin.
+  static const double celah = 2;
+
+  /// Tebal garis cincin.
+  static const double tebal = 2;
+
+  /// Jarak luar cincin dari tepi isi (celah + tebal).
+  static const double jarakLuar = celah + tebal;
 }
 
 /// Baris, ubin, dan grafik.
@@ -134,6 +184,15 @@ abstract final class UkuranUbin {
   /// Avatar inisial: 48 (daftar) dan 88 (profil).
   static const double avatar = 48;
   static const double avatarBesar = 88;
+
+  /// Padding dalam ubin alat (18); ubin pasangan dan menu memakai [Spasi.lg].
+  static const double paddingAlat = 18;
+
+  /// Lebar judul ubin menu paling banyak (dua baris).
+  static const double judulMenuMaks = 100;
+
+  /// Avatar kecil di tumpukan ubin menu.
+  static const double avatarUbin = 40;
 }
 
 /// Dock navigasi melayang (HP, di bawah [Spasi.batasLebar]).
@@ -150,4 +209,17 @@ abstract final class UkuranVisual {
   static const double alat = 160;
   static const double alatBeranda = 176;
   static const double ubinKecil = 112;
+
+  /// Visual di ubin menu.
+  static const double ubinMenu = 100;
+
+  /// Visual ubin alat di lebar < [Spasi.batasKompak].
+  static const double alatKompak = 120;
+
+  /// Visual ubin alat keluar dari tepi kanan 10 dan tepi bawah 20.
+  static const double keluarSamping = 10;
+  static const double keluarBawah = 20;
+
+  /// Visual ubin pasangan dan menu keluar 10 di kedua sisi.
+  static const double keluarKecil = 10;
 }

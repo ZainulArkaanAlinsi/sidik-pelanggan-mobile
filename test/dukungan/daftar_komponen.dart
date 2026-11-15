@@ -25,4 +25,13 @@ const daftarKomponenJejak = <String, List<String>>{
   'stempel': ['Stempel'],
   'tautan_baris': ['TautanBaris'],
   'tik_paket': ['TikPaket', 'TahapTik'],
+  // Bento Lab (P2): komponen baru. Pembantu internalnya ada di
+  // `lib/widgets/dasar/` (CincinFokus, KontrolKetuk, DasarUbin) dan dijaga
+  // `test/widgets/komponen_bento_test.dart`. Belum dipakai layar (P3 dan P5).
+  'saringan_pil': ['SaringanPil', 'PilihanPil'],
+  'segmen_pil': ['SegmenPil'],
+  'tombol_bulat': ['TombolBulat', 'UkuranTombolBulat', 'NadaTombolBulat'],
+  'ubin_alat': ['UbinAlat'],
+  'ubin_menu': ['UbinMenu'],
+  'ubin_ringkas': ['UbinRingkas'],
 };
