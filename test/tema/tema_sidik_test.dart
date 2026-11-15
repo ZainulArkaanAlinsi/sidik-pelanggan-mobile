@@ -1,8 +1,8 @@
-// Tema SIDIK Pelanggan: token tunggal (tanpa warna/ukuran liar di layar),
-// skala tipografi sembilan tingkat (daftar izin eksplisit), dan kontras WCAG AA
-// di terang dan gelap. Gerbang desain yang lebih lengkap ada di
-// token_only_test.dart, kontras_tema_test.dart, token_tema_test.dart, dan
-// anti_slop_test.dart (folder yang sama).
+// Tema SIDIK Pelanggan (Bento Lab): token tunggal (tanpa warna/ukuran liar di
+// layar), skala tipografi sepuluh ukuran (daftar izin eksplisit, termasuk 64
+// angka sorot), dan kontras WCAG AA di terang dan gelap. Gerbang desain yang
+// lebih lengkap ada di token_only_test.dart, kontras_tema_test.dart,
+// token_tema_test.dart, dan anti_slop_test.dart (folder yang sama).
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/core/tema/palet_sidik.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
+import 'package:sidik_pelanggan/core/tema/tipografi.dart';
 import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
 
 /// Rasio kontras WCAG 2.x antara dua warna buram.
@@ -43,8 +44,15 @@ void main() {
       expect(
         File('lib/core/tema/palet_sidik.dart').readAsStringSync(),
         contains('Color(0xFF043EA1)'),
-        reason: 'kobalt logo adalah warna utama',
+        reason: 'kobalt logo tetap tercatat di palet (hanya untuk aset merek)',
       );
+      // Bento Lab: kobalt BUKAN warna aksi. Warna utama kedua tema adalah
+      // navy (terang) atau navyTeks (gelap), tidak pernah kobaltLogo.
+      for (final tema in [TemaSidik.terang, TemaSidik.gelap]) {
+        expect(tema.colorScheme.primary, isNot(PaletSidik.kobaltLogo));
+        expect(tema.colorScheme.inversePrimary, isNot(PaletSidik.kobaltLogo));
+      }
+      expect(TemaSidik.terang.colorScheme.primary, PaletSidik.navy);
     });
 
     test('tanpa Colors.* (selain transparent) di layar dan widget', () {
@@ -74,12 +82,16 @@ void main() {
     });
   });
 
-  group('tipografi: Inter, sembilan tingkat', () {
+  // Daftar izin ukuran huruf (sp), Bento Lab. 64 = angka sorot (satu-satunya
+  // ukuran baru, BUKAN slot TextTheme: lihat TipografiSidik.angkaSorot).
+  final ukuranIzin = <double>{64, 44, 32, 28, 22, 20, 17, 16, 14, 12};
+
+  group('tipografi: Inter, sepuluh ukuran', () {
     for (final (nama, tema) in [
       ('terang', TemaSidik.terang),
       ('gelap', TemaSidik.gelap),
     ]) {
-      test('tema $nama memakai Inter dan hanya sembilan ukuran huruf', () {
+      test('tema $nama memakai Inter dan hanya ukuran huruf yang diizinkan', () {
         final t = tema.textTheme;
         final gaya = [
           t.displayLarge,
@@ -98,20 +110,122 @@ void main() {
           t.labelMedium,
           t.labelSmall,
         ];
-        // Daftar izin eksplisit (Paket 1, token "Jejak"): tiga tingkat baru
-        // masing-masing dipakai satu peran. 44 angka bintang (sisa hari di
-        // detail alat), 32 kalimat utama Beranda dan paket, 17 judul baris.
-        // Tingkat lama 15 dan 13 diganti 16 dan 14 (pembaca santai di meja);
-        // 22 menggantikan 20 untuk judul layar, 20 tinggal untuk app bar.
-        // Ukuran di luar daftar ini tetap tertolak; minimum 12 sp.
+        // Daftar izin eksplisit. Slot TextTheme: 44 angka kartu, 32 kalimat
+        // utama, 28 judul layar, 22 nama, 20 judul bar, 17 judul bagian, 16
+        // label dan isi, 14 keterangan, 12 stempel. Ukuran ke-10 (64, angka
+        // sorot) hidup di luar TextTheme dan diuji terpisah di bawah. Ukuran di
+        // luar daftar ini tetap tertolak; minimum 12 sp.
         expect(
           {for (final g in gaya) g!.fontSize},
           {44, 32, 28, 22, 20, 17, 16, 14, 12},
+        );
+        expect(
+          ukuranIzin,
+          containsAll({for (final g in gaya) g!.fontSize!}),
+          reason: 'semua slot TextTheme harus ada di daftar izin',
         );
         expect(gaya.every((g) => g!.fontFamily == 'Inter'), isTrue);
         expect(tema.useMaterial3, isTrue);
       });
     }
+  });
+
+  group('tipografi Bento Lab: angka sorot, spasi huruf, berat', () {
+    test('angka sorot 64/60, selebar tetap, hanya ukuran yang diizinkan', () {
+      final g = TipografiSidik.angkaSorot(teks: PaletSidik.navy);
+      expect(g.fontSize, 64);
+      expect(ukuranIzin, contains(g.fontSize));
+      expect(g.height! * g.fontSize!, closeTo(60, 1e-9));
+      expect(g.fontFamily, 'Inter');
+      expect(g.color, PaletSidik.navy);
+      expect(g.fontFeatures, contains(const FontFeature.tabularFigures()));
+    });
+
+    test('spasi huruf mengikuti em di DESIGN.md (dp = ukuran x em)', () {
+      final t = TemaSidik.terang.textTheme;
+      final harapan = <(String, TextStyle?, double)>[
+        (
+          'angka sorot 64',
+          TipografiSidik.angkaSorot(teks: PaletSidik.navy),
+          -0.04,
+        ),
+        ('angka kartu 44', t.displayLarge, -0.04),
+        ('kalimat 32', t.displayMedium, -0.03),
+        ('judul layar 28', t.displaySmall, -0.03),
+        ('nama 22', t.headlineMedium, -0.02),
+        ('judul bar 20', t.titleLarge, -0.02),
+        ('judul bagian 17', t.titleMedium, -0.01),
+      ];
+      for (final (apa, g, em) in harapan) {
+        expect(
+          g!.letterSpacing,
+          closeTo(g.fontSize! * em, 1e-9),
+          reason: '$apa: spasi huruf harus ${g.fontSize} x $em',
+        );
+      }
+    });
+
+    test('tinggi baris sesuai DESIGN.md', () {
+      final t = TemaSidik.terang.textTheme;
+      double baris(TextStyle? g) => g!.height! * g.fontSize!;
+      expect(baris(t.displayLarge), closeTo(48, 1e-9));
+      expect(baris(t.displayMedium), closeTo(38, 1e-9));
+      expect(baris(t.displaySmall), closeTo(34, 1e-9));
+      expect(baris(t.headlineMedium), closeTo(28, 1e-9));
+      expect(baris(t.titleLarge), closeTo(26, 1e-9));
+      expect(baris(t.titleMedium), closeTo(24, 1e-9));
+      expect(baris(t.labelLarge), closeTo(24, 1e-9));
+      expect(baris(t.bodySmall), closeTo(20, 1e-9));
+      expect(baris(t.labelMedium), closeTo(16, 1e-9));
+    });
+
+    test('UTANG: berat 800 belum ada; semua berat punya berkas font', () {
+      // Bento Lab meminta 800 (ExtraBold) untuk judul dan angka. Inter yang
+      // dibundel hanya punya 400/500/600/700 dan font baru dilarang, jadi
+      // `TipografiSidik.beratTebal` tampil 700. Tes ini memegang dua hal:
+      // (1) tak ada TextStyle yang meminta berat tanpa berkasnya (kalau
+      // diminta, mesin huruf diam-diam jatuh ke 700 dan kita lupa utangnya),
+      // (2) utangnya tercatat: begitu Inter-ExtraBold.ttf masuk pubspec,
+      // tes ini menyuruh `beratTebal` dinaikkan ke 800.
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      final deklarasi = RegExp(
+        r'asset:\s*assets/fonts/Inter-\w+\.ttf\s*weight:\s*(\d+)',
+      ).allMatches(pubspec).map((m) => int.parse(m.group(1)!)).toSet();
+      expect(deklarasi, containsAll({400, 500, 600, 700}));
+
+      final t = TemaSidik.terang.textTheme;
+      final semua = <TextStyle?>[
+        TipografiSidik.angkaSorot(teks: PaletSidik.navy),
+        t.displayLarge,
+        t.displayMedium,
+        t.displaySmall,
+        t.headlineLarge,
+        t.titleLarge,
+        t.titleMedium,
+        t.titleSmall,
+        t.bodyLarge,
+        t.bodySmall,
+        t.labelLarge,
+        t.labelMedium,
+      ];
+      for (final g in semua) {
+        final berat = (g!.fontWeight ?? FontWeight.w400).value;
+        expect(
+          deklarasi,
+          contains(berat),
+          reason: '${g.fontSize} sp meminta berat $berat tanpa berkas fontnya',
+        );
+      }
+
+      final adaExtraBold = deklarasi.contains(800);
+      expect(
+        TipografiSidik.beratTebal,
+        adaExtraBold ? FontWeight.w800 : FontWeight.w700,
+        reason: adaExtraBold
+            ? 'Inter-ExtraBold sudah ada: naikkan beratTebal ke w800'
+            : 'tanpa Inter-ExtraBold, beratTebal harus 700 (utang desain)',
+      );
+    });
   });
 
   group('kontras WCAG AA', () {
@@ -135,7 +249,7 @@ void main() {
         }
       });
 
-      test('$nama: tombol dan kobalt >= 4,5:1', () {
+      test('$nama: tombol dan warna utama >= 4,5:1', () {
         expect(kontras(s.onPrimary, s.primary), greaterThanOrEqualTo(4.5));
         expect(
           kontras(s.onPrimaryContainer, s.primaryContainer),
@@ -174,7 +288,8 @@ void main() {
     test('merah KAN bukan merah galat', () {
       expect(WarnaSidik.terang.kanMerah, isNot(WarnaSidik.terang.gagal));
       expect(WarnaSidik.gelap.kanMerah, isNot(WarnaSidik.gelap.gagal));
-      expect(PaletSidik.kanMerah, isNot(PaletSidik.gagalTerang));
+      expect(PaletSidik.kanMerah, isNot(PaletSidik.galat));
+      expect(PaletSidik.kanMerahGelap, isNot(PaletSidik.koral));
     });
   });
 }

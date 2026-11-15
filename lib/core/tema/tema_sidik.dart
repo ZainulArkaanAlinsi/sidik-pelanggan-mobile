@@ -9,13 +9,15 @@ import 'tipografi.dart';
 import 'ukuran.dart';
 import 'warna_sidik.dart';
 
-/// Tema SIDIK Pelanggan: Material 3 datar, elevasi rendah, ruang putih lega.
+/// Tema SIDIK Pelanggan, arah "Bento Lab": Material 3 datar, navy sebagai warna
+/// utama, kuning sebagai aksen, tombol pil, panel dan ubin membulat besar.
 ///
 /// Dua pintu: [TemaSidik.terang] dan [TemaSidik.gelap]. Semua komponen Material
 /// (tombol, isian, chip, navigasi, dialog) ditema di sini, sehingga layar cukup
 /// memakai widget bawaan atau komponen di `lib/widgets/` tanpa gaya sendiri.
 /// Tokennya: `palet_sidik.dart` (warna mentah), `warna_sidik.dart` (status),
 /// `spasi.dart`, `bentuk.dart`, `elevasi.dart`, `ukuran.dart`, `tipografi.dart`.
+/// Nilai dari `docs/desain-ulang/` (DESIGN.md, tokens.json).
 abstract final class TemaSidik {
   static final ThemeData terang = _bangun(
     skema: _skemaTerang,
@@ -29,51 +31,54 @@ abstract final class TemaSidik {
 
   static const ColorScheme _skemaTerang = ColorScheme(
     brightness: Brightness.light,
-    primary: PaletSidik.kobalt,
-    onPrimary: PaletSidik.permukaanTerang,
-    primaryContainer: PaletSidik.kobaltTipis,
-    onPrimaryContainer: PaletSidik.kobaltTua,
-    secondary: PaletSidik.teksKeduaTerang,
-    onSecondary: PaletSidik.permukaanTerang,
-    secondaryContainer: PaletSidik.permukaanTinggiTerang,
-    onSecondaryContainer: PaletSidik.teksTerang,
-    error: PaletSidik.gagalTerang,
-    onError: PaletSidik.permukaanTerang,
-    errorContainer: PaletSidik.gagalLatarTerang,
-    onErrorContainer: PaletSidik.gagalTerang,
-    surface: PaletSidik.permukaanTerang,
-    onSurface: PaletSidik.teksTerang,
-    onSurfaceVariant: PaletSidik.teksKeduaTerang,
-    surfaceContainerLowest: PaletSidik.permukaanTerang,
-    surfaceContainerLow: PaletSidik.permukaanRendahTerang,
-    surfaceContainer: PaletSidik.latarTerang,
-    surfaceContainerHigh: PaletSidik.permukaanTinggiTerang,
-    surfaceContainerHighest: PaletSidik.permukaanTertinggiTerang,
-    outline: PaletSidik.garisTerang,
-    outlineVariant: PaletSidik.garisHalusTerang,
+    primary: PaletSidik.navy,
+    onPrimary: PaletSidik.kartu,
+    // Ubin ikon pastel (langit) dengan glif navy; BUKAN penanda pilihan
+    // (chip/segmen terpilih memakai primary penuh, lihat di bawah).
+    primaryContainer: PaletSidik.langit,
+    onPrimaryContainer: PaletSidik.navy,
+    secondary: PaletSidik.kuning,
+    onSecondary: PaletSidik.navy,
+    secondaryContainer: PaletSidik.latar,
+    onSecondaryContainer: PaletSidik.navy,
+    error: PaletSidik.galat,
+    onError: PaletSidik.kartu,
+    errorContainer: PaletSidik.koral,
+    onErrorContainer: PaletSidik.navy,
+    surface: PaletSidik.kartu,
+    onSurface: PaletSidik.navy,
+    onSurfaceVariant: PaletSidik.teksKedua,
+    surfaceContainerLowest: PaletSidik.kartu,
+    surfaceContainerLow: PaletSidik.kartu,
+    surfaceContainer: PaletSidik.latar,
+    surfaceContainerHigh: PaletSidik.latar,
+    surfaceContainerHighest: PaletSidik.garis,
+    outline: PaletSidik.garisTegas,
+    outlineVariant: PaletSidik.garis,
     shadow: PaletSidik.bayangan,
     scrim: PaletSidik.bayangan,
-    inverseSurface: PaletSidik.teksTerang,
-    onInverseSurface: PaletSidik.latarTerang,
-    inversePrimary: PaletSidik.kobaltTerang,
+    inverseSurface: PaletSidik.navy,
+    onInverseSurface: PaletSidik.kartu,
+    inversePrimary: PaletSidik.kuning,
     surfaceTint: Colors.transparent,
   );
 
+  // Tema gelap: titik awal (DESIGN.md §Mode gelap, "belum final").
   static const ColorScheme _skemaGelap = ColorScheme(
     brightness: Brightness.dark,
-    primary: PaletSidik.kobaltTerang,
-    onPrimary: PaletSidik.kobaltTerangTua,
-    primaryContainer: PaletSidik.kobaltGelapTipis,
-    onPrimaryContainer: PaletSidik.kobaltGelapTeks,
-    secondary: PaletSidik.teksKeduaGelap,
-    onSecondary: PaletSidik.latarGelap,
+    primary: PaletSidik.navyTeks,
+    onPrimary: PaletSidik.navy,
+    primaryContainer: PaletSidik.navyLembut,
+    onPrimaryContainer: PaletSidik.teksGelap,
+    secondary: PaletSidik.kuning,
+    onSecondary: PaletSidik.navy,
     secondaryContainer: PaletSidik.permukaanTinggiGelap,
     onSecondaryContainer: PaletSidik.teksGelap,
-    error: PaletSidik.gagalGelap,
-    onError: PaletSidik.latarGelap,
+    error: PaletSidik.koral,
+    onError: PaletSidik.navy,
     errorContainer: PaletSidik.gagalLatarGelap,
-    onErrorContainer: PaletSidik.gagalGelap,
-    surface: PaletSidik.permukaanGelap,
+    onErrorContainer: PaletSidik.koral,
+    surface: PaletSidik.kartuGelap,
     onSurface: PaletSidik.teksGelap,
     onSurfaceVariant: PaletSidik.teksKeduaGelap,
     surfaceContainerLowest: PaletSidik.latarGelap,
@@ -81,13 +86,13 @@ abstract final class TemaSidik {
     surfaceContainer: PaletSidik.permukaanTinggiGelap,
     surfaceContainerHigh: PaletSidik.permukaanTinggiGelap,
     surfaceContainerHighest: PaletSidik.permukaanTertinggiGelap,
-    outline: PaletSidik.garisGelap,
+    outline: PaletSidik.garisTegasGelap,
     outlineVariant: PaletSidik.garisHalusGelap,
     shadow: PaletSidik.bayangan,
     scrim: PaletSidik.bayangan,
     inverseSurface: PaletSidik.teksGelap,
     onInverseSurface: PaletSidik.latarGelap,
-    inversePrimary: PaletSidik.kobalt,
+    inversePrimary: PaletSidik.navy,
     surfaceTint: Colors.transparent,
   );
 
@@ -100,14 +105,13 @@ abstract final class TemaSidik {
       teksKedua: skema.onSurfaceVariant,
     );
     final terang = skema.brightness == Brightness.light;
-    final latar = terang ? PaletSidik.latarTerang : PaletSidik.latarGelap;
+    final latar = terang ? PaletSidik.latar : PaletSidik.latarGelap;
     final garisHalus = BorderSide(
       color: skema.outlineVariant,
       width: Elevasi.garis,
     );
-    final bentukKontrol = RoundedRectangleBorder(
-      borderRadius: Bentuk.sudutKontrol,
-    );
+    // Tombol Bento Lab: pil penuh (utama, sekunder, dan teks).
+    const bentukPil = StadiumBorder();
 
     InputBorder isian(Color warna, [double tebal = 1]) => OutlineInputBorder(
       borderRadius: Bentuk.sudutKontrol,
@@ -137,9 +141,11 @@ abstract final class TemaSidik {
         },
       ),
 
-      // App bar putih, tanpa bayangan, dibatasi garis halus.
+      // Kepala layar Bento Lab: setara latar halaman, tanpa bayangan dan tanpa
+      // garis bawah (judul 20/26 di kiri; tombol kembali memakai ikon biasa
+      // sampai komponen `TombolBulat` masuk di P2).
       appBarTheme: AppBarTheme(
-        backgroundColor: skema.surface,
+        backgroundColor: latar,
         foregroundColor: skema.onSurface,
         surfaceTintColor: Colors.transparent,
         elevation: Elevasi.datar,
@@ -150,10 +156,9 @@ abstract final class TemaSidik {
           color: skema.onSurface,
           size: UkuranIkon.sedang,
         ),
-        shape: Border(bottom: garisHalus),
       ),
 
-      // Kartu datar: permukaan putih + garis halus, tanpa bayangan.
+      // Panel datar: permukaan putih, sudut 28, garis halus, tanpa bayangan.
       cardTheme: CardThemeData(
         elevation: Elevasi.datar,
         color: skema.surface,
@@ -171,7 +176,7 @@ abstract final class TemaSidik {
           minimumSize: const Size(64, UkuranBaris.tombolUtama),
           padding: const EdgeInsets.symmetric(horizontal: Spasi.xl),
           elevation: Elevasi.datar,
-          shape: RoundedRectangleBorder(borderRadius: Bentuk.sudutUtama),
+          shape: bentukPil,
           textStyle: teks.labelLarge,
         ),
       ),
@@ -182,7 +187,7 @@ abstract final class TemaSidik {
           foregroundColor: skema.primary,
           backgroundColor: skema.surface,
           side: BorderSide(color: skema.outline),
-          shape: bentukKontrol,
+          shape: bentukPil,
           textStyle: teks.labelLarge,
         ),
       ),
@@ -191,7 +196,7 @@ abstract final class TemaSidik {
           minimumSize: const Size(64, AreaSentuh.minimum),
           padding: const EdgeInsets.symmetric(horizontal: Spasi.lg),
           foregroundColor: skema.primary,
-          shape: bentukKontrol,
+          shape: bentukPil,
           textStyle: teks.labelLarge,
         ),
       ),
@@ -227,7 +232,8 @@ abstract final class TemaSidik {
         height: 68,
         backgroundColor: skema.surface,
         surfaceTintColor: Colors.transparent,
-        // Tanpa pil penanda: tujuan aktif = ikon terisi + kobalt + kata tebal.
+        // Tanpa pil penanda: tujuan aktif = ikon terisi + navy + kata tebal.
+        // Dock melayang (butir aktif = pil kuning) menggantikan ini di P4.
         indicatorColor: Colors.transparent,
         elevation: Elevasi.datar,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -277,7 +283,7 @@ abstract final class TemaSidik {
         elevation: Elevasi.lembar,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
-            top: Radius.circular(Bentuk.lembar),
+            top: Radius.circular(Bentuk.ubin),
           ),
         ),
       ),
@@ -286,9 +292,7 @@ abstract final class TemaSidik {
         backgroundColor: skema.surface,
         surfaceTintColor: Colors.transparent,
         elevation: Elevasi.lembar,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Bentuk.lembar),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: Bentuk.sudutPanel),
         titleTextStyle: teks.titleLarge,
         contentTextStyle: teks.bodyMedium,
       ),
@@ -300,29 +304,35 @@ abstract final class TemaSidik {
         actionTextColor: skema.inversePrimary,
         behavior: SnackBarBehavior.floating,
         elevation: Elevasi.rendah,
-        shape: bentukKontrol,
+        shape: RoundedRectangleBorder(borderRadius: Bentuk.sudutKapsul),
       ),
 
+      // Saringan Bento Lab: tidak aktif putih + tepi tegas, aktif navy + teks
+      // putih (pil). Warna label mengikuti keadaan terpilih.
       chipTheme: ChipThemeData(
         backgroundColor: skema.surface,
-        selectedColor: skema.primaryContainer,
-        checkmarkColor: skema.onPrimaryContainer,
+        selectedColor: skema.primary,
+        checkmarkColor: skema.onPrimary,
         side: BorderSide(color: skema.outline),
         labelStyle: teks.bodySmall?.copyWith(
-          color: skema.onSurface,
-          fontWeight: FontWeight.w600,
+          color: WidgetStateColor.resolveWith(
+            (s) => s.contains(WidgetState.selected)
+                ? skema.onPrimary
+                : skema.onSurface,
+          ),
+          fontWeight: TipografiSidik.beratLabel,
         ),
         secondaryLabelStyle: teks.bodySmall?.copyWith(
-          color: skema.onPrimaryContainer,
-          fontWeight: FontWeight.w600,
+          color: skema.onPrimary,
+          fontWeight: TipografiSidik.beratLabel,
         ),
         shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: Spasi.xs),
       ),
       // Pilihan tampilan (mis. Daftar | Arsip di tab Sertifikat): tinggi
-      // sentuh 48 dp, segmen terpilih berlatar kobalt tipis seperti chip.
-      // Latar tipis BUKAN penanda satu-satunya (kontras antar-keadaan <3:1):
-      // pemakai wajib menyalakan `showSelectedIcon` (centang).
+      // sentuh 48 dp, segmen terpilih navy + teks putih (segmen pil Bento Lab).
+      // Pemakai tetap WAJIB menyalakan `showSelectedIcon` (centang): warna
+      // bukan penanda satu-satunya.
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
           minimumSize: const WidgetStatePropertyAll(
@@ -332,14 +342,34 @@ abstract final class TemaSidik {
           textStyle: WidgetStatePropertyAll(teks.labelLarge),
           backgroundColor: WidgetStateProperty.resolveWith(
             (s) => s.contains(WidgetState.selected)
-                ? skema.primaryContainer
+                ? skema.primary
                 : skema.surface,
           ),
           foregroundColor: WidgetStateProperty.resolveWith(
             (s) => s.contains(WidgetState.selected)
-                ? skema.onPrimaryContainer
+                ? skema.onPrimary
                 : skema.onSurface,
           ),
+        ),
+      ),
+      // Sakelar Bento Lab: nyala = rel navy + tombol kuning; mati = rel latar
+      // + tepi tegas + tombol teks kedua. Tema gelap: rel nyala berwarna
+      // terang (primary), jadi tombolnya navy (kuning di atas rel terang
+      // tidak terlihat). Ukuran 56 x 36 dari spesifikasi tidak bisa diatur
+      // lewat tema Material 3; ditunda ke komponen sakelar.
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? (terang ? skema.secondary : skema.onPrimary)
+              : skema.onSurfaceVariant,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? skema.primary : latar,
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? Colors.transparent
+              : skema.outline,
         ),
       ),
       listTileTheme: ListTileThemeData(

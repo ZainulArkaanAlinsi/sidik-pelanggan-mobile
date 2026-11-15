@@ -28,31 +28,58 @@ manfaat terukur. Layar tidak menyusun gaya dari `Container`+`Padding`+`Text`
 mentah: pakai widget bawaan yang sudah ditema atau komponen di `lib/widgets/`.
 Warna, huruf, radius, dan jarak hanya dari token.
 
-## 3. Arah visual: "Jejak"
+## 3. Arah visual: "Bento Lab"
 
-Satu keluarga dengan Lab (kobalt `#043EA1`, netral dingin, Inter, grid 4/8,
-stempel persegi radius 4), tetapi lebih tenang dan lega.
+Menggantikan arah "Jejak" (keputusan pemilik, paket desain 14 Nov 2026; sumber:
+`docs/desain-ulang/`, mulai dari `README.md`, `DESIGN.md`, `UKURAN.md`,
+`tokens.json`). Satu kalimat: **navy korporat + ubin pastel bermakna + visual
+alat**. Kesan formal dijaga navy (teks, aksi, dock), Inter tebal, dan disiplin
+grid; kesan segar datang dari ubin besar membulat dan visual alat.
 
-1. **Kalimat utama + angka sebagai penunjuk.** Beranda dibuka dengan satu kalimat
-   besar ("1 alat lewat jadwal. 1 paket siap diambil."); sisa hari menjadi angka
-   di awal baris alat, bukan ubin KPI.
-2. **Jejak tahap.** Satu motif tik, satu tik per langkah `garis_waktu` dari
-   server, dipakai di Beranda, daftar alat, detail alat, dan paket. Jumlah tik
-   = panjang `garis_waktu`, tidak pernah angka 6 yang dikeraskan di kode.
-3. **Normal diam, pengecualian bersuara.** "Berlaku" dan "Memenuhi toleransi"
-   tanpa stempel; hanya "Lewat jadwal", "Tidak memenuhi toleransi", dan sejenisnya
-   yang berstempel.
+1. **Satu ubin = satu hal.** Tidak ada kartu di dalam kartu.
+2. **Warna ubin bukan hiasan.** Koral = lewat jadwal/gagal, kuning = awas dan
+   aksen, hijau = berlaku/selesai, langit = info/diproses, putih = netral. Tiap
+   warna terikat ke satu makna status.
+3. **Angka memimpin.** Sisa hari ditulis besar (44, di Beranda 64), kata
+   menjelaskan di sebelahnya.
+4. **Satu aksi utama per layar** (pil navy 56 dp).
+5. **Visual alat** duduk di sudut kanan bawah ubin dan tidak pernah menimpa teks
+   (komponen dan gambar menyusul di P2/P3; token ukurannya sudah ada).
+6. **Jejak tahap** (satu tik per langkah `garis_waktu` server) tetap motifnya
+   sampai paket komponen mengganti bentuknya; jumlah tik tidak pernah dikeraskan.
 
-Keputusan pemilik: stempel status persegi radius 4 (bukan pil) dan tombol utama
-56 dp (dua hal yang mengubah tabel brief Lab, berlaku juga di sini). Nama PT
-hanya tampil bila akun punya lebih dari satu perusahaan. Tanpa IBM Plex Mono:
-angka memakai Inter selebar tetap + nol bergaris (`GayaAngka.nomor`).
+Yang berubah dari "Jejak", dan keputusannya sudah diambil pemilik:
+
+| Aturan Jejak | Bento Lab |
+|---|---|
+| Kobalt `#043EA1` warna utama | Navy `#0B1F4B` utama; kobalt hanya di logo (`PaletSidik.kobaltLogo`) |
+| Stempel persegi radius 4 | Stempel pil radius 15 (komponen: P2; token `Bentuk.stempel` sudah ada) |
+| Datar, radius 16, aksi 56 dp | Ubin 28-32, tombol pil; aksi utama tetap 56 dp |
+| "Lima warna aksen bersaing" dihindari | Empat warna ubin, masing-masing terikat ke satu makna |
+| "Ilustrasi stok / ubin ikon dekoratif" dihindari | Visual alat per jenis (milik sendiri, satu gaya), bukan stok |
+| Skala huruf `{44, 32, 28, 22, 20, 17, 16, 14, 12}` | Sama, plus SATU ukuran baru: 64 (angka sorot) |
+| "Normal diam, pengecualian bersuara" | Dilonggarkan: di ubin alat status selalu tampil (ubin sudah berwarna, stempel menyebut katanya); di baris daftar padat tetap satu stempel per baris |
+
+Yang TIDAK berubah: aplikasi tetap baca-saja, tanpa paket/font baru, status
+selalu ikon + kata, area sentuh minimum 48 dp, `AppMotion` dan "kurangi gerak".
+Nama PT hanya tampil bila akun punya lebih dari satu perusahaan. Tanpa IBM Plex
+Mono: angka memakai Inter selebar tetap + nol bergaris (`GayaAngka.nomor`).
 
 **Tanda yang dihindari** (bawaan generik): gradien ungu-biru, semua panel satu
 bentuk dan satu bayangan, semua rata tengah, teks abu di atas latar berwarna,
-emoji sebagai ikon, ilustrasi stok, lima warna aksen bersaing, kartu di dalam
-kartu, ubin ikon dekoratif di atas judul, chip pil di tiap baris, dan "A · B · C"
-sebagai pemisah teks.
+emoji sebagai ikon, ilustrasi stok, kartu di dalam kartu, ubin ikon dekoratif
+di atas judul, chip pil di tiap baris, dan "A · B · C" sebagai pemisah teks.
+(Anti-slop ratchet di `anti_slop_test.dart` tetap berlaku sampai P5/P6
+menurunkan angkanya.)
+
+### Status penerapan
+
+P1 (token) ada; layar dan widget BELUM diubah. Selama P2-P6 belum selesai,
+widget "Jejak" yang ada memakai token baru lewat nama lamanya, jadi tampilannya
+setengah jalan: warna, panel, tombol, dan jarak sudah Bento Lab; stempel masih
+persegi 4, status masih bertinta navy di semua nada, dan grafik status
+(`PetaJatuhTempo`, `SkalaTempo`) kehilangan beda warna tintanya (kata dan ikon
+tetap membawa arti).
 
 ## 4. Token (satu sumber)
 
@@ -60,93 +87,153 @@ Nilai mentah hanya ditulis di `lib/core/tema/palet_sidik.dart` (warna) dan
 berkas token lain di folder itu. Layar membaca lewat `context.skema`
 (`ColorScheme`), `context.warna` (`WarnaSidik`: status), `context.teks`
 (`TextTheme`), `Spasi`, `Bentuk`, `UkuranIkon`, `AreaSentuh`, `UkuranBaris`,
-`UkuranTik`.
+`UkuranTik`, `UkuranKontrol`, `UkuranUbin`, `UkuranDock`, `UkuranVisual`,
+`TipografiSidik.angkaSorot`. `test/tema/token_bento_test.dart` mencocokkan semua
+token itu dengan `docs/desain-ulang/tokens.json`.
 
 ### Warna
 
 | Peran | Terang | Gelap |
 |---|---|---|
-| Kobalt (aksi, fokus, tautan) | `#043EA1` | `#8CB0FF` |
-| Kobalt tipis | `#DCE6FA` | `#14306F` |
-| Latar layar | `#F2F4F8` | `#0E1320` |
-| Permukaan (panel, baris, isian) | `#FFFFFF` | `#171D2B` |
-| Tinta | `#111827` | `#E6EAF2` |
-| Tinta kedua | `#475467` | `#A9B2C3` |
-| Garis tegas (tepi isian dan tombol) | `#6B7588` | `#7C879B` |
-| Garis halus (pemisah, dekoratif) | `#DDE2EB` | `#2C3548` |
+| Aksi (tombol utama, fokus, tautan) = `primary` | navy `#0B1F4B` | navyTeks `#C9D3EA` |
+| Di atas aksi (`onPrimary`) | putih `#FFFFFF` | navy `#0B1F4B` |
+| Ubin ikon pastel (`primaryContainer`) | langit `#BCE0F0` (teks navy) | navyLembut `#2B4380` (teks `#E8ECF6`) |
+| Aksen (`secondary`: butir dock aktif, lencana, tombol sakelar) | kuning `#F6D36B` | kuning `#F6D36B` |
+| Latar layar | `#EEF0F3` | `#0A1226` |
+| Permukaan (panel, baris, isian) | `#FFFFFF` | `#131E3A` |
+| Tinta | navy `#0B1F4B` | `#E8ECF6` |
+| Tinta kedua | `#4A5672` | `#C9D3EA` |
+| Garis tegas (tepi isian, tombol sekunder, sakelar mati) | `#6B7588` | `#7C879B` |
+| Garis halus (pemisah, dekoratif) | `#D5DAE3` | `#26385F` |
+| Galat isian dan tombol bahaya (`error`) | `#A3261A` | koral `#F2957A` |
+| Kobalt logo (hanya aset merek) | `#043EA1` | `#043EA1` |
 
-Status (tinta di atas latar tipis; satu keluarga dengan Lab):
+Status. **Tema terang:** tinta keempat status sama, navy, di atas ubin berwarna.
+Pembeda status adalah LATAR + IKON + KATA, tidak pernah warna saja.
+**Tema gelap:** tinta = warna pastel di atas latar gelap bernada sama (titik
+awal, belum final).
 
-| Status | Terang | Gelap |
+| Status | Ubin / tinta terang | Tinta / latar gelap |
 |---|---|---|
-| Berlaku (lulus) | `#125739` / `#E1F0E8` | `#6FD3A0` / `#12301F` |
-| Segera, perlu perhatian (awas) | `#8C5C0A` / `#FBF0DA` | `#DB9A2B` / `#33260C` |
-| Gagal, lewat jadwal | `#A81B33` / `#FBE4E8` | `#FF8FA0` / `#3A1720` |
-| Diproses (tunggu) | `#344054` / `#E6EAF2` | `#C3CAD8` / `#262E40` |
+| Berlaku (lulus) | hijau `#CBE7B8` / navy | `#CBE7B8` / `#12301F` |
+| Segera, perlu perhatian (awas) | kuning `#F6D36B` / navy | `#F6D36B` / `#33260C` |
+| Gagal, lewat jadwal | koral `#F2957A` / navy | `#F2957A` / `#3A1720` |
+| Diproses (tunggu) | langit `#BCE0F0` / navy | `#BCE0F0` / `#262E40` |
+| Netral | putih `#FFFFFF` / navy | `#131E3A` / `#E8ECF6` |
 
-Amber berubah dari `#7A4F08`/`#F2B655` ke nilai di atas (sama dengan Lab):
-nilai lama nyaris sama terangnya dengan merah (terang, selisih luminans 0,004)
-dan dengan hijau (gelap, 0,005), sehingga fotokopi hitam-putih dan mata
-deuteranopia tak bisa membedakan "awas" dari "gagal"/"lulus". Pengaman utamanya
-tetap ikon + kata; aturan beda terang adalah lapis kedua.
+**Penyimpangan sadar dari paket desain** (dicatat di `token_bento_test.dart`
+dan perlu keputusan pemilik bila ingin dicabut):
 
-**Ini menyimpang dari brief desain Pelanggan**, yang menyatakan tidak ada nilai
-warna berubah (tabel kontras brief bagian 8.1 dihitung dengan amber lama).
-Penyimpangan dipilih sadar dan sama dengan Lab; gerbang kontras sendiri yang
-menemukan amber lama melanggar aturan beda terang. Rasio WCAG yang berubah
-(dihitung ulang, semua tetap >= 4,5:1):
+1. Tepi kontrol memakai `garisTegas` (`#6B7588`, nilai Jejak), bukan `garis`
+   (`#D5DAE3`): garis Bento Lab cuma 1,4:1 di atas putih dan gagal 3:1
+   (komponen UI). `garis` tetap untuk pemisah dan tepi panel.
+2. Galat isian dan tombol bahaya memakai merah tua `#A3261A` (ELEMEN.md,
+   dialog bahaya), bukan koral: koral hanya 2,2:1 di atas putih sebagai teks.
+3. Tema gelap: tinta status pastel, bukan navy. DESIGN.md menyarankan ubin
+   tetap terang dengan tinta navy; tetapi tinta status juga dipakai langsung
+   sebagai teks dan ikon di atas halaman, dan navy di atas halaman gelap tidak
+   terbaca. Memisahkan "tinta ubin" dan "tinta halaman" di `WarnaSidik` adalah
+   keputusan komponen (P2).
+4. `teksKedua` TIDAK dipakai di atas koral (3,3:1): pakai navy.
 
-| Pasangan | Amber lama | Amber baru |
+Kontras yang dihitung (WCAG 2.x, `test/tema/kontras_tema_test.dart`):
+
+| Pasangan | Rasio | Ambang |
 |---|---|---|
-| terang: awas / putih | 7,12 | 5,75 |
-| terang: awas / latar layar | 6,47 | 5,22 |
-| terang: stempel awas (tinta / latar tipis) | 6,30 | 5,09 |
-| gelap: awas / permukaan | 9,30 | 6,95 |
-| gelap: stempel awas (tinta / latar tipis) | 8,15 | 6,09 |
+| navy / putih, latar, kuning, hijau, langit, koral | 16,0 / 14,0 / 11,0 / 11,9 / 11,5 / 7,1 | 4,5 (teks) |
+| teksKedua / putih, latar, kuning, hijau, langit | 7,3 / 6,4 / 5,0 / 5,5 / 5,3 | 4,5 |
+| teksKedua / koral (DILARANG) | 3,3 | gagal 4,5 sengaja |
+| putih / navy, navyTeks / navy | 16,0 / 10,7 | 4,5 |
+| kuning / navy (butir dock, tombol sakelar) | 11,0 | 3 (komponen) |
+| garisTegas / putih, latar, garis | 4,6 / 4,1 / 3,3 | 3 |
+| garis / putih (DILARANG sebagai tepi kontrol) | 1,4 | gagal 3 sengaja |
+| galat `#A3261A` / putih, latar | 7,4 / 6,5 | 4,5 |
+| gelap: tinta / latar, permukaan | 15,8 / 13,9 | 4,5 |
+| gelap: pastel status / latar tipisnya | 7,1 sampai 10,7 | 4,5 |
 
-Selisih luminans: terang lulus-gagal 0,0211 (nilai lama, tidak diubah; tipis
-terhadap ambang 0,02), gagal-awas 0,0390, lulus-awas 0,0601; gelap lulus-gagal
-0,0906, gagal-awas 0,0510, lulus-awas 0,1416.
+Luminans ubin (pembawa makna di tema terang): hijau 0,733, langit 0,703, kuning
+0,672, koral 0,418. Selisih terdekat: hijau-langit 0,030 dan langit-kuning 0,031,
+lolos tipis terhadap ambang 0,02. Karena itu ikon + kata wajib; warna tidak
+pernah satu-satunya penanda.
 
 ### Bentuk (`Bentuk`)
 
-Stempel, tik, dan plat nama 4; isian dan tombol sekunder 10; panel dan tombol
-utama 16; lembar bawah dan dialog 20; pil 999 hanya untuk lencana angka (dan
-chip saring sampai diganti komponen baru). Radius bervariasi dengan alasan.
+| Token | dp | Pakai |
+|---|---|---|
+| `ikon` | 16 | ubin ikon persegi, isian |
+| `kapsul` | 22 | kapsul grafik, segmen, saringan, toast |
+| `panel` | 28 | panel putih, ubin kecil (sampai 188), dialog |
+| `ubin` | 32 | ubin besar, sudut atas lembar bawah |
+| `dock` | 36 | dock navigasi |
+| `pil` | 999 | tombol, stempel, kolom cari, avatar |
+| `stempel` | 15 | stempel pil setinggi 30 (dipakai komponen P2) |
 
-### Ukuran sentuh
+Nama lama dipertahankan agar widget Jejak tetap memakai token yang sama:
+`kontrol` = `ikon` (dulu 10), `kartu` = `panel` (dulu 16), `utama` = `pil` (dulu
+16), `lembar` = `panel` (dulu 20). `kecil` tetap 4: tik jejak, tooltip, balok
+kerangka, dan (sampai P2) stempel. Alias dihapus di paket bersih-bersih (P7).
 
-- **Aksi utama 56 dp** (`UkuranBaris.tombolUtama`): `FilledButton`. Satu per
+### Ukuran sentuh dan komponen
+
+- **Aksi utama 56 dp** (`UkuranBaris.tombolUtama`): `FilledButton`, pil. Satu per
   layar.
 - **Semua aksi lain 48 dp** (`AreaSentuh.minimum`): tombol sekunder, tombol
   teks, tombol ikon, segmen, baris yang diketuk.
-- Baris daftar minimum 72 dp (`UkuranBaris.minimum`).
+- Baris daftar minimum 72 dp (`UkuranBaris.minimum` = `UkuranUbin.barisDaftar`).
+- Ukuran komponen Bento Lab ada di `ukuran.dart`: `UkuranKontrol` (tombol
+  bulat 44/48/52, saringan 44, segmen 56/44, kolom cari 56, sakelar 56x36,
+  stempel 30), `UkuranUbin` (baris menu 64, ubin alat 196/232, ubin pasangan
+  188, ubin menu 140, kapsul 124/44, avatar 48/88), `UkuranDock` (64/48, 16 dari
+  bawah), `UkuranVisual` (160/176/112). Tinggi ubin adalah MINIMUM
+  (`ConstrainedBox(minHeight:)`); pada huruf sistem > 1,0 ubin tumbuh.
 
 ### Tipografi (Inter; `TipografiSidik.skala`)
 
-Sembilan ukuran, daftar izin eksplisit di `test/tema/tema_sidik_test.dart`:
-`{44, 32, 28, 22, 20, 17, 16, 14, 12}`. Minimum **12 sp**, tanpa pengecualian.
+Sepuluh ukuran, daftar izin eksplisit di `test/tema/tema_sidik_test.dart`:
+`{64, 44, 32, 28, 22, 20, 17, 16, 14, 12}`. Minimum **12 sp**, tanpa pengecualian.
+Sembilan ukuran ada di `TextTheme`; 64 hidup di `TipografiSidik.angkaSorot`
+(bukan slot).
 
-| Tingkat | Ukuran/baris | Berat | Slot |
-|---|---|---|---|
-| angka bintang | 44/48 | 700, selebar tetap | displayLarge |
-| kalimat utama | 32/38 | 700 | displayMedium |
-| tampilan | 28/34 | 700 | displaySmall |
-| judul | 22/28 | 600 | headline* |
-| app bar | 20/26 | 600 | titleLarge |
-| subjudul | 17/24 | 600 | titleMedium |
-| isi | 16/24 | 400 (600 untuk nama) | body*, titleSmall, labelLarge |
-| keterangan | 14/20 | 400, tinta kedua | bodySmall |
-| label | 12/16 | 600 | labelMedium, labelSmall |
+| Tingkat | Ukuran/baris | Berat desain | Spasi huruf | Slot |
+|---|---|---|---|---|
+| angka sorot | 64/60 | 800, selebar tetap | -0,04 em | `TipografiSidik.angkaSorot` |
+| angka kartu | 44/48 | 800, selebar tetap | -0,04 em | displayLarge |
+| kalimat utama | 32/38 | 800 | -0,03 em | displayMedium |
+| judul layar | 28/34 | 800 | -0,03 em | displaySmall |
+| nama alat/akun | 22/28 | 800 | -0,02 em | headline* |
+| judul app bar | 20/26 | 800 | -0,02 em | titleLarge |
+| judul bagian/ubin | 17/24 | 800 | -0,01 em | titleMedium |
+| label tombol/baris | 16/24 | 700 | 0 | titleSmall, labelLarge |
+| isi bacaan | 16/24 | 400 | 0 | bodyLarge, bodyMedium |
+| keterangan | 14/20 | 500, tinta kedua | 0 | bodySmall |
+| stempel/label | 12/16 | 700, tinta kedua | 0 | labelMedium, labelSmall |
 
-Nomor sertifikat, order, dan seri: `GayaAngka.nomor` (digit selebar tetap + nol
-bergaris, fitur Inter yang sudah dibundel).
+**UTANG DESAIN: berat 800.** Bento Lab meminta 800 (ExtraBold) untuk tingkat
+tebal, tetapi Inter yang dibundel hanya punya 400/500/600/700 dan font baru
+dilarang. Tingkat tebal tampil **700** lewat satu konstanta
+(`TipografiSidik.beratTebal`). Bila pemilik menambah `Inter-ExtraBold.ttf`
+(keluarga yang sama) ke `assets/fonts/` dan `pubspec.yaml`, ubah konstanta itu
+ke `FontWeight.w800`; `tema_sidik_test.dart` menyuruhnya begitu dan menolak
+berat apa pun tanpa berkas fontnya.
+
+Spasi huruf dalam em di tabel dihitung ke dp (ukuran x em) karena Flutter
+memakai dp. Nomor sertifikat, order, dan seri: `GayaAngka.nomor` (digit selebar
+tetap + nol bergaris, fitur Inter yang sudah dibundel).
 
 ### Spasi
 
-Grid 4/8 (`Spasi.xs` 4 sampai `xxl` 32). Margin halaman `Spasi.sisi` 20, jarak
-antar-bagian `Spasi.bagian` 32, kolom angka pindah ke atas judul di bawah
-`Spasi.batasKompak` 340 dp. Nama-nama baru ini baru dipakai paket komponen.
+Grid 4/8 (`Spasi.xs` 4 sampai `xxl` 32). Margin halaman `Spasi.sisi` **16**
+(dulu 20), jarak antar-ubin `Spasi.antarUbin` 12, jarak antar-bagian
+`Spasi.bagian` 32, kolom angka pindah ke atas judul di bawah
+`Spasi.batasKompak` 340 dp.
+
+### Komponen Material (`TemaSidik`)
+
+Tombol utama dan sekunder pil (56 / 48), tombol teks pil, isian radius 16 dengan
+tepi `garisTegas`, kartu dan panel 28, dialog 28, lembar bawah 32 (sudut atas),
+toast/snack 22 berlatar navy, saringan (`Chip`) dan segmen terpilih navy + teks
+putih, sakelar nyala rel navy + tombol kuning, app bar setara latar halaman
+tanpa garis bawah. Navigasi bawah masih bawaan Material (dock melayang: P4).
 
 ## 5. Aturan kontras (WCAG 2.x)
 
@@ -156,9 +243,13 @@ antar-bagian `Spasi.bagian` 32, kolom angka pindah ke atas judul di bawah
 - Garis halus (`outlineVariant`) dan batas panel terhadap latar (sekitar 1,1 sampai
   1,3:1) hanya pemisah dekoratif; arti selalu diulang oleh kata, panah, atau
   tautan. Jangan jadikan satu-satunya penanda sebuah kontrol.
-- Status selalu ikon + kata, tidak pernah warna saja. Lulus, gagal, dan awas
-  beda terangnya (luminans relatif selisih > 0,02), `tunggu` dikecualikan
-  (abu tanpa rona).
+- Status selalu ikon + kata, tidak pernah warna saja. Lulus, gagal, awas, dan
+  tunggu beda terangnya (luminans relatif selisih > 0,02), diukur pada warna
+  yang membawa makna: UBIN di tema terang (tinta status sama, navy), TINTA di
+  tema gelap.
+- `teksKedua` tidak dipakai di atas koral (3,3:1); `garis` (1,4:1) tidak boleh
+  jadi satu-satunya tepi kontrol: pakai `garisTegas`. Keduanya dipegang sebagai
+  tes negatif di `kontras_tema_test.dart`.
 
 ## 6. Aturan menulis tampilan
 
@@ -183,8 +274,8 @@ Enam kelompok tes deterministik, semuanya ikut `flutter test` dan CI
 | Tes | Berkas | Gagal bila |
 |---|---|---|
 | Token-only (ratchet dua arah) | `test/tema/token_only_test.dart` + `token_only_baseline.json` (pemindai: `test/dukungan/pemindai_token.dart`) | di `lib/`: ada berkas BARU atau hitungan NAIK atau TURUN (tanpa baseline ikut diturunkan) untuk hex mentah, `Color(0x`, `Color.fromARGB/fromRGBO/from(`, `Colors.*`, `fontSize` < 12 (literal, variabel literal, atau ekspresi campuran yang memuat angka pengecil), radius angka atau ekspresi (juga `radius:` di pemanggil widget), tinggi tombol literal < 48 (`minimumSize`, `SizedBox`, `ConstrainedBox`). Daftar berkas yang dilewati harus kosong dan jumlah berkas dipindai >= 90 |
-| Kontras | `test/tema/kontras_tema_test.dart` | pasangan token, `ThemeData`, atau label `TombolSidik` (semua ragam) di bawah 4,5:1 (teks) atau 3:1 (komponen), terang atau gelap; atau lulus/gagal/awas selisih luminans <= 0,02 |
-| Token tema | `test/tema/token_tema_test.dart` + `tema_sidik_test.dart` | huruf < 12 sp atau di luar daftar izin, tinggi tombol bukan 56 (utama) / 48, radius di luar set, elevasi di kartu/app bar/navigasi, stempel tanpa ikon atau kata, istilah "kedaluwarsa" |
+| Kontras | `test/tema/kontras_tema_test.dart` | pasangan token, `ThemeData`, atau label `TombolSidik` (semua ragam) di bawah 4,5:1 (teks) atau 3:1 (komponen), terang atau gelap; atau lulus/gagal/awas/tunggu selisih luminans <= 0,02; dua pasangan DILARANG (teksKedua/koral, garis/putih) mendadak lolos |
+| Token tema | `test/tema/token_tema_test.dart` + `tema_sidik_test.dart` + `token_bento_test.dart` | huruf < 12 sp atau di luar daftar izin (termasuk 64), berat huruf tanpa berkas font, spasi/tinggi baris menyimpang dari DESIGN.md, tinggi tombol bukan 56 (utama) / 48, radius di luar set, elevasi di kartu/app bar/navigasi, stempel tanpa ikon atau kata, istilah "kedaluwarsa", atau token Dart berbeda dari `docs/desain-ulang/tokens.json` |
 | Anti-slop | `test/tema/anti_slop_test.dart` | di seluruh `lib/`: `KartuSidik(`, `ChipStatus(`, ` · ` pemisah, atau ubin ikon bertambah (atau berkurang tanpa angka diturunkan). Ratchet utang SIMBOL, bukan detektor slop: `Card(`, `Chip(`, atau pemisah lain tidak terlihat |
 | Komponen Jejak | `test/tema/komponen_jejak_test.dart` + `test/dukungan/daftar_komponen.dart` | berkas komponen di `lib/widgets` tak diimpor galeri render, tak punya tes widget, atau tak tercatat di README; ada angka mentah pada parameter ukuran (`width`, `height`, `dimension`, `EdgeInsets.*`), warna mentah, " · ", atau "kedaluwarsa"; berkas ber-`InkWell` tanpa tinggi sentuh dari token, `Semantics`, atau `onTap` pada `Semantics` |
 | Render | `test/tampilan/render_layar_test.dart` | layar kunci meluap (RenderFlex) atau galat saat render pada HP 392x852, 320 dp x huruf 1,3, tablet 840x1200, terang atau gelap; atau gagal pedoman sasaran sentuh 48 dp / label semantik di HP 392 dan HP sempit (viewport biasa, dan 3000 dp tinggi di tema terang agar butir di bawah lipatan ikut terbangun) |
@@ -237,7 +328,8 @@ utangnya sudah lunas.
 **Golden.** Repo ini belum punya golden (`matchesGoldenFile`) dan belum punya
 workflow `golden-baru`; satu-satunya workflow adalah `periksa.yml`. Perubahan
 token tidak mematahkan golden mana pun. Bila golden diperkenalkan, baseline
-harus lahir lewat CI macOS, bukan render Windows.
+harus lahir lewat CI macOS, bukan render Windows. Render PNG manual (di atas)
+adalah satu-satunya bukti visual; PNG tidak di-commit.
 
 ## 8. Ukuran yang bisa dites, dan yang tidak
 
@@ -261,6 +353,11 @@ di perangkat tetap diperlukan; angka hijau saja tidak cukup.
 ## 9. Status migrasi
 
 - Paket 0 (gerbang) dan Paket 1 (nilai token baru di bawah nama lama): ada.
+- P1 Bento Lab (token): ada. Palet, `WarnaSidik`, `Bentuk`, `UkuranKontrol/
+  Ubin/Dock/Visual`, `Spasi.sisi` 16, `TipografiSidik.angkaSorot`, dan `TemaSidik`
+  memakai nilai Bento Lab. Layar dan widget belum diubah. Berikutnya: P2
+  (komponen), P3 (elemen, gambar alat, splash, masuk), P4 (dock), P5 (layar),
+  P6 (sapu pola), P7 (bersih-bersih). Rencana: `docs/desain-ulang/PROMPT.md`.
 - Paket 2 (komponen bersama): ada, 20 berkas baru di `lib/widgets` (daftar di
   `lib/widgets/README.md`): `PanelSidik`, `BarisSidik`, `BarisAlat`, `AngkaHari`,
   `Stempel`, `JejakTahap`, `TikPaket`, `GarisWaktuTahap`, `SkalaTempo`,

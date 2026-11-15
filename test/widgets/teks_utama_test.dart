@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/core/tema/bentuk.dart';
+import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
 import 'package:sidik_pelanggan/widgets/fakta.dart';
@@ -333,7 +334,7 @@ void main() {
       expect(d.borderRadius, Bentuk.sudutKecil);
       expect(d.color, s.surface);
       expect((d.border! as Border).top.color, s.outline);
-      expect(tester.getSize(find.byType(PlatNama)).width, 360 - 40);
+      expect(tester.getSize(find.byType(PlatNama)).width, 360 - 2 * Spasi.sisi);
     });
 
     testWidgets('label baca: satu kalimat berisi semua fakta yang terisi', (
@@ -596,7 +597,7 @@ void main() {
       expect(barisTeks(p), [panjang]);
       expect(
         tester.getRect(find.byType(FittedBox)).right,
-        lessThanOrEqualTo(320 - 20 + 0.5),
+        lessThanOrEqualTo(320 - Spasi.sisi + 0.5),
       );
     });
 
@@ -611,7 +612,7 @@ void main() {
       final label = tester.getRect(find.text('No. seri'));
       final nomor = tester.getRect(find.byType(FittedBox));
       expect(nomor.left, greaterThanOrEqualTo(label.right));
-      expect(nomor.right, lessThanOrEqualTo(320 - 20 + 0.5));
+      expect(nomor.right, lessThanOrEqualTo(320 - Spasi.sisi + 0.5));
       final p = tester.renderObject<RenderParagraph>(find.text(sedang));
       expect(barisTeks(p), [sedang]);
     });
