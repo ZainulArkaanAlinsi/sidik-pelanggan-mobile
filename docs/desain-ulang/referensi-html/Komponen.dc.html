@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Komponen dan token</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+body{margin:0}
+button,input{font:inherit;color:inherit}
+a{color:#0B1F4B}a:hover{color:#1C3A7A}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1700px; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px; background: #EEF0F3; color: #0B1F4B; font-family: 'Inter', system-ui, sans-serif; overflow: hidden">
+
+  <header style="display: flex; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <h1 style="margin: 0; font-size: 44px; line-height: 48px; font-weight: 800; letter-spacing: -0.03em">Bento Lab</h1>
+      <p style="margin: 0; font-size: 15px; line-height: 22px; color: #4A5672; max-width: 620px">Navy korporat sebagai tinta dan aksi, ubin pastel untuk status, satu aksen kuning. Semua ukuran dalam dp; angka kecil di bawah tiap komponen adalah spesifikasinya.</p>
+    </div>
+    <div style="font-size: 13px; font-weight: 700; color: #4A5672">Grid 4 dp · margin layar 16 · jarak antar-ubin 12</div>
+  </header>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <section style="padding: 24px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 16px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Warna</h2>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 56px; height: 56px; border-radius: 18px; background: #0B1F4B; flex-shrink: 0"></div><div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><strong>Navy</strong><span>#0B1F4B</span><span style="color: #4A5672">teks, aksi, dock</span></div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 56px; height: 56px; border-radius: 18px; background: #F6D36B; flex-shrink: 0"></div><div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><strong>Kuning</strong><span>#F6D36B</span><span style="color: #4A5672">aksen, awas</span></div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 56px; height: 56px; border-radius: 18px; background: #F2957A; flex-shrink: 0"></div><div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><strong>Koral</strong><span>#F2957A</span><span style="color: #4A5672">lewat jadwal</span></div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 56px; height: 56px; border-radius: 18px; background: #CBE7B8; flex-shrink: 0"></div><div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><strong>Hijau</strong><span>#CBE7B8</span><span style="color: #4A5672">berlaku, selesai</span></div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 56px; height: 56px; border-radius: 18px; background: #BCE0F0; flex-shrink: 0"></div><div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><strong>Langit</strong><span>#BCE0F0</span><span style="color: #4A5672">info, diproses</span></div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 56px; height: 56px; border-radius: 18px; background: #EEF0F3; border: 1px solid #D5DAE3; box-sizing: border-box; flex-shrink: 0"></div><div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><strong>Latar</strong><span>#EEF0F3</span><span style="color: #4A5672">halaman</span></div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 56px; height: 56px; border-radius: 18px; background: #FFFFFF; border: 1px solid #D5DAE3; box-sizing: border-box; flex-shrink: 0"></div><div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><strong>Kartu</strong><span>#FFFFFF</span><span style="color: #4A5672">panel, kontrol</span></div></div>
+          <div style="display: flex; align-items: center; gap: 12px"><div style="width: 56px; height: 56px; border-radius: 18px; background: #4A5672; flex-shrink: 0"></div><div style="display: flex; flex-direction: column; font-size: 12px; line-height: 16px"><strong>Teks kedua</strong><span>#4A5672</span><span style="color: #4A5672">keterangan</span></div></div>
+        </div>
+      </section>
+
+      <section style="padding: 24px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Huruf · Inter</h2>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><span style="font-size: 64px; line-height: 60px; font-weight: 800; letter-spacing: -0.04em">88</span><span style="font-size: 12px; color: #4A5672; text-align: right">Angka sorot · 64/60 · 800 · −4%</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><span style="font-size: 44px; line-height: 44px; font-weight: 800; letter-spacing: -0.04em">124</span><span style="font-size: 12px; color: #4A5672; text-align: right">Angka kartu · 44/44 · 800 · −4%</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><span style="font-size: 32px; line-height: 38px; font-weight: 800; letter-spacing: -0.03em">Kalimat utama</span><span style="font-size: 12px; color: #4A5672; text-align: right">32/38 · 800</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><span style="font-size: 28px; line-height: 34px; font-weight: 800; letter-spacing: -0.03em">Judul layar</span><span style="font-size: 12px; color: #4A5672; text-align: right">28/34 · 800</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><span style="font-size: 22px; line-height: 28px; font-weight: 800; letter-spacing: -0.02em">Nama alat</span><span style="font-size: 12px; color: #4A5672; text-align: right">22/28 · 800</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><span style="font-size: 17px; line-height: 24px; font-weight: 800">Judul bagian dan ubin</span><span style="font-size: 12px; color: #4A5672; text-align: right">17/24 · 800</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><span style="font-size: 16px; line-height: 24px; font-weight: 700">Label tombol dan baris</span><span style="font-size: 12px; color: #4A5672; text-align: right">16/24 · 700</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><span style="font-size: 14px; line-height: 20px; font-weight: 500">Keterangan, merk, tanggal</span><span style="font-size: 12px; color: #4A5672; text-align: right">14/20 · 500</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><span style="font-size: 12px; line-height: 16px; font-weight: 700">Stempel status, label sumbu</span><span style="font-size: 12px; color: #4A5672; text-align: right">12/16 · 700 (minimum)</span></div>
+      </section>
+
+      <section style="padding: 24px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Sudut dan jarak</h2>
+        <div style="display: flex; align-items: flex-end; gap: 12px">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 56px; height: 56px; border-radius: 16px; background: #BCE0F0"></div><span style="font-size: 12px; font-weight: 700">16</span></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 56px; height: 56px; border-radius: 22px; background: #BCE0F0"></div><span style="font-size: 12px; font-weight: 700">22</span></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 56px; height: 56px; border-radius: 28px 28px 0 0; background: #BCE0F0"></div><span style="font-size: 12px; font-weight: 700">28</span></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 56px; height: 56px; border-radius: 32px 32px 0 0; background: #BCE0F0"></div><span style="font-size: 12px; font-weight: 700">32</span></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 56px; height: 56px; border-radius: 28px; background: #BCE0F0"></div><span style="font-size: 12px; font-weight: 700">pil</span></div>
+        </div>
+        <p style="margin: 0; font-size: 13px; line-height: 19px; color: #4A5672">16 ubin ikon · 22 kapsul grafik · 28 panel dan ubin kecil · 32 ubin besar · pil untuk tombol, stempel, kolom cari. Jarak: 4, 8, 12, 16, 24, 32.</p>
+      </section>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <section style="padding: 24px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 10px">
+        <h2 style="margin: 0 0 6px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Tombol dan kontrol</h2>
+
+        <button type="button" style="height: 56px; padding: 0 8px 0 22px; display: flex; align-items: center; justify-content: space-between; border: 0; border-radius: 28px; background: #0B1F4B; color: #FFFFFF; font-size: 16px; font-weight: 700; cursor: pointer">Tombol utama <span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 20px; background: #F6D36B; color: #0B1F4B; font-weight: 800">2</span></button>
+        <div style="font-size: 12px; color: #4A5672; margin-bottom: 8px">Lebar penuh × 56 · radius 28 · padding 22 kiri, 8 kanan · lencana 40 · 16/700 · satu per layar</div>
+
+        <div style="display: flex; align-items: center; gap: 12px">
+          <button type="button" aria-label="Cari" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: #0B1F4B; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.500"/><path d="m20 20-4-4"/></svg></button>
+          <button type="button" aria-label="Kembali" style="width: 48px; height: 48px; border-radius: 24px; border: 1px solid #D5DAE3; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B1F4B" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+          <button type="button" aria-label="Buka" style="width: 52px; height: 52px; border-radius: 26px; border: 0; background: #F6D36B; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B1F4B" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></button>
+        </div>
+        <div style="font-size: 12px; color: #4A5672; margin-bottom: 8px">Tombol bulat 44 (dalam kolom) · 48 (kepala layar) · 52 (aksi ubin) · ikon 20–22 · area sentuh minimum 48</div>
+
+        <div style="display: flex; gap: 8px">
+          <button type="button" aria-pressed="true" style="height: 44px; padding: 0 6px 0 16px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 22px; background: #0B1F4B; color: #FFFFFF; font-size: 14px; font-weight: 700; cursor: pointer">Semua <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 16px; background: #F6D36B; color: #0B1F4B">2</span></button>
+          <button type="button" aria-pressed="false" style="height: 44px; padding: 0 6px 0 16px; display: flex; align-items: center; gap: 8px; border: 1px solid #D5DAE3; border-radius: 22px; background: #FFFFFF; font-size: 14px; font-weight: 700; cursor: pointer">Lewat jadwal <span style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 16px; background: #F2957A">1</span></button>
+        </div>
+        <div style="font-size: 12px; color: #4A5672; margin-bottom: 8px">Saringan: tinggi 44 · radius 22 · padding 16 kiri, 6 kanan · jumlah 32 · jarak 8 · 14/700</div>
+
+        <div style="height: 56px; box-sizing: border-box; padding: 6px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; border-radius: 28px; background: #EEF0F3">
+          <div style="display: flex; align-items: center; justify-content: center; border-radius: 22px; background: #0B1F4B; color: #FFFFFF; font-size: 14px; font-weight: 700">Daftar</div>
+          <div style="display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700">Arsip</div>
+        </div>
+        <div style="font-size: 12px; color: #4A5672; margin-bottom: 8px">Pilihan ganda: 56 · padding 6 · segmen 44, radius 22 · 14/700</div>
+
+        <div style="height: 56px; box-sizing: border-box; padding: 0 6px 0 20px; display: flex; align-items: center; gap: 10px; border-radius: 28px; background: #EEF0F3">
+          <span style="flex-grow: 1; font-size: 14px; color: #4A5672">Cari nama, merk, atau nomor seri</span>
+          <span aria-hidden="true" style="width: 44px; height: 44px; border-radius: 22px; background: #0B1F4B; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.500"/><path d="m20 20-4-4"/></svg></span>
+        </div>
+        <div style="font-size: 12px; color: #4A5672; margin-bottom: 8px">Kolom cari: 56 · radius 28 · padding 20 kiri, 6 kanan · tombol 44 · 14/400</div>
+
+        <div style="display: flex; align-items: center; gap: 16px">
+          <span aria-hidden="true" style="width: 56px; height: 36px; box-sizing: border-box; padding: 4px; border-radius: 18px; background: #EEF0F3; display: flex"><span style="width: 28px; height: 28px; border-radius: 14px; background: #4A5672"></span></span>
+          <span aria-hidden="true" style="width: 56px; height: 36px; box-sizing: border-box; padding: 4px; border-radius: 18px; background: #0B1F4B; display: flex; justify-content: flex-end"><span style="width: 28px; height: 28px; border-radius: 14px; background: #F6D36B"></span></span>
+          <span style="font-size: 12px; color: #4A5672">Sakelar 56 × 36 · tombol 28 · baris 56</span>
+        </div>
+      </section>
+
+      <section style="padding: 24px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 10px">
+        <h2 style="margin: 0 0 6px; font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Stempel status</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #0B1F4B; color: #FFFFFF; font-size: 12px; font-weight: 700"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.200" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.500v5.500M12 16.500v.010"/></svg>Lewat jadwal</span>
+          <span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #F6D36B; font-size: 12px; font-weight: 700"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Segera jatuh tempo</span>
+          <span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #CBE7B8; font-size: 12px; font-weight: 700"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.400" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.500 4.500 4.500L19 7.500"/></svg>Berlaku</span>
+          <span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #BCE0F0; font-size: 12px; font-weight: 700"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10M7 21h10M8 3v4l4 5 4-5V3M8 21v-4l4-5 4 5v4"/></svg>Diproses</span>
+        </div>
+        <div style="font-size: 12px; color: #4A5672">Tinggi 30 · radius 15 · padding 12 · ikon 14, jarak 6 · 12/700 · selalu ikon + kata. Di atas ubin berwarna stempel memakai navy atau putih.</div>
+      </section>
+
+      <section style="padding: 24px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Dock navigasi</h2>
+        <div style="display: flex; align-items: center; gap: 4px; padding: 8px; background: #0B1F4B; border-radius: 36px; box-shadow: 0 16px 32px rgba(11,31,75,0.28)">
+          <span style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px; border-radius: 24px; background: #F6D36B; font-size: 14px; font-weight: 800"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.500 12 4l8 7.500V20h-5v-5H9v5H4z"/></svg>Beranda</span>
+          <span style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; color: #FFFFFF"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16a8 8 0 1 1 16 0"/><path d="m12 16 4-5"/><path d="M4 20h16"/></svg></span>
+          <span style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; color: #FFFFFF"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/></svg></span>
+          <span style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; color: #FFFFFF"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17v-6a6 6 0 1 1 12 0v6l1.500 2h-15z"/><path d="M10 21h4"/></svg></span>
+          <span style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; color: #FFFFFF"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+        </div>
+        <div style="font-size: 12px; line-height: 18px; color: #4A5672">Tinggi 64 · radius 36 · padding 8 · jarak 4 · butir 48 × 48 · butir aktif pil kuning, padding 16, ikon 20 + label 14/800 · melayang 16 dari tepi bawah (di atas tepi sistem) · bayangan 0 16 32 navy 28%</div>
+      </section>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <section style="padding: 24px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Ubin dan visual</h2>
+        <div style="position: relative; height: 196px; box-sizing: border-box; padding: 18px; border-radius: 32px; background: #F2957A; display: flex; flex-direction: column; overflow: hidden">
+          <span style="align-self: flex-start; display: flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 15px; background: #0B1F4B; color: #FFFFFF; font-size: 12px; font-weight: 700">Lewat jadwal</span>
+          <span style="margin-top: 12px; font-size: 22px; line-height: 28px; font-weight: 800; letter-spacing: -0.02em">Oven Memmert</span>
+          <span style="margin-top: auto; font-size: 44px; line-height: 44px; font-weight: 800; letter-spacing: -0.04em">88</span>
+          <img src="/_blob/09fd6726ba13e4ca94123efea6e3836c" alt="" width="160" height="160" style="position: absolute; right: -10px; bottom: -20px; width: 160px; height: 160px">
+        </div>
+        <div style="font-size: 12px; line-height: 18px; color: #4A5672">Ubin alat: lebar penuh × 196 (Beranda 232) · radius 32 · padding 18 · visual 160 (Beranda 176), keluar 10–20 dari sudut kanan bawah, tidak pernah menimpa teks</div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+          <div style="height: 76px; border-radius: 20px; background: #F2957A; display: flex; align-items: center; justify-content: center"><img src="/_blob/09fd6726ba13e4ca94123efea6e3836c" alt="Oven" width="64" height="64" style="width: 64px; height: 64px"></div>
+          <div style="height: 76px; border-radius: 20px; background: #CBE7B8; display: flex; align-items: center; justify-content: center"><img src="/_blob/d468dc83a2d4704d86ce3710278e842d" alt="Timbangan analitik" width="64" height="64" style="width: 64px; height: 64px"></div>
+          <div style="height: 76px; border-radius: 20px; background: #F6D36B; display: flex; align-items: center; justify-content: center"><img src="/_blob/05764b0325efb84106a3c5c1472def80" alt="Sertifikat" width="64" height="64" style="width: 64px; height: 64px"></div>
+          <div style="height: 76px; border-radius: 20px; background: #BCE0F0; display: flex; align-items: center; justify-content: center"><img src="/_blob/005caa4cca9ac9259ef90e699a66f414" alt="Paket" width="64" height="64" style="width: 64px; height: 64px"></div>
+        </div>
+        <div style="font-size: 12px; line-height: 18px; color: #4A5672">Visual alat: kanvas 240 × 240, cahaya dari kiri atas, bayangan lantai lonjong, tanpa merek. Satu visual per jenis alat; jenis tanpa visual memakai ubin polos.</div>
+      </section>
+
+      <section style="padding: 24px; border-radius: 28px; background: #FFFFFF; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Kapsul jatuh tempo dan baris</h2>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+          <div style="height: 124px; border-radius: 22px; background: #EEF0F3; display: flex; flex-direction: column; justify-content: flex-end"><div style="height: 88px; border-radius: 22px; background: #F2957A; display: flex; justify-content: center; padding-top: 12px; box-sizing: border-box; font-size: 28px; font-weight: 800">1</div></div>
+          <div style="height: 124px; border-radius: 22px; background: #EEF0F3; display: flex; flex-direction: column; justify-content: flex-end"><div style="height: 44px; border-radius: 22px; background: #F6D36B; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800">0</div></div>
+          <div style="height: 124px; border-radius: 22px; background: #EEF0F3; display: flex; flex-direction: column; justify-content: flex-end"><div style="height: 44px; border-radius: 22px; background: #BCE0F0; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800">0</div></div>
+          <div style="height: 124px; border-radius: 22px; background: #EEF0F3; display: flex; flex-direction: column; justify-content: flex-end"><div style="height: 44px; border-radius: 22px; background: #CBE7B8; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800">0</div></div>
+        </div>
+        <div style="font-size: 12px; line-height: 18px; color: #4A5672">Rel 124 tinggi · radius 22 · jarak 8 · isi minimum 44 (nilai 0), maksimum 124; tinggi isi = 44 + 80 × (nilai ÷ nilai terbesar), dibatasi 88 bila hanya satu kolom terisi</div>
+        <div style="border-radius: 22px; background: #EEF0F3; padding: 0 10px; height: 64px; display: flex; align-items: center; gap: 14px">
+          <span aria-hidden="true" style="width: 44px; height: 44px; border-radius: 22px; background: #F6D36B; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B1F4B" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17v-6a6 6 0 1 1 12 0v6l1.500 2h-15z"/><path d="M10 21h4"/></svg></span>
+          <span style="flex-grow: 1; font-size: 16px; font-weight: 700">Baris menu</span>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5672" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+        <div style="font-size: 12px; line-height: 18px; color: #4A5672">Baris menu 64 · ubin ikon 44 bulat · jarak 14 · panah 20 · 16/700 · pemisah 1 dp mulai dari x 68. Baris daftar (teknisi) minimum 72.</div>
+      </section>
+
+      <section style="padding: 24px; border-radius: 28px; background: #0B1F4B; color: #FFFFFF; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.02em">Gerak</h2>
+        <div style="display: flex; flex-direction: column">
+          <div style="padding: 10px 0; border-top: 1px solid #2B4380; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; line-height: 18px"><span style="font-weight: 700">Tekan tombol dan ubin</span><span style="color: #C9D3EA; text-align: right">skala 0,97 · 120 ms</span></div>
+          <div style="padding: 10px 0; border-top: 1px solid #2B4380; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; line-height: 18px"><span style="font-weight: 700">Ubin masuk layar</span><span style="color: #C9D3EA; text-align: right">pudar + naik 12 · 240 ms · berurutan 35 ms, maks 210</span></div>
+          <div style="padding: 10px 0; border-top: 1px solid #2B4380; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; line-height: 18px"><span style="font-weight: 700">Visual alat</span><span style="color: #C9D3EA; text-align: right">skala 0,92 → 1 + pudar · 240 ms · setelah ubinnya</span></div>
+          <div style="padding: 10px 0; border-top: 1px solid #2B4380; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; line-height: 18px"><span style="font-weight: 700">Kapsul jatuh tempo</span><span style="color: #C9D3EA; text-align: right">tumbuh dari bawah · 240 ms · berurutan 35 ms</span></div>
+          <div style="padding: 10px 0; border-top: 1px solid #2B4380; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; line-height: 18px"><span style="font-weight: 700">Angka sorot</span><span style="color: #C9D3EA; text-align: right">hitung naik · 240 ms · sekali per buka layar</span></div>
+          <div style="padding: 10px 0; border-top: 1px solid #2B4380; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; line-height: 18px"><span style="font-weight: 700">Pil dock dan segmen</span><span style="color: #C9D3EA; text-align: right">geser ke butir baru · 240 ms</span></div>
+          <div style="padding: 10px 0; border-top: 1px solid #2B4380; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; line-height: 18px"><span style="font-weight: 700">Sakelar, stempel berubah</span><span style="color: #C9D3EA; text-align: right">120 ms</span></div>
+          <div style="padding: 10px 0; border-top: 1px solid #2B4380; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; line-height: 18px"><span style="font-weight: 700">Pindah halaman</span><span style="color: #C9D3EA; text-align: right">280 ms</span></div>
+        </div>
+        <p style="margin: 0; font-size: 12px; line-height: 18px; color: #C9D3EA">Kurva masuk easeOutCubic, keluar easeInCubic. Durasi memakai AppMotion yang sudah ada (kilat 120, sedang 240, halaman 280). "Kurangi gerak" di sistem menyala = semua jadi nol.</p>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

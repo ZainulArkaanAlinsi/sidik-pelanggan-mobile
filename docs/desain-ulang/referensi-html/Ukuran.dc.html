@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Tabel ukuran komponen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1180px; height: 1560px; box-sizing: border-box; padding: 48px; display: flex; flex-direction: column; gap: 24px; background: #EEF0F3; color: #0B1F4B; font-family: 'Inter', system-ui, sans-serif">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 32px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-size: 44px; line-height: 48px; font-weight: 800; letter-spacing: -0.03em">Ukuran komponen</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 24px; color: #4A5672; max-width: 640px">Satu baris per komponen. Semua angka dalam dp pada layar rujukan 390 dp; "penuh" berarti lebar layar dikurangi margin 16 kiri dan kanan. Huruf ditulis ukuran/tinggi baris · berat.</p>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <span style="display: flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 18px; background: #0B1F4B; color: #FFFFFF; font-size: 13px; font-weight: 700">Inter</span>
+      <span style="display: flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 18px; background: #FFFFFF; font-size: 13px; font-weight: 700">Grid 4 dp</span>
+      <span style="display: flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 18px; background: #F6D36B; font-size: 13px; font-weight: 700">Sentuh min. 48</span>
+    </div>
+  </div>
+
+  <div style="border-radius: 28px; background: #FFFFFF; padding: 8px 24px; display: flex; flex-direction: column">
+    <div style="display: grid; grid-template-columns: 210px 150px 160px 90px 190px 1fr; gap: 16px; padding: 14px 0; border-bottom: 2px solid #0B1F4B; font-size: 12px; font-weight: 800; letter-spacing: 0.06em">
+      <span>KOMPONEN</span><span>LEBAR</span><span>TINGGI</span><span>SUDUT</span><span>PADDING</span><span>HURUF</span>
+    </div>
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="26">
+      <div style="display: grid; grid-template-columns: 210px 150px 160px 90px 190px 1fr; gap: 16px; padding: 13px 0; border-bottom: 1px solid #EEF0F3; font-size: 14px; line-height: 20px">
+        <span style="font-weight: 700">{{r.n}}</span>
+        <span style="font-variant-numeric: tabular-nums">{{r.w}}</span>
+        <span style="font-variant-numeric: tabular-nums">{{r.h}}</span>
+        <span style="font-variant-numeric: tabular-nums">{{r.r}}</span>
+        <span style="color: #4A5672">{{r.p}}</span>
+        <span style="color: #4A5672">{{r.f}}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const d = [
+      ['Layar', '360–430 (rujukan 390)', 'bergulir', '—', 'sisi 16 · antar-ubin 12', 'Inter saja'],
+      ['Kepala layar tab', 'penuh', '48', '—', '0', 'judul 28/34 · 800'],
+      ['Kepala layar anak', 'penuh', '48', '—', 'kembali 48 + jarak 12', 'judul 20/26 · 800'],
+      ['Tombol utama', 'penuh', '56', 'pil', '22 kiri · 8 kanan', '16/24 · 700 · lencana 40, 16/800'],
+      ['Tombol sekunder', 'mengikuti isi', '48', 'pil', '0 · 20', '16/24 · 700'],
+      ['Tombol teks', 'mengikuti isi', '48', '—', '—', '14/20 · 700, garis bawah'],
+      ['Tombol bulat', '44 · 48 · 52', '44 · 48 · 52', 'bulat', 'ikon 20–22 di tengah', '—'],
+      ['Kolom cari', 'penuh', '56', 'pil', '20 kiri · 6 kanan', '14/20 · 400 · tombol 44'],
+      ['Saringan', 'mengikuti isi', '44', '22', '16 kiri · 6 kanan · jarak 8', '14/20 · 700 · jumlah 32'],
+      ['Segmen dua pilihan', 'penuh', '56 (dalam 44)', 'pil · 22', '6', '14/20 · 700'],
+      ['Sakelar', '56', '36 (tombol 28)', 'pil', '4', 'baris 56, 14/20 · 600'],
+      ['Stempel status', 'mengikuti isi', '30', '15', '0 · 12 · ikon 14, jarak 6', '12/16 · 700'],
+      ['Ubin alat', 'penuh', '196 (Beranda 232)', '32', '18', 'nama 22/28 · 800 · angka 44 (Beranda 64) · 800'],
+      ['Ubin pasangan', '(penuh − 12) ÷ 2', '188', '28', '16', 'judul 17/24 · 800 · isi 12–14 · 500'],
+      ['Ubin menu', '(penuh − 12) ÷ 2', '140', '28', '16', 'judul 17/24 · 800 · tombol bulat 40'],
+      ['Ubin kosong', 'penuh', 'min. 420', '32', '22', 'judul 28/34 · 800 · isi 14/20 · 500'],
+      ['Ubin navy', 'penuh', 'mengikuti isi', '32', '20', 'putih; keterangan #C9D3EA'],
+      ['Panel', 'penuh', 'mengikuti isi', '28', '6 (baris) · 18–20 (isi)', '—'],
+      ['Baris menu', 'penuh', '64', '—', '0 · 10 · jarak 14', '16/24 · 700 · ubin ikon 44'],
+      ['Baris daftar (teknisi)', 'penuh', 'min. 72', '—', '0 · 16', 'judul 16/24 · 800 · nomor 12/16 · 700'],
+      ['Kartu draf (teknisi)', '196', '132', '26', '16', 'nama 16/20 · 800 · nomor 12/16 · 700'],
+      ['Kapsul jatuh tempo', '(penuh − 60) ÷ 4', 'rel 124 · isi 44–124', '22', 'jarak 8', 'angka 28 atau 17 · 800 · label 12/16'],
+      ['Avatar', '48 · 88', '48 · 88', 'bulat', '—', 'inisial 16 · 30 · 800'],
+      ['Dock navigasi', 'mengikuti isi, di tengah', '64', '36', '8 · jarak 4 · melayang 16', 'label aktif 14/20 · 800'],
+      ['Butir dock', '48 (aktif: mengikuti isi)', '48', '24', 'aktif 0 · 16', 'ikon 22 (aktif 20)'],
+      ['Visual alat', '176 · 160 · 112 · 100 · 270', 'sama dengan lebar', '—', 'keluar 10–20 dari sudut ubin', 'kanvas sumber 240 × 240'],
+    ];
+    return { rows: d.map((x) => ({ n: x[0], w: x[1], h: x[2], r: x[3], p: x[4], f: x[5] })) };
+  }
+}
+</script>
+</body>
+</html>
