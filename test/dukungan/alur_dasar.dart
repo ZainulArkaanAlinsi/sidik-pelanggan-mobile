@@ -27,6 +27,7 @@ import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
 import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
+import 'package:sidik_pelanggan/widgets/navigasi_utama.dart';
 import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
 
 import 'dukungan.dart';
@@ -306,7 +307,7 @@ Future<HasilAlur> jalankanAlurDasar(
   }
 
   // 3. Masuk ke Rangka (Beranda).
-  expect(find.byType(NavigationBar), findsOneWidget);
+  expect(find.byType(DockNavigasi), findsOneWidget);
   // Beranda terbuka (kalimat utama; nama PT hanya tampil untuk akun
   // multi-perusahaan, jadi bukan penandanya).
   expect(find.text('Tidak ada alat yang lewat jadwal.'), findsOneWidget);
@@ -314,8 +315,8 @@ Future<HasilAlur> jalankanAlurDasar(
   // 4. Daftar sertifikat.
   await tester.tap(
     find.descendant(
-      of: find.byType(NavigationBar),
-      matching: find.text('Sertifikat'),
+      of: find.byType(DockNavigasi),
+      matching: find.byTooltip('Sertifikat'),
     ),
   );
   await tester.pumpAndSettle();
@@ -342,8 +343,8 @@ Future<HasilAlur> jalankanAlurDasar(
   await tester.pumpAndSettle();
   await tester.tap(
     find.descendant(
-      of: find.byType(NavigationBar),
-      matching: find.text('Akun'),
+      of: find.byType(DockNavigasi),
+      matching: find.byTooltip('Akun'),
     ),
   );
   await tester.pumpAndSettle();
