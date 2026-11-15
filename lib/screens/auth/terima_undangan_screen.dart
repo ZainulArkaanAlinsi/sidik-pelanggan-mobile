@@ -5,9 +5,9 @@ import '../../core/api_pelanggan.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/warna_sidik.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/halaman_sidik.dart';
 import '../../widgets/tombol_sidik.dart';
 import '../akun/bantuan_screen.dart';
+import 'kerangka_auth.dart';
 
 /// Pesan untuk email undangan yang SUDAH punya akun. Sengaja tidak menyebut
 /// nama akun lama, perusahaan lain, atau nomor apa pun — hanya apa yang
@@ -144,107 +144,97 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
     final s = context.skema;
     final info = ref.watch(infoAplikasiProvider).value;
     final galatKode = _galatIsian['kode'] != null || _galat != null;
-    return HalamanSidik(
-      judul: 'Pakai kode undangan',
-      latarPutih: true,
-      isi: ListView(
-        padding: Spasi.denganTepiBawah(context, const EdgeInsets.all(Spasi.xl)),
-        children: [
-          Text(
-            'Masukkan email yang menerima undangan dan kodenya, lalu lengkapi data Anda.',
-            style: context.teks.bodyMedium?.copyWith(color: s.onSurfaceVariant),
+    return KerangkaAuth(
+      ringkas: true,
+      kartu: [
+        const JudulAuth('Pakai kode undangan'),
+        const SizedBox(height: Spasi.sm),
+        Text(
+          'Masukkan email yang menerima undangan dan kodenya, lalu lengkapi data Anda.',
+          style: context.teks.bodyMedium?.copyWith(color: s.onSurfaceVariant),
+        ),
+        const SizedBox(height: Spasi.xl),
+        _isian(_email, 'Email', 'email', keyboard: TextInputType.emailAddress),
+        _isian(
+          _kode,
+          'Kode undangan',
+          'kode',
+          bantuan: 'Ada di email undangan',
+        ),
+        _isian(_nama, 'Nama lengkap', 'nama'),
+        _isian(
+          _telepon,
+          'Nomor HP',
+          'telepon',
+          keyboard: TextInputType.phone,
+          bantuan: 'Contoh: 0812 3456 7890',
+        ),
+        _isian(_jabatan, 'Jabatan (opsional)', 'jabatan'),
+        _isian(
+          _sandi,
+          'Buat sandi',
+          'sandi',
+          rahasia: true,
+          bantuan: 'Minimal 10 karakter',
+        ),
+        CheckboxListTile(
+          value: _setuju,
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          onChanged: (v) => setState(() => _setuju = v ?? false),
+          title: const Text(
+            'Saya menyetujui syarat penggunaan dan kebijakan privasi.',
           ),
-          const SizedBox(height: Spasi.xl),
-          _isian(
-            _email,
-            'Email',
-            'email',
-            keyboard: TextInputType.emailAddress,
-          ),
-          _isian(
-            _kode,
-            'Kode undangan',
-            'kode',
-            bantuan: 'Ada di email undangan',
-          ),
-          _isian(_nama, 'Nama lengkap', 'nama'),
-          _isian(
-            _telepon,
-            'Nomor HP',
-            'telepon',
-            keyboard: TextInputType.phone,
-            bantuan: 'Contoh: 0812 3456 7890',
-          ),
-          _isian(_jabatan, 'Jabatan (opsional)', 'jabatan'),
-          _isian(
-            _sandi,
-            'Buat sandi',
-            'sandi',
-            rahasia: true,
-            bantuan: 'Minimal 10 karakter',
-          ),
-          CheckboxListTile(
-            value: _setuju,
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            onChanged: (v) => setState(() => _setuju = v ?? false),
-            title: const Text(
-              'Saya menyetujui syarat penggunaan dan kebijakan privasi.',
-            ),
-            subtitle: _galatIsian['setuju_syarat'] == null
-                ? null
-                : Text(
-                    _galatIsian['setuju_syarat']!,
-                    style: TextStyle(color: s.error),
-                  ),
-          ),
-          // REQ-PRV-01: dokumen yang disetujui harus bisa dibaca dulu.
-          if (info?.kebijakanPrivasiUrl != null || info?.syaratUrl != null)
-            Wrap(
-              spacing: 8,
-              children: [
-                if (info?.kebijakanPrivasiUrl != null)
-                  TextButton(
-                    onPressed: () =>
-                        bukaTautanLuar(Uri.parse(info!.kebijakanPrivasiUrl!)),
-                    child: const Text('Baca kebijakan privasi'),
-                  ),
-                if (info?.syaratUrl != null)
-                  TextButton(
-                    onPressed: () =>
-                        bukaTautanLuar(Uri.parse(info!.syaratUrl!)),
-                    child: const Text('Baca syarat & ketentuan'),
-                  ),
-              ],
-            ),
-          if (_galat != null) ...[
-            const SizedBox(height: Spasi.sm),
-            Text(_galat!, style: TextStyle(color: s.error)),
-          ],
-          // Flow A: kode salah / kedaluwarsa → minta kode baru ke lab.
-          if (galatKode && (info?.adaKontak ?? false))
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                icon: const Icon(Icons.support_agent),
-                label: const Text('Minta kode baru ke PT Sidik'),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const BantuanScreen(),
-                  ),
+          subtitle: _galatIsian['setuju_syarat'] == null
+              ? null
+              : Text(
+                  _galatIsian['setuju_syarat']!,
+                  style: TextStyle(color: s.error),
                 ),
+        ),
+        // REQ-PRV-01: dokumen yang disetujui harus bisa dibaca dulu.
+        if (info?.kebijakanPrivasiUrl != null || info?.syaratUrl != null)
+          Wrap(
+            spacing: 8,
+            children: [
+              if (info?.kebijakanPrivasiUrl != null)
+                TextButton(
+                  onPressed: () =>
+                      bukaTautanLuar(Uri.parse(info!.kebijakanPrivasiUrl!)),
+                  child: const Text('Baca kebijakan privasi'),
+                ),
+              if (info?.syaratUrl != null)
+                TextButton(
+                  onPressed: () => bukaTautanLuar(Uri.parse(info!.syaratUrl!)),
+                  child: const Text('Baca syarat & ketentuan'),
+                ),
+            ],
+          ),
+        if (_galat != null) ...[
+          const SizedBox(height: Spasi.sm),
+          PesanGalatAuth(_galat!),
+        ],
+        // Flow A: kode salah / kedaluwarsa → minta kode baru ke lab.
+        if (galatKode && (info?.adaKontak ?? false))
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon: const Icon(Icons.support_agent),
+              label: const Text('Minta kode baru ke PT Sidik'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const BantuanScreen()),
               ),
             ),
-          const SizedBox(height: Spasi.xl),
-          TombolSidik(
-            label: 'Buat akun & masuk',
-            ragam: RagamTombol.utama,
-            penuh: true,
-            sibuk: _sibuk,
-            onPressed: _setuju ? _kirim : null,
           ),
-        ],
-      ),
+        const SizedBox(height: Spasi.xl),
+        TombolSidik(
+          label: 'Buat akun & masuk',
+          ragam: RagamTombol.utama,
+          penuh: true,
+          sibuk: _sibuk,
+          onPressed: _setuju ? _kirim : null,
+        ),
+      ],
     );
   }
 }
