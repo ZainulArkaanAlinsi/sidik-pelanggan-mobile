@@ -6,59 +6,82 @@ import '../core/tema/ukuran.dart';
 import '../core/tema/warna_sidik.dart';
 import 'status_tampil.dart';
 
-/// Stempel status: persegi sudut 4 ([Bentuk.kecil]), ikon + kata pada latar
-/// tipis nadanya. Pengganti `ChipStatus` (pil) di tiap baris.
+/// Stempel status Bento Lab: pil setinggi 30 (radius 15), ikon 14 + kata 12/700
+/// pada latar warna status dengan tinta navy. Pengganti `ChipStatus`.
 ///
-/// "Normal diam, pengecualian bersuara": pakai stempel berlatar hanya untuk
-/// pengecualian ("Lewat jadwal", "Tidak memenuhi toleransi") atau di lembar
-/// detail. Keadaan normal memakai [tenang] (tanpa latar, ikon + kata tetap
-/// ada) atau tidak ditampilkan sama sekali.
+/// Normal diam di baris daftar padat: stempel berlatar hanya untuk pengecualian
+/// ("Lewat jadwal", "Tidak memenuhi toleransi"); keadaan normal memakai
+/// [tenang] (tanpa latar, ikon + kata tetap ada) atau tidak ditampilkan. Di
+/// ubin alat stempel selalu tampil (ubinnya sudah berwarna) dengan
+/// [diAtasUbin]: navy + putih untuk gagal, putih + navy untuk lainnya
+/// (KOMPONEN.md §Status).
 ///
 /// Status SELALU ikon + kata, tidak pernah warna saja (buta warna, cetakan
-/// hitam-putih). Pasangan tinta/latar dari [StatusTampil.warna], hasil SATU
-/// pemetaan (`pemetaan_status.dart`). Kata panjang membungkus (tidak dipotong);
-/// pembaca layar menerima "Status: kata". Stempel bukan tombol.
+/// hitam-putih). Pasangan warna dari [StatusTampil], hasil SATU pemetaan
+/// (`pemetaan_status.dart`). Pil berlatar memakai warna UBIN (pastel bertinta
+/// navy, sama di terang dan gelap); [tenang] memakai tinta halaman (pastel di
+/// tema gelap). Kata panjang membungkus dan pil tumbuh ke bawah (tinggi 30
+/// adalah minimum); pembaca layar menerima "Status: kata". Stempel bukan tombol.
 class Stempel extends StatelessWidget {
-  const Stempel(this.status, {super.key, this.tenang = false});
+  const Stempel(
+    this.status, {
+    super.key,
+    this.tenang = false,
+    this.diAtasUbin = false,
+  });
 
   final StatusTampil status;
 
   /// Tanpa latar dan tanpa bantalan: untuk keadaan normal.
   final bool tenang;
 
+  /// Stempel ditaruh di atas ubin berwarna: navy + putih (gagal) atau putih +
+  /// navy (lainnya). Diabaikan bila [tenang].
+  final bool diAtasUbin;
+
   @override
   Widget build(BuildContext context) {
-    final (tinta, latar) = status.warna(context);
+    final (tinta, latar) = tenang
+        ? status.warna(context)
+        : (diAtasUbin ? status.diAtasUbin(context) : status.ubin(context));
+    final isi = Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: tenang
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.center,
+      children: [
+        Icon(status.ikon, size: UkuranIkon.stempel, color: tinta),
+        const SizedBox(width: UkuranKontrol.stempelJarak),
+        Flexible(
+          child: Text(
+            status.label,
+            style: context.teks.labelMedium?.copyWith(color: tinta),
+          ),
+        ),
+      ],
+    );
     return Semantics(
       label: 'Status: ${status.label}',
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: tenang ? null : latar,
-          borderRadius: Bentuk.sudutKecil,
+          borderRadius: Bentuk.sudutStempel,
         ),
-        child: Padding(
-          padding: tenang
-              ? EdgeInsets.zero
-              : const EdgeInsets.symmetric(
-                  horizontal: Spasi.sm,
-                  vertical: Spasi.xs,
+        child: tenang
+            ? isi
+            : ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: UkuranKontrol.stempel,
                 ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(status.ikon, size: UkuranIkon.kecil, color: tinta),
-              const SizedBox(width: Spasi.xs),
-              Flexible(
-                child: Text(
-                  status.label,
-                  style: context.teks.labelMedium?.copyWith(color: tinta),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Spasi.md,
+                    vertical: Spasi.xs,
+                  ),
+                  child: isi,
                 ),
               ),
-            ],
-          ),
-        ),
       ),
     );
   }

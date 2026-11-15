@@ -18,6 +18,12 @@ import 'palet_sidik.dart';
 /// Bento Lab, tema terang: tinta keempat status SAMA (navy). Yang membedakan
 /// status adalah LATAR + IKON + KATA, tidak pernah warna saja. Tema gelap
 /// memakai tinta pastel di atas latar gelap bernada sama.
+///
+/// DUA pasang dibedakan (P2): [lulus]/[lulusLatar] dan kawan-kawannya adalah
+/// tinta dan latar untuk teks yang duduk di HALAMAN (gelap di tema gelap); warna
+/// UBIN ([ubinLulus], ... [tintaUbin]) adalah pastel bertinta navy yang SAMA di
+/// dua tema, karena ubin Bento tetap terang di mode gelap (DESIGN.md §Mode
+/// gelap). Teks di atas ubin memakai [tintaUbin], bukan [lulus] dan kawannya.
 @immutable
 class WarnaSidik extends ThemeExtension<WarnaSidik> {
   const WarnaSidik({
@@ -30,6 +36,12 @@ class WarnaSidik extends ThemeExtension<WarnaSidik> {
     required this.tunggu,
     required this.tungguLatar,
     required this.kanMerah,
+    this.ubinLulus = PaletSidik.hijau,
+    this.ubinAwas = PaletSidik.kuning,
+    this.ubinGagal = PaletSidik.koral,
+    this.ubinTunggu = PaletSidik.langit,
+    this.tintaUbin = PaletSidik.navy,
+    this.kertasUbin = PaletSidik.kartu,
   });
 
   final Color lulus;
@@ -43,6 +55,19 @@ class WarnaSidik extends ThemeExtension<WarnaSidik> {
 
   /// Merah check mark KAN. Hanya untuk `LencanaKan`, bukan tanda galat.
   final Color kanMerah;
+
+  /// Latar ubin status (pastel), sama di terang dan gelap.
+  final Color ubinLulus;
+  final Color ubinAwas;
+  final Color ubinGagal;
+  final Color ubinTunggu;
+
+  /// Tinta di atas ubin pastel: navy di dua tema.
+  final Color tintaUbin;
+
+  /// Putih di atas ubin: latar stempel "lulus/awas/tunggu" dan tinta stempel
+  /// "gagal" (navy) di atas ubin berwarna. Sama di dua tema.
+  final Color kertasUbin;
 
   static const WarnaSidik terang = WarnaSidik(
     lulus: PaletSidik.navy,
@@ -83,6 +108,12 @@ class WarnaSidik extends ThemeExtension<WarnaSidik> {
     Color? tunggu,
     Color? tungguLatar,
     Color? kanMerah,
+    Color? ubinLulus,
+    Color? ubinAwas,
+    Color? ubinGagal,
+    Color? ubinTunggu,
+    Color? tintaUbin,
+    Color? kertasUbin,
   }) => WarnaSidik(
     lulus: lulus ?? this.lulus,
     lulusLatar: lulusLatar ?? this.lulusLatar,
@@ -93,6 +124,12 @@ class WarnaSidik extends ThemeExtension<WarnaSidik> {
     tunggu: tunggu ?? this.tunggu,
     tungguLatar: tungguLatar ?? this.tungguLatar,
     kanMerah: kanMerah ?? this.kanMerah,
+    ubinLulus: ubinLulus ?? this.ubinLulus,
+    ubinAwas: ubinAwas ?? this.ubinAwas,
+    ubinGagal: ubinGagal ?? this.ubinGagal,
+    ubinTunggu: ubinTunggu ?? this.ubinTunggu,
+    tintaUbin: tintaUbin ?? this.tintaUbin,
+    kertasUbin: kertasUbin ?? this.kertasUbin,
   );
 
   @override
@@ -109,6 +146,12 @@ class WarnaSidik extends ThemeExtension<WarnaSidik> {
       tunggu: c(tunggu, other.tunggu),
       tungguLatar: c(tungguLatar, other.tungguLatar),
       kanMerah: c(kanMerah, other.kanMerah),
+      ubinLulus: c(ubinLulus, other.ubinLulus),
+      ubinAwas: c(ubinAwas, other.ubinAwas),
+      ubinGagal: c(ubinGagal, other.ubinGagal),
+      ubinTunggu: c(ubinTunggu, other.ubinTunggu),
+      tintaUbin: c(tintaUbin, other.tintaUbin),
+      kertasUbin: c(kertasUbin, other.kertasUbin),
     );
   }
 }
