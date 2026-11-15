@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="480" height="480">
+<defs>
+<linearGradient id="p" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F1EFE8"/></linearGradient>
+<radialGradient id="au" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#FFF0B8"/><stop offset=".55" stop-color="#E2AB3C"/><stop offset="1" stop-color="#9C6A16"/></radialGradient>
+<linearGradient id="rb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9A035"/><stop offset="1" stop-color="#A9761C"/></linearGradient>
+<radialGradient id="sh" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+</defs>
+<ellipse cx="122" cy="220" rx="88" ry="10" fill="url(#sh)"/>
+<rect x="52" y="30" width="150" height="186" rx="7" fill="#000" opacity=".12"/>
+<rect x="42" y="22" width="150" height="186" rx="7" fill="url(#p)"/>
+<rect x="42.500" y="22.500" width="149" height="185" rx="7" fill="none" stroke="#D9D7CF" stroke-width="1"/>
+<path d="M42 29a7 7 0 0 1 7-7h136a7 7 0 0 1 7 7v25H42z" fill="#151613"/>
+<rect x="58" y="34" width="62" height="6" rx="3" fill="#F6D36B"/><circle cx="174" cy="38" r="7" fill="#F6D36B"/>
+<rect x="58" y="70" width="118" height="5" rx="2.500" fill="#C8C9C3"/><rect x="58" y="83" width="118" height="5" rx="2.500" fill="#C8C9C3"/><rect x="58" y="96" width="78" height="5" rx="2.500" fill="#C8C9C3"/>
+<rect x="58" y="114" width="118" height="38" rx="4" fill="#FFFFFF" stroke="#D3D4CE" stroke-width="1.200"/>
+<path d="M58 127h118M58 140h118M98 114v38M138 114v38" stroke="#D3D4CE" stroke-width="1.200"/>
+<path d="M60 186c8-14 12 10 20-3s10 9 24-5" fill="none" stroke="#1E3A8A" stroke-width="2.200" stroke-linecap="round"/>
+<rect x="58" y="194" width="50" height="2" fill="#C8C9C3"/>
+<polygon points="146,180 138,222 153,211 160,180" fill="url(#rb)"/><polygon points="158,180 165,211 180,222 172,180" fill="url(#rb)"/>
+<circle cx="159" cy="172" r="26" fill="none" stroke="#B98322" stroke-width="5" stroke-dasharray="4 3.400"/>
+<circle cx="159" cy="172" r="24" fill="url(#au)"/>
+<circle cx="159" cy="172" r="16" fill="none" stroke="#FFF3C4" stroke-width="1.600"/>
+<path d="M151 172l6 6 11-12" fill="none" stroke="#FFFBEA" stroke-width="3.400" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

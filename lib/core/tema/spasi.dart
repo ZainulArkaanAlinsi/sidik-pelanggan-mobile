@@ -21,8 +21,12 @@ abstract final class Spasi {
   /// 32 dp: ruang napas di layar sambutan dan keadaan kosong.
   static const double xxl = 32;
 
-  /// 20 dp: margin kiri-kanan halaman (Pelanggan lebih lega dari Lab: 16).
-  static const double sisi = 20;
+  /// 16 dp: margin kiri-kanan halaman (Bento Lab: turun dari 20 ke 16, sama
+  /// dengan Lab; ubin besar menuntut lebar isi lebih banyak di layar 360).
+  static const double sisi = 16;
+
+  /// 12 dp: jarak antar-ubin (grid bento), baris dan kolom.
+  static const double antarUbin = 12;
 
   /// 32 dp: jarak antar-bagian layar.
   static const double bagian = 32;

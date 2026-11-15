@@ -23,6 +23,9 @@ analyzer:
     - web/**
     - windows/**
     - macos/**
+    # Paket desain (docs/desain-ulang/) memuat kerangka Dart yang BUKAN bagian
+    # app: ditempel bertahap ke lib/core/tema/ dan lib/widgets/, bukan diimpor.
+    - docs/**
 
 linter:
   # The lint rules applied to this project can be customized in the

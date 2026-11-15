@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Kalibrasi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+body{margin:0}
+button,input{font:inherit;color:inherit}
+a{color:#0B1F4B}a:hover{color:#1C3A7A}
+@keyframes naik{from{opacity:0;translate:0 12px}to{opacity:1;translate:0 0}}
+@keyframes tumbuh{from{scale:1 0}to{scale:1 1}}
+@keyframes muncul{from{opacity:0;scale:.92}to{opacity:1;scale:1}}
+a,button{transition:scale 120ms cubic-bezier(.33,1,.68,1)}a:active,button:active{scale:.97}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; background: #EEF0F3; color: #0B1F4B; font-family: 'Inter', system-ui, sans-serif; overflow: hidden">
+
+  <header style="display: flex; align-items: center; justify-content: space-between; height: 48px">
+    <h1 style="margin: 0; font-size: 30px; line-height: 34px; font-weight: 800; letter-spacing: -0.03em">Kalibrasi</h1>
+    <button type="button" aria-label="Notifikasi, 29 belum dibaca" style="position: relative; width: 48px; height: 48px; border-radius: 24px; border: 0; background: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B1F4B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17v-6a6 6 0 1 1 12 0v6l1.500 2h-15z"/><path d="M10 21h4"/></svg>
+      <span style="position: absolute; top: -4px; right: -6px; min-width: 24px; height: 24px; box-sizing: border-box; padding: 0 6px; border-radius: 12px; background: #F2957A; border: 2px solid #EEF0F3; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800">29</span>
+    </button>
+  </header>
+
+  <button type="button" style="margin-top: 14px; position: relative; height: 132px; box-sizing: border-box; padding: 20px; border: 0; border-radius: 32px; background: #0B1F4B; color: #FFFFFF; text-align: left; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; cursor: pointer; animation: naik 240ms cubic-bezier(0.33,1,0.68,1) 0ms both">
+    <span style="font-size: 12px; font-weight: 600; color: #C9D3EA">Lembar kerja baru</span>
+    <span style="font-size: 26px; line-height: 30px; font-weight: 800; letter-spacing: -0.03em">Mulai kalibrasi</span>
+    <svg aria-hidden="true" width="150" height="150" viewBox="0 0 150 150" fill="none" style="position: absolute; right: -24px; top: -6px">
+      <path d="M20 96A56 56 0 0 1 130 96" stroke="#2B4380" stroke-width="14" stroke-dasharray="2 7.800"/>
+      <path d="M20 96A56 56 0 0 1 102 47" stroke="#F6D36B" stroke-width="14" stroke-dasharray="2 7.800"/>
+      <path d="M75 96 100 52" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="75" cy="96" r="9" fill="#F6D36B"/>
+    </svg>
+  </button>
+
+  <div style="margin: 22px 4px 10px; display: flex; align-items: center; gap: 8px">
+    <h2 style="margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.01em">Draf</h2>
+    <span style="display: flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; border-radius: 13px; background: #F6D36B; font-size: 12px; font-weight: 800">3</span>
+  </div>
+  <div style="margin: 0 -16px; padding: 0 16px; display: flex; gap: 10px; overflow-x: auto">
+    <button type="button" style="flex-shrink: 0; width: 196px; height: 132px; box-sizing: border-box; padding: 16px; border: 0; border-radius: 26px; background: #FFFFFF; text-align: left; display: flex; flex-direction: column; cursor: pointer; animation: naik 240ms cubic-bezier(0.33,1,0.68,1) 35ms both">
+      <span style="font-size: 12px; font-weight: 700; color: #4A5672; font-variant-numeric: tabular-nums">KAL/2026/11/0003</span>
+      <span style="margin-top: 6px; font-size: 16px; line-height: 20px; font-weight: 800; letter-spacing: -0.01em">Flow Meter Cairan (Flowrate)</span>
+      <span style="margin-top: auto; font-size: 12px; color: #4A5672; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 164px">PT Contoh Kalibrasi N…</span>
+    </button>
+    <button type="button" style="flex-shrink: 0; width: 196px; height: 132px; box-sizing: border-box; padding: 16px; border: 0; border-radius: 26px; background: #FFFFFF; text-align: left; display: flex; flex-direction: column; cursor: pointer; animation: naik 240ms cubic-bezier(0.33,1,0.68,1) 70ms both">
+      <span style="font-size: 12px; font-weight: 700; color: #4A5672; font-variant-numeric: tabular-nums">KAL/2026/11/0002</span>
+      <span style="margin-top: 6px; font-size: 16px; line-height: 20px; font-weight: 800; letter-spacing: -0.01em">Autoclave</span>
+      <span style="margin-top: auto; font-size: 12px; color: #4A5672; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 164px">LPKL PDAM KOTA CO…</span>
+    </button>
+    <button type="button" style="flex-shrink: 0; width: 196px; height: 132px; box-sizing: border-box; padding: 16px; border: 0; border-radius: 26px; background: #FFFFFF; text-align: left; display: flex; flex-direction: column; cursor: pointer; animation: naik 240ms cubic-bezier(0.33,1,0.68,1) 105ms both">
+      <span style="font-size: 12px; font-weight: 700; color: #4A5672; font-variant-numeric: tabular-nums">KAL/2026/10/0005</span>
+      <span style="margin-top: 6px; font-size: 16px; line-height: 20px; font-weight: 800; letter-spacing: -0.01em">Thermohygrometer</span>
+      <span style="margin-top: auto; font-size: 12px; color: #4A5672; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 164px">PT. Perkebunan Cont…</span>
+    </button>
+  </div>
+
+  <div style="margin: 22px 4px 10px; display: flex; align-items: center; gap: 8px">
+    <h2 style="margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.01em">Terkirim terakhir</h2>
+    <span style="display: flex; align-items: center; justify-content: center; min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box; border-radius: 13px; background: #FFFFFF; font-size: 12px; font-weight: 800">10</span>
+  </div>
+  <div style="border-radius: 28px; background: #FFFFFF; padding: 6px 16px; display: flex; flex-direction: column; animation: naik 240ms cubic-bezier(0.33,1,0.68,1) 140ms both">
+    <button type="button" style="min-height: 72px; padding: 0; border: 0; background: none; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer">
+      <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+        <span style="font-size: 16px; font-weight: 800; letter-spacing: -0.01em">pH Meter</span>
+        <span style="font-size: 12px; color: #4A5672; font-variant-numeric: tabular-nums">KAL/2026/11/0001</span>
+      </span>
+      <span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #F6D36B; font-size: 12px; font-weight: 700; flex-shrink: 0">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10M7 21h10M8 3v4l4 5 4-5V3M8 21v-4l4-5 4 5v4"/></svg>
+        Menunggu approval
+      </span>
+    </button>
+    <div aria-hidden="true" style="height: 1px; background: #EEF0F3"></div>
+    <button type="button" style="min-height: 72px; padding: 0; border: 0; background: none; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer">
+      <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+        <span style="font-size: 16px; font-weight: 800; letter-spacing: -0.01em">incubator</span>
+        <span style="font-size: 12px; color: #4A5672; font-variant-numeric: tabular-nums">KAL/2026/10/0021</span>
+      </span>
+      <span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #CBE7B8; font-size: 12px; font-weight: 700; flex-shrink: 0">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.500 4.500 4.500L19 7.500"/></svg>
+        Disetujui
+      </span>
+    </button>
+    <div aria-hidden="true" style="height: 1px; background: #EEF0F3"></div>
+    <button type="button" style="min-height: 72px; padding: 0; border: 0; background: none; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer">
+      <span style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+        <span style="font-size: 16px; font-weight: 800; letter-spacing: -0.01em">Pipet Ukur</span>
+      </span>
+      <span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #CBE7B8; font-size: 12px; font-weight: 700; flex-shrink: 0">
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.500 4.500 4.500L19 7.500"/></svg>
+        Disetujui
+      </span>
+    </button>
+  </div>
+
+  <nav aria-label="Navigasi utama" style="margin-top: auto; align-self: center; display: flex; align-items: center; gap: 4px; padding: 8px; background: #0B1F4B; border-radius: 36px; box-shadow: 0 16px 32px rgba(11,31,75,0.28)">
+    <button type="button" aria-current="page" style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border: 0; border-radius: 24px; background: #F6D36B; color: #0B1F4B; font-size: 14px; font-weight: 800; cursor: pointer">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.500h6V4M9 10h6M9 14h6"/></svg>
+      Kalibrasi
+    </button>
+    <button type="button" style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px; border: 0; border-radius: 24px; background: none; color: #FFFFFF; font-size: 14px; font-weight: 700; cursor: pointer">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      Profil
+    </button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

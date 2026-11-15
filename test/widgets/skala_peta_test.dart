@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/core/tema/bentuk.dart';
+import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/core/tema/ukuran.dart';
 import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
@@ -36,6 +37,25 @@ Finder _batang(Type dalam, Color warna) => find.descendant(
         (w.decoration as BoxDecoration).color == warna,
   ),
 );
+
+/// Kotak berwarna salah satu dari [warna] di dalam [dalam], urut dari kiri.
+///
+/// Bento Lab: tinta status tema terang SAMA (navy) dan sama dengan `primary`,
+/// jadi isi dan ekor `SkalaTempo` tak bisa dibedakan lewat warna. Keduanya
+/// dikenali lewat urutan: isi mulai di tepi kiri trek, ekor menyusul di
+/// kanannya. (Pembeda warna kembali saat grafik jatuh tempo diganti komponen
+/// Bento di P5; geometri yang diuji tidak berubah.)
+List<Rect> _rectBatang(WidgetTester tester, Type dalam, Set<Color> warna) {
+  final hasil = <Rect>[];
+  for (final w in warna) {
+    final f = _batang(dalam, w);
+    final n = f.evaluate().length;
+    for (var i = 0; i < n; i++) {
+      hasil.add(tester.getRect(f.at(i)));
+    }
+  }
+  return hasil..sort((a, b) => a.left.compareTo(b.left));
+}
 
 void main() {
   setUpAll(siapkanTesFitur);
@@ -145,8 +165,11 @@ void main() {
           aplikasiUji(SkalaTempo(hari: -4, jadwal: _jadwal)),
         );
         final trek = tester.getRect(_batang(SkalaTempo, s.outlineVariant));
-        final isi = tester.getRect(_batang(SkalaTempo, s.primary));
-        final ekor = tester.getRect(_batang(SkalaTempo, w.gagal));
+        final warnaIsiEkor = {s.primary, w.gagal};
+        final batang = _rectBatang(tester, SkalaTempo, warnaIsiEkor);
+        expect(batang, hasLength(2), reason: 'isi sampai hari ini + ekor');
+        final isi = batang.first;
+        final ekor = batang.last;
         final p = SkalaTempo.posisiTampak(-4);
         expect(isi.left, closeTo(trek.left, 0.01));
         expect(isi.width, closeTo(trek.width * p.jadwal, 0.01));
@@ -161,9 +184,10 @@ void main() {
         await tester.pumpWidget(
           aplikasiUji(SkalaTempo(hari: 30, jadwal: _jadwal)),
         );
-        expect(_batang(SkalaTempo, w.gagal), findsNothing);
+        final batang2 = _rectBatang(tester, SkalaTempo, warnaIsiEkor);
+        expect(batang2, hasLength(1), reason: 'tanpa ekor: hanya isi');
         final trek2 = tester.getRect(_batang(SkalaTempo, s.outlineVariant));
-        final isi2 = tester.getRect(_batang(SkalaTempo, s.primary));
+        final isi2 = batang2.single;
         expect(isi2.width, closeTo(trek2.width * (60 / 90), 0.01));
       },
     );
@@ -369,7 +393,7 @@ void main() {
         final bawah = tester.getRect(find.text('Jadwal 9 Nov 2026'));
         expect(atas.bottom, lessThanOrEqualTo(trek.top));
         expect(bawah.top, greaterThanOrEqualTo(trek.bottom));
-        expect(bawah.right, lessThanOrEqualTo(320 - 20 + 0.5));
+        expect(bawah.right, lessThanOrEqualTo(320 - Spasi.sisi + 0.5));
       });
     }
 
@@ -382,7 +406,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(
         tester.getRect(_batang(SkalaTempo, s.outlineVariant)).width,
-        840 - 40,
+        840 - 2 * Spasi.sisi,
       );
     });
 
@@ -422,12 +446,18 @@ void main() {
       expect(angka('2', 0), s.onSurface);
       expect(angka('0', 0), s.onSurfaceVariant);
       // Batang: gagal, awas, garis tegas (netral), dan abu halus untuk zona nol.
-      expect(_batang(PetaJatuhTempo, w.gagal), findsOneWidget);
-      expect(_batang(PetaJatuhTempo, w.awas), findsOneWidget);
+      // Bento Lab: tinta gagal dan awas sama (navy) di tema terang, jadi kedua
+      // batang berstatus dihitung bersama (warna kembali membedakan di P5).
+      if (w.gagal == w.awas) {
+        expect(_batang(PetaJatuhTempo, w.gagal), findsNWidgets(2));
+      } else {
+        expect(_batang(PetaJatuhTempo, w.gagal), findsOneWidget);
+        expect(_batang(PetaJatuhTempo, w.awas), findsOneWidget);
+      }
       expect(_batang(PetaJatuhTempo, s.outline), findsOneWidget);
       expect(_batang(PetaJatuhTempo, s.outlineVariant), findsOneWidget);
       for (final f in [
-        _batang(PetaJatuhTempo, w.gagal),
+        _batang(PetaJatuhTempo, w.gagal).first,
         _batang(PetaJatuhTempo, s.outlineVariant),
       ]) {
         expect(tester.getSize(f).height, UkuranTik.tinggi);

@@ -7,13 +7,17 @@ import 'palet_sidik.dart';
 /// Dibaca lewat `WarnaSidik.of(context)` (atau `context.warna`). Mengikuti tema
 /// terang/gelap otomatis, jadi layar tidak pernah menulis `if (gelap)`.
 ///
-/// Setiap status punya pasangan [tinta] (teks, ikon, garis) dan [latar]
-/// (isi tipis di belakangnya). Maknanya tetap di seluruh aplikasi:
-/// - lulus: berlaku, selesai, aktif
-/// - awas: segera jatuh tempo, perlu perhatian
-/// - gagal: lewat jadwal, dibatalkan, tidak memenuhi toleransi
-/// - tunggu: sedang diproses pihak lain
-/// - netral: tidak aktif, riwayat
+/// Setiap status punya pasangan [tinta] (teks, ikon, garis) dan [latar] (isi
+/// ubin di belakangnya). Maknanya tetap di seluruh aplikasi:
+/// - lulus (hijau): berlaku, selesai, aktif
+/// - awas (kuning): segera jatuh tempo, perlu perhatian
+/// - gagal (koral): lewat jadwal, dibatalkan, tidak memenuhi toleransi
+/// - tunggu (langit): sedang diproses pihak lain
+/// - netral (putih): tidak aktif, riwayat
+///
+/// Bento Lab, tema terang: tinta keempat status SAMA (navy). Yang membedakan
+/// status adalah LATAR + IKON + KATA, tidak pernah warna saja. Tema gelap
+/// memakai tinta pastel di atas latar gelap bernada sama.
 @immutable
 class WarnaSidik extends ThemeExtension<WarnaSidik> {
   const WarnaSidik({
@@ -41,25 +45,25 @@ class WarnaSidik extends ThemeExtension<WarnaSidik> {
   final Color kanMerah;
 
   static const WarnaSidik terang = WarnaSidik(
-    lulus: PaletSidik.lulusTerang,
-    lulusLatar: PaletSidik.lulusLatarTerang,
-    awas: PaletSidik.awasTerang,
-    awasLatar: PaletSidik.awasLatarTerang,
-    gagal: PaletSidik.gagalTerang,
-    gagalLatar: PaletSidik.gagalLatarTerang,
-    tunggu: PaletSidik.tungguTerang,
-    tungguLatar: PaletSidik.tungguLatarTerang,
+    lulus: PaletSidik.navy,
+    lulusLatar: PaletSidik.hijau,
+    awas: PaletSidik.navy,
+    awasLatar: PaletSidik.kuning,
+    gagal: PaletSidik.navy,
+    gagalLatar: PaletSidik.koral,
+    tunggu: PaletSidik.navy,
+    tungguLatar: PaletSidik.langit,
     kanMerah: PaletSidik.kanMerah,
   );
 
   static const WarnaSidik gelap = WarnaSidik(
-    lulus: PaletSidik.lulusGelap,
+    lulus: PaletSidik.hijau,
     lulusLatar: PaletSidik.lulusLatarGelap,
-    awas: PaletSidik.awasGelap,
+    awas: PaletSidik.kuning,
     awasLatar: PaletSidik.awasLatarGelap,
-    gagal: PaletSidik.gagalGelap,
+    gagal: PaletSidik.koral,
     gagalLatar: PaletSidik.gagalLatarGelap,
-    tunggu: PaletSidik.tungguGelap,
+    tunggu: PaletSidik.langit,
     tungguLatar: PaletSidik.tungguLatarGelap,
     kanMerah: PaletSidik.kanMerahGelap,
   );

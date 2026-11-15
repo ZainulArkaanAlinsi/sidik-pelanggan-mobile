@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/core/tema/bentuk.dart';
+import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
@@ -400,7 +401,7 @@ void main() {
         );
         expect(tester.takeException(), isNull);
         final lebar = tester.getSize(find.byType(Stempel).last).width;
-        expect(lebar, lessThanOrEqualTo(320 - 40));
+        expect(lebar, lessThanOrEqualTo(320 - 2 * Spasi.sisi));
       });
     }
 

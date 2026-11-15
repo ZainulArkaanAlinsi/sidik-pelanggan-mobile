@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Pelacakan paket</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+body{margin:0}
+button,input{font:inherit;color:inherit}
+a{color:#0B1F4B}a:hover{color:#1C3A7A}
+@keyframes naik{from{opacity:0;translate:0 12px}to{opacity:1;translate:0 0}}
+@keyframes tumbuh{from{scale:1 0}to{scale:1 1}}
+@keyframes muncul{from{opacity:0;scale:.92}to{opacity:1;scale:1}}
+a,button{transition:scale 120ms cubic-bezier(.33,1,.68,1)}a:active,button:active{scale:.97}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; background: #EEF0F3; color: #0B1F4B; font-family: 'Inter', system-ui, sans-serif; overflow: hidden">
+
+  <header style="display: flex; align-items: center; gap: 12px; height: 48px">
+    <a href="Akun.dc.html" aria-label="Kembali" style="width: 48px; height: 48px; border-radius: 24px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B1F4B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <h1 style="margin: 0; font-size: 20px; line-height: 26px; font-weight: 800; letter-spacing: -0.02em">Pelacakan paket</h1>
+  </header>
+
+  <div style="margin-top: 16px; height: 56px; box-sizing: border-box; padding: 0 6px 0 20px; display: flex; align-items: center; gap: 10px; border-radius: 28px; background: #FFFFFF; animation: naik 240ms cubic-bezier(0.33,1,0.68,1) 0ms both">
+    <label for="cari-order" style="position: absolute; width: 1px; height: 1px; overflow: hidden">Cari nomor order</label>
+    <input id="cari-order" type="search" placeholder="Cari nomor order" style="flex-grow: 1; min-width: 0; height: 44px; border: 0; outline: 0; background: none; font-size: 14px">
+    <button type="button" aria-label="Cari" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: #0B1F4B; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/></svg>
+    </button>
+  </div>
+
+  <div role="group" aria-label="Status paket" style="margin-top: 12px; height: 56px; box-sizing: border-box; padding: 6px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; border-radius: 28px; background: #FFFFFF; animation: naik 240ms cubic-bezier(0.33,1,0.68,1) 35ms both">
+    <button type="button" aria-pressed="{{ariaJalan}}" onClick="{{pilihJalan}}" style="border: 0; border-radius: 22px; background: {{bgJalan}}; color: {{fgJalan}}; font-size: 14px; font-weight: 700; cursor: pointer">Berjalan</button>
+    <button type="button" aria-pressed="{{ariaSelesai}}" onClick="{{pilihSelesai}}" style="border: 0; border-radius: 22px; background: {{bgSelesai}}; color: {{fgSelesai}}; font-size: 14px; font-weight: 700; cursor: pointer">Selesai</button>
+  </div>
+
+  <section style="margin-top: 16px; position: relative; height: 470px; box-sizing: border-box; padding: 22px; border-radius: 32px; background: #CBE7B8; display: flex; flex-direction: column; overflow: hidden; animation: naik 240ms cubic-bezier(0.33,1,0.68,1) 70ms both">
+    <h2 style="margin: 0; font-size: 26px; line-height: 30px; font-weight: 800; letter-spacing: -0.03em; max-width: 260px">{{judulKosong}}</h2>
+    <p style="margin: 8px 0 0; font-size: 14px; line-height: 20px; font-weight: 500; max-width: 250px">Paket yang Anda serahkan ke laboratorium muncul di sini beserta tahap pengerjaannya.</p>
+    <svg aria-hidden="true" width="230" height="24" viewBox="0 0 230 24" fill="none" style="margin-top: 22px">
+      <path d="M12 12h206" stroke="#0B1F4B" stroke-width="2" stroke-dasharray="3 7" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="8" fill="#FFFFFF" stroke="#0B1F4B" stroke-width="2"/>
+      <circle cx="80" cy="12" r="8" fill="#FFFFFF" stroke="#0B1F4B" stroke-width="2"/>
+      <circle cx="148" cy="12" r="8" fill="#FFFFFF" stroke="#0B1F4B" stroke-width="2"/>
+      <circle cx="218" cy="12" r="8" fill="#FFFFFF" stroke="#0B1F4B" stroke-width="2"/>
+    </svg>
+    <img src="/_blob/005caa4cca9ac9259ef90e699a66f414" alt="" width="270" height="270" style="position: absolute; right: -24px; bottom: -34px; width: 270px; height: 270px; animation: muncul 240ms cubic-bezier(0.33,1,0.68,1) 240ms both">
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  state = { tab: 'jalan' };
+  renderVals() {
+    const jalan = this.state.tab === 'jalan';
+    return {
+      ariaJalan: jalan ? 'true' : 'false',
+      ariaSelesai: jalan ? 'false' : 'true',
+      bgJalan: jalan ? '#0B1F4B' : 'transparent',
+      fgJalan: jalan ? '#FFFFFF' : '#0B1F4B',
+      bgSelesai: jalan ? 'transparent' : '#0B1F4B',
+      fgSelesai: jalan ? '#0B1F4B' : '#FFFFFF',
+      judulKosong: jalan ? 'Tidak ada paket yang sedang berjalan' : 'Belum ada paket yang selesai',
+      pilihJalan: () => this.setState({ tab: 'jalan' }),
+      pilihSelesai: () => this.setState({ tab: 'selesai' }),
+    };
+  }
+}
+</script>
+</body>
+</html>
