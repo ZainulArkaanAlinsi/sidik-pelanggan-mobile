@@ -211,6 +211,18 @@ void main() {
       );
     }
     await inter.load();
+    // IBM Plex Mono (nomor, kode, angka sisa hari), seperti di HP.
+    final plex = FontLoader('IBMPlexMono');
+    for (final f in ['Regular', 'Medium', 'SemiBold']) {
+      plex.addFont(
+        Future.value(
+          ByteData.sublistView(
+            File('assets/fonts/IBMPlexMono-$f.ttf').readAsBytesSync(),
+          ),
+        ),
+      );
+    }
+    await plex.load();
   });
 
   void layarSempit(WidgetTester tester, {double tinggi = 640}) {

@@ -66,6 +66,10 @@ void _periksaCincin(WidgetTester tester, Rect isi, {required bool gelap}) {
   );
 }
 
+/// Padding wadah segmen dan lebar satu sel pada layar 392 dp.
+const _pad = UkuranKontrol.segmenPadding;
+const _selSegmen = (392 - 2 * _pad) / 2;
+
 void main() {
   setUpAll(siapkanTesFitur);
 
@@ -293,7 +297,7 @@ void main() {
     Widget app(Widget t, {bool gelap = false, double skala = 1}) =>
         aplikasiUji(Center(child: t), gelap: gelap, skala: skala, bergulir: false);
 
-    testWidgets('ukuran: lingkaran 44 / 48 / 52, kotak sentuh >= 48', (
+    testWidgets('ukuran: lingkaran 36 / 48 / 52, kotak sentuh >= 48', (
       tester,
     ) async {
       for (final (u, sisi, kotak) in [
@@ -323,7 +327,7 @@ void main() {
         );
         expect(tester.widget<Icon>(find.byType(Icon)).size, u.ikon);
       }
-      expect(UkuranTombolBulat.kecil.sisi, 44);
+      expect(UkuranTombolBulat.kecil.sisi, 36);
       expect(UkuranTombolBulat.sedang.sisi, 48);
       expect(UkuranTombolBulat.besar.sisi, 52);
       expect(UkuranTombolBulat.kecil.ikon, 20);
@@ -361,7 +365,7 @@ void main() {
         final s = _skema(gelap);
         final w = _tema(gelap).extension<WarnaSidik>()!;
         final harapan = {
-          NadaTombolBulat.navy: (s.primary, s.onPrimary, BorderSide.none),
+          NadaTombolBulat.biru: (s.primary, s.onPrimary, BorderSide.none),
           NadaTombolBulat.navyUbin: (
             w.tintaUbin,
             w.kertasUbin,
@@ -372,7 +376,11 @@ void main() {
             s.onSurface,
             BorderSide(color: s.outlineVariant),
           ),
-          NadaTombolBulat.kuning: (s.secondary, s.onSecondary, BorderSide.none),
+          NadaTombolBulat.aksen: (
+            s.primaryContainer,
+            s.onPrimaryContainer,
+            BorderSide(color: s.primary),
+          ),
         };
         for (final e in harapan.entries) {
           await tester.pumpWidget(
@@ -543,7 +551,7 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(
         tester.getSize(_bahanDi(find.byType(TombolBulat).first)),
-        const Size.square(44),
+        const Size.square(UkuranKontrol.tombolBulatKecil),
       );
     });
   });
@@ -571,14 +579,14 @@ void main() {
       ),
     );
 
-    testWidgets('tinggi 44 radius 22, bulatan 32, tinggi baris 56 dengan '
+    testWidgets('tinggi 40 radius 12, bulatan 24, tinggi baris 56 dengan '
         'ruang cincin', (tester) async {
       layarHp(tester, lebar: 392, tinggi: 640);
       await tester.pumpWidget(
         app(SaringanPil(pilihan: pilihan, terpilih: 0, onPilih: (_) {})),
       );
       expect(tester.getSize(pil('Semua')).height, UkuranKontrol.saringan);
-      expect(tester.getSize(pil('Lewat jadwal')).height, 44);
+      expect(tester.getSize(pil('Lewat jadwal')).height, 40);
       final bahan = tester.widget<Material>(pil('Semua'));
       expect(
         (bahan.shape! as RoundedRectangleBorder).borderRadius,
@@ -588,11 +596,11 @@ void main() {
         of: find.text('9'),
         matching: find.byType(AnimatedContainer),
       );
-      expect(tester.getSize(bulatan), const Size.square(32));
-      // Kata dan bulatan: padding 16 kiri, 6 kanan, jarak 8.
+      expect(tester.getSize(bulatan), const Size.square(24));
+      // Kata dan bulatan: padding 16 kiri, 4 kanan, jarak 8.
       final r = tester.getRect(pil('Semua'));
       expect(tester.getRect(find.text('Semua')).left - r.left, 16);
-      expect(r.right - tester.getRect(bulatan).right, 6);
+      expect(r.right - tester.getRect(bulatan).right, 4);
       expect(
         tester.getRect(bulatan).left - tester.getRect(find.text('Semua')).right,
         8,
@@ -664,8 +672,8 @@ void main() {
     });
 
     for (final gelap in [false, true]) {
-      testWidgets('warna dari token: terpilih navy + putih + bulatan kuning; '
-          'tidak terpilih putih + tepi tegas + bulatan status '
+      testWidgets('warna dari token: terpilih biru muda + tepi biru + navy + '
+          'bulatan biru; tidak terpilih putih + tepi tegas + bulatan status '
           '(${gelap ? 'gelap' : 'terang'})', (tester) async {
         layarHp(tester, lebar: 392, tinggi: 640);
         final s = _skema(gelap);
@@ -677,7 +685,12 @@ void main() {
           ),
         );
         final terpilih = tester.widget<Material>(pil('Semua'));
-        expect(terpilih.color, s.primary);
+        expect(terpilih.color, s.primaryContainer);
+        expect(
+          (terpilih.shape! as RoundedRectangleBorder).side.color,
+          s.primary,
+          reason: 'terpilih: tepi biru (bukan warna saja)',
+        );
         final tidak = tester.widget<Material>(pil('Dalam 30 hari'));
         expect(tidak.color, s.surface);
         expect(
@@ -695,12 +708,12 @@ void main() {
                             .decoration!)
                         as BoxDecoration)
                     .color;
-        expect(isiBulatan('9'), s.secondary, reason: 'terpilih: kuning');
+        expect(isiBulatan('9'), s.primary, reason: 'terpilih: bulatan biru');
         expect(isiBulatan('3'), s.surfaceContainer, reason: 'tanpa nada');
-        // Nada gagal = koral pastel di dua tema (ubin tetap terang), tinta navy.
+        // Nada gagal = merah muda di dua tema (ubin tetap terang), tinta navy.
         expect(isiBulatan('1'), w.ubinGagal, reason: 'nada gagal');
-        // Semua teks (kata terpilih onPrimary di atas primary, angka navy di
-        // atas pastel) >= 4,5:1.
+        // Semua teks (kata terpilih onPrimaryContainer di atas biru muda,
+        // angka putih di atas biru, angka navy di atas warna muda) >= 4,5:1.
         expect(
           pelanggaranKontrasTeks(tester, find.byType(SaringanPil)),
           isEmpty,
@@ -803,9 +816,15 @@ void main() {
           matching: find.byType(AnimatedContainer),
         ),
       );
-      expect(bulatan.width, greaterThanOrEqualTo(32));
-      expect(bulatan.height, greaterThanOrEqualTo(32));
-      expect(tester.getSize(pil('Semua')).height, greaterThanOrEqualTo(44));
+      expect(bulatan.width, greaterThanOrEqualTo(UkuranKontrol.jumlahSaringan));
+      expect(
+        bulatan.height,
+        greaterThanOrEqualTo(UkuranKontrol.jumlahSaringan),
+      );
+      expect(
+        tester.getSize(pil('Semua')).height,
+        greaterThanOrEqualTo(UkuranKontrol.saringan),
+      );
     });
   });
 
@@ -814,14 +833,25 @@ void main() {
         aplikasiUji(t, gelap: gelap, skala: skala, bergulir: false);
 
     Finder pilNavy(bool gelap) => find.byWidgetPredicate(
-      (w) => w is ColoredBox && w.color == _skema(gelap).primary,
+      (w) =>
+          w is DecoratedBox &&
+          w.decoration is BoxDecoration &&
+          (w.decoration as BoxDecoration).color ==
+              _skema(gelap).primaryContainer &&
+          (w.decoration as BoxDecoration).border != null,
     );
 
-    Finder salinan(String kata, bool gelap) => find.byWidgetPredicate(
-      (w) =>
-          w is RichText &&
-          w.text.toPlainText() == kata &&
-          (w.text as TextSpan).style?.color == _skema(gelap).onPrimary,
+    // Salinan kata ada DI DALAM penanda yang bergeser (warnanya sama dengan
+    // kata dasar di tema terang, jadi dibedakan lewat letaknya).
+    Finder salinan(String kata, bool gelap) => find.descendant(
+      of: pilNavy(gelap),
+      matching: find.byWidgetPredicate(
+        (w) =>
+            w is RichText &&
+            w.text.toPlainText() == kata &&
+            (w.text as TextSpan).style?.color ==
+                _skema(gelap).onPrimaryContainer,
+      ),
     );
 
     Widget segmen({
@@ -830,7 +860,7 @@ void main() {
       List<String> pilihan = const ['Daftar', 'Arsip'],
     }) => SegmenPil(pilihan: pilihan, terpilih: terpilih, onPilih: onPilih);
 
-    testWidgets('wadah 56 padding 6, pil 44 radius 22, lebar separuh', (
+    testWidgets('wadah 48 padding 4, penanda 40 radius 8, lebar separuh', (
       tester,
     ) async {
       layarHp(tester, lebar: 392, tinggi: 640);
@@ -840,13 +870,21 @@ void main() {
       expect(luar.width, 392);
       final pilRect = tester.getRect(pilNavy(false));
       expect(pilRect.height, UkuranKontrol.segmenDalam);
-      expect(pilRect.width, (392 - 12) / 2);
-      expect(pilRect.left - luar.left, 6);
-      expect(pilRect.top - luar.top, 6);
+      expect(pilRect.width, (392 - 2 * _pad) / 2);
+      expect(pilRect.left - luar.left, _pad);
+      expect(pilRect.top - luar.top, _pad);
       final klip = tester.widget<ClipRRect>(
         find.ancestor(of: pilNavy(false), matching: find.byType(ClipRRect)).first,
       );
-      expect(klip.borderRadius, Bentuk.sudutKapsul);
+      expect(klip.borderRadius, Bentuk.sudutPenanda);
+      final dekorPil =
+          tester.widget<DecoratedBox>(pilNavy(false)).decoration as BoxDecoration;
+      expect(dekorPil.color, _skema(false).primaryContainer);
+      expect(
+        dekorPil.border,
+        Border.all(color: _skema(false).primary, width: 1),
+        reason: 'penanda bertepi biru: bukan warna saja',
+      );
       final bahan = tester.widget<Material>(
         find.descendant(
           of: find.byType(SegmenPil),
@@ -855,7 +893,7 @@ void main() {
       );
       expect(
         (bahan.shape! as RoundedRectangleBorder).borderRadius,
-        Bentuk.sudutPil,
+        Bentuk.sudutKapsul,
       );
       expect(bahan.color, _skema(false).surface);
     });
@@ -932,27 +970,33 @@ void main() {
             gelap: gelap,
           ),
         );
-        expect(tester.getRect(pilNavy(gelap)).left, 6);
+        expect(tester.getRect(pilNavy(gelap)).left, _pad);
         ubah(() => t = 1);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 120));
         final tengah = tester.getRect(pilNavy(gelap)).left;
-        expect(tengah, greaterThan(6));
-        expect(tengah, lessThan(6 + 190), reason: 'masih bergeser');
+        expect(tengah, greaterThan(_pad));
+        expect(tengah, lessThan(_pad + _selSegmen), reason: 'masih bergeser');
         expect(
           tester.getCenter(salinan('Arsip', gelap)).dx,
           closeTo(tester.getCenter(find.text('Arsip')).dx, 0.5),
           reason: 'salinan harus tepat di atas kata dasar saat bergeser',
         );
         await tester.pump(const Duration(milliseconds: 200));
-        expect(tester.getRect(pilNavy(gelap)).left, closeTo(6 + 190, 0.01));
+        expect(
+          tester.getRect(pilNavy(gelap)).left,
+          closeTo(_pad + _selSegmen, 0.01),
+        );
         expect(
           tester.getCenter(salinan('Arsip', gelap)),
           offsetMoreOrLessEquals(tester.getCenter(find.text('Arsip')), epsilon: 0.5),
         );
-        // Kata dalam pil: tinta putih (onPrimary) di atas navy (primary).
+        // Kata dalam penanda: onPrimaryContainer di atas primaryContainer.
         expect(
-          rasioKontras(_skema(gelap).onPrimary, _skema(gelap).primary),
+          rasioKontras(
+            _skema(gelap).onPrimaryContainer,
+            _skema(gelap).primaryContainer,
+          ),
           greaterThanOrEqualTo(4.5),
         );
         expect(
@@ -980,7 +1024,10 @@ void main() {
       ubah(() => t = 1);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 1));
-      expect(tester.getRect(pilNavy(false)).left, closeTo(6 + 190, 0.01));
+      expect(
+        tester.getRect(pilNavy(false)).left,
+        closeTo(_pad + _selSegmen, 0.01),
+      );
     });
 
     testWidgets('mati (onPilih null): semua enabled:false, pil redup dari '
@@ -1001,7 +1048,11 @@ void main() {
       final s = _skema(false);
       expect(
         find.byWidgetPredicate(
-          (w) => w is ColoredBox && w.color == s.onSurface.withValues(alpha: 0.12),
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).color ==
+                  s.onSurface.withValues(alpha: 0.12),
         ),
         findsOneWidget,
       );
@@ -1022,8 +1073,8 @@ void main() {
         ),
       );
       final r = tester.getRect(pilNavy(false));
-      expect(r.width, closeTo((392 - 12) / 3, 0.01));
-      expect(r.right, closeTo(392 - 6, 0.01));
+      expect(r.width, closeTo((392 - 2 * _pad) / 3, 0.01));
+      expect(r.right, closeTo(392 - _pad, 0.01));
       expect(
         tester.getCenter(salinan('Tiga', false)).dx,
         closeTo(tester.getCenter(find.text('Tiga')).dx, 0.5),
@@ -1031,7 +1082,7 @@ void main() {
     });
 
     for (final gelap in [false, true]) {
-      testWidgets('cincin fokus: mengelilingi pil sel (44), di dalam wadah, '
+      testWidgets('cincin fokus: mengelilingi penanda sel (40), di dalam wadah, '
           '3:1 (${gelap ? 'gelap' : 'terang'})', (tester) async {
         layarHp(tester, lebar: 392, tinggi: 640);
         final dipilih = <int>[];
@@ -1042,7 +1093,12 @@ void main() {
         final luar = tester.getRect(find.byType(SegmenPil));
         _periksaCincin(
           tester,
-          Rect.fromLTWH(luar.left + 6, luar.top + 6, 190, 44),
+          Rect.fromLTWH(
+            luar.left + _pad,
+            luar.top + _pad,
+            _selSegmen,
+            UkuranKontrol.segmenDalam,
+          ),
           gelap: gelap,
         );
         expect(
@@ -1069,7 +1125,10 @@ void main() {
         ),
       );
       expect(tester.takeException(), isNull);
-      expect(tester.getSize(find.byType(SegmenPil)).height, greaterThanOrEqualTo(56));
+      expect(
+        tester.getSize(find.byType(SegmenPil)).height,
+        greaterThanOrEqualTo(UkuranKontrol.segmenLuar),
+      );
       final p = tester.renderObject<RenderParagraph>(find.text('Sertifikat berlaku'));
       expect(p.didExceedMaxLines, isFalse);
       expect(barisTeks(p).join(' ').replaceAll('  ', ' '), contains('Sertifikat'));
@@ -1085,7 +1144,7 @@ void main() {
       matching: find.byType(DecoratedBox),
     );
 
-    testWidgets('utama + jumlah: 56, padding 22/8, lencana 40 kuning, label '
+    testWidgets('utama + jumlah: 48, padding 20/8, lencana 28 putih, label '
         'kiri dan lencana kanan', (tester) async {
       layarHp(tester, lebar: 392, tinggi: 640);
       await tester.pumpWidget(
@@ -1105,7 +1164,10 @@ void main() {
       final tombol = tester.getRect(find.byType(FilledButton));
       expect(tombol.height, UkuranBaris.tombolUtama);
       expect(tombol.width, 392 - 32);
-      expect(tester.getRect(find.text('Periksa alat')).left - tombol.left, 22);
+      expect(
+        tester.getRect(find.text('Periksa alat')).left - tombol.left,
+        UkuranKontrol.tombolUtamaAwal,
+      );
       final l = tester.getRect(lencana('2').first);
       expect(l.size, const Size.square(UkuranKontrol.lencanaTombol));
       expect(tombol.right - l.right, 8);
@@ -1113,9 +1175,17 @@ void main() {
           as BoxDecoration;
       expect(dekor.color, _skema(false).secondary);
       expect(dekor.borderRadius, Bentuk.sudutPil);
-      // Pil: bentuk tombol dari tema.
+      // Lencana putih bertinta biru di atas tombol biru.
+      expect(
+        rasioKontras(_skema(false).onSecondary, dekor.color!),
+        greaterThanOrEqualTo(4.5),
+      );
+      // Bentuk tombol dari tema: persegi bersudut 10.
       final bahan = tester.widget<Material>(_bahanDi(find.byType(FilledButton)));
-      expect(bahan.shape, isA<StadiumBorder>());
+      expect(
+        (bahan.shape! as RoundedRectangleBorder).borderRadius,
+        Bentuk.sudutTombol,
+      );
     });
 
     testWidgets('semantik "label, jumlah"; mati: lencana redup dari token', (
@@ -1140,7 +1210,7 @@ void main() {
       semantik.dispose();
     });
 
-    testWidgets('jumlah hanya untuk ragam utama; sekunder 48 padding 20, pil', (
+    testWidgets('jumlah hanya untuk ragam utama; sekunder 48 padding 20, sudut 10', (
       tester,
     ) async {
       layarHp(tester, lebar: 392, tinggi: 640);
@@ -1167,7 +1237,10 @@ void main() {
             2 * UkuranKontrol.tombolSekunder,
       );
       final bahan = tester.widget<Material>(_bahanDi(o));
-      expect(bahan.shape, isA<StadiumBorder>());
+      expect(
+        (bahan.shape! as RoundedRectangleBorder).borderRadius,
+        Bentuk.sudutTombol,
+      );
       final bahaya = find.byType(OutlinedButton).last;
       expect(
         tester.getSize(bahaya).width,
@@ -1257,7 +1330,10 @@ void main() {
         ),
       );
       expect(tester.takeException(), isNull);
-      expect(tester.getSize(find.byType(FilledButton)).height, greaterThanOrEqualTo(56));
+      expect(
+        tester.getSize(find.byType(FilledButton)).height,
+        greaterThanOrEqualTo(UkuranBaris.tombolUtama),
+      );
     });
   });
 
@@ -1267,8 +1343,8 @@ void main() {
     Widget app(Widget t, {bool gelap = false, double skala = 1}) =>
         aplikasiUji(t, gelap: gelap, skala: skala, bergulir: false);
 
-    testWidgets('pil 56, padding 20 kiri, tombol bulat 44 navy 6 dp dari tepi '
-        'kanan, kotak sentuh 48', (tester) async {
+    testWidgets('kotak 48, sudut 10, padding 16 kiri, tombol bulat 36 biru 6 dp '
+        'dari tepi kanan, kotak sentuh 48', (tester) async {
       layarHp(tester, lebar: 392, tinggi: 640);
       await tester.pumpWidget(
         app(KolomCariUtuh(petunjuk: petunjuk, onCari: (_) {})),
@@ -1279,16 +1355,16 @@ void main() {
       expect(kolom.right, 392 - 16);
       final dekor = tester.widget<TextField>(find.byType(TextField)).decoration!;
       final tepi = dekor.enabledBorder! as OutlineInputBorder;
-      expect(tepi.borderRadius, Bentuk.sudutPil);
+      expect(tepi.borderRadius, Bentuk.sudutTombol);
       expect(tepi.borderSide.color, _skema(false).outline);
       expect((dekor.focusedBorder! as OutlineInputBorder).borderSide.width, 2);
-      // Petunjuk mulai 20 dp dari tepi kiri kolom.
+      // Petunjuk mulai 16 dp dari tepi kiri kolom.
       expect(
         tester.getRect(find.text(petunjuk)).left - kolom.left,
         closeTo(UkuranKontrol.kolomCariAwal, 1),
       );
       final lingkaran = tester.getRect(_bahanDi(find.byType(TombolBulat)));
-      expect(lingkaran.size, const Size.square(44));
+      expect(lingkaran.size, const Size.square(UkuranKontrol.tombolBulatKecil));
       expect(kolom.right - lingkaran.right, UkuranKontrol.kolomCariAkhir);
       expect(lingkaran.center.dy, closeTo(kolom.center.dy, 0.5));
       expect(tester.getSize(find.byType(TombolBulat)), const Size.square(48));
@@ -1296,9 +1372,9 @@ void main() {
         tester.widget<Material>(_bahanDi(find.byType(TombolBulat))).color,
         _skema(false).primary,
       );
-      // Petunjuk 14/400 teksKedua.
+      // Petunjuk 13/400 teksKedua.
       final gaya = dekor.hintStyle!;
-      expect(gaya.fontSize, 14);
+      expect(gaya.fontSize, 13);
       expect(gaya.fontWeight, FontWeight.w400);
       expect(gaya.color, _skema(false).onSurfaceVariant);
     });

@@ -17,6 +17,7 @@ import 'package:http/http.dart' as http;
 import 'package:sidik_pelanggan/core/motion/gerak_bento.dart';
 import 'package:sidik_pelanggan/core/konfigurasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
+import 'package:sidik_pelanggan/core/tema/ukuran.dart';
 import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
@@ -580,18 +581,20 @@ void main() {
 
   // ── Kapsul jatuh tempo ────────────────────────────────────────────────────
   group('kapsul jatuh tempo', () {
-    test('tinggi isi: 44 + 80 x (n / terbesar); nol 44; satu kolom 88', () {
+    test('tinggi isi: 40 + 60 x (n / terbesar); nol 40; satu kolom 80', () {
       double h(int n, int maks, int kolom) =>
           tinggiIsiKapsul(jumlah: n, terbesar: maks, kolomBernilai: kolom);
-      expect(h(0, 10, 2), 44);
-      expect(h(10, 10, 2), 124);
-      expect(h(5, 10, 2), 84);
-      expect(h(1, 4, 3), 64);
-      // Hanya satu kolom bernilai: 88, bukan 124.
-      expect(h(7, 7, 1), 88);
-      expect(h(0, 7, 1), 44);
+      expect(UkuranUbin.kapsulMin, 40);
+      expect(UkuranUbin.kapsulRel, 100);
+      expect(h(0, 10, 2), 40);
+      expect(h(10, 10, 2), 100);
+      expect(h(5, 10, 2), 70);
+      expect(h(1, 4, 3), 55);
+      // Hanya satu kolom bernilai: 80, bukan 100.
+      expect(h(7, 7, 1), 80);
+      expect(h(0, 7, 1), 40);
       // Semuanya nol: tidak ada pembagian dengan nol.
-      expect(h(0, 0, 0), 44);
+      expect(h(0, 0, 0), 40);
     });
 
     ZonaKapsul z(String label, int n, NadaStatus nada, {String? semantik}) =>
@@ -641,12 +644,12 @@ void main() {
     ) async {
       layarHp(tester, lebar: 392, tinggi: 800);
       await tester.pumpWidget(bungkus(empat));
-      // terbesar 4; bernilai 3 kolom: 44 + 80 x n / 4.
-      expect(isi(tester, 0), 124);
-      expect(isi(tester, 1), 84);
-      expect(isi(tester, 2), 44);
-      expect(isi(tester, 3), 64);
-      // Warna isi: koral, kuning, langit, hijau (pastel yang sama di dua tema).
+      // terbesar 4; bernilai 3 kolom: 40 + 60 x n / 4.
+      expect(isi(tester, 0), 100);
+      expect(isi(tester, 1), 70);
+      expect(isi(tester, 2), 40);
+      expect(isi(tester, 3), 55);
+      // Warna isi: merah muda, krem, biru kelabu, hijau muda (sama di dua tema).
       final w = _w(false);
       final warna = [
         for (var i = 0; i < 4; i++)
@@ -664,7 +667,7 @@ void main() {
       expect(warna, [w.ubinGagal, w.ubinAwas, w.ubinTunggu, w.ubinLulus]);
     });
 
-    testWidgets('satu kolom bernilai: isinya 88; semua nol: semuanya 44', (
+    testWidgets('satu kolom bernilai: isinya 80; semua nol: semuanya 40', (
       tester,
     ) async {
       layarHp(tester, lebar: 392, tinggi: 800);
@@ -674,27 +677,27 @@ void main() {
           z('≤ 30 hari', 0, NadaStatus.awas),
         ]),
       );
-      expect(isi(tester, 0), 88);
-      expect(isi(tester, 1), 44);
+      expect(isi(tester, 0), 80);
+      expect(isi(tester, 1), 40);
       await tester.pumpWidget(
         bungkus([
           z('Lewat jadwal', 0, NadaStatus.gagal),
           z('≤ 30 hari', 0, NadaStatus.awas),
         ]),
       );
-      expect(isi(tester, 0), 44);
-      expect(isi(tester, 1), 44);
+      expect(isi(tester, 0), 40);
+      expect(isi(tester, 1), 40);
     });
 
-    testWidgets('angka dan kata: bernilai 28 tebal, nol 17; label kata', (
+    testWidgets('angka dan kata: bernilai 24 tebal, nol 16; label kata', (
       tester,
     ) async {
       layarHp(tester, lebar: 392, tinggi: 800);
       await tester.pumpWidget(bungkus(empat));
       double ukuran(String teks) =>
           tester.widget<Text>(find.text(teks)).style!.fontSize!;
-      expect(ukuran('4'), 28);
-      expect(ukuran('0'), 17);
+      expect(ukuran('4'), 24);
+      expect(ukuran('0'), 16);
       for (final k in ['Lewat jadwal', '≤ 30 hari', '31–60 hari']) {
         expect(find.text(k), findsOneWidget);
       }
@@ -769,23 +772,23 @@ void main() {
       'animasi: tumbuh dari 0 sekali; kurangi gerak = langsung akhir',
       (tester) async {
         layarHp(tester, lebar: 392, tinggi: 800);
-        // Gerak normal: kolom pertama mulai dari 0 lalu mencapai 124.
+        // Gerak normal: kolom pertama mulai dari 0 lalu mencapai 100.
         await tester.pumpWidget(bungkus(empat, animasi: true));
         expect(isi(tester, 0), 0);
         await tester.pump(const Duration(milliseconds: 120));
-        expect(isi(tester, 0), inExclusiveRange(0, 124));
+        expect(isi(tester, 0), inExclusiveRange(0, 100));
         await tester.pumpAndSettle();
-        expect(isi(tester, 0), 124);
-        expect(isi(tester, 3), 64);
+        expect(isi(tester, 0), 100);
+        expect(isi(tester, 3), 55);
 
         // Kurangi gerak: langsung keadaan akhir pada frame pertama.
         await _pasang(
           tester,
           bungkus(empat, animasi: true, kurangiGerak: true),
         );
-        expect(isi(tester, 0), 124);
-        expect(isi(tester, 1), 84);
-        expect(isi(tester, 3), 64);
+        expect(isi(tester, 0), 100);
+        expect(isi(tester, 1), 70);
+        expect(isi(tester, 3), 55);
       },
     );
 
@@ -883,9 +886,9 @@ void main() {
         final sapaan = tester.widget<Text>(find.text('Selamat pagi,'));
         expect(sapaan.style!.color, s.onSurfaceVariant);
         expect(rasioKontras(s.onSurfaceVariant, bg), greaterThanOrEqualTo(4.5));
-        // Inisial kuning di atas navy tetap (hiasan, tetap terbaca).
+        // Inisial putih di atas navy tetap di dua tema (hiasan, terbaca).
         expect(
-          rasioKontras(s.secondary, _w(gelap).tintaUbin),
+          rasioKontras(_w(gelap).kertasUbin, _w(gelap).tintaUbin),
           greaterThanOrEqualTo(4.5),
         );
       }
@@ -919,7 +922,7 @@ void main() {
       };
       expect(potongan['2 alat ']!.warna, s.onSurface);
       expect(potongan['1 paket ']!.warna, s.onSurfaceVariant);
-      expect(potongan['2 alat ']!.ukuran, 32);
+      expect(potongan['2 alat ']!.ukuran, 24);
       // Frasa status tetap KATA ber-nada (bukan hanya warna), di dua kalimat.
       expect(potongan.keys, containsAll(['lewat jadwal', 'siap diambil']));
       expect(potongan['lewat jadwal']!.warna, _w(false).gagal);
@@ -929,8 +932,8 @@ void main() {
 
   // ── Ubin alat ─────────────────────────────────────────────────────────────
   group('ubin alat: satu alat paling mendesak', () {
-    testWidgets('lewat jadwal terlama: ubin koral 232, stempel, angka, kata, '
-        'identitas, dan "Di lab"', (tester) async {
+    testWidgets('lewat jadwal terlama: kartu netral >= 160, lencana, angka, '
+        'kata, identitas, dan "Di lab"', (tester) async {
       layarHp(tester, lebar: 392, tinggi: 2400);
       await tester.pumpWidget(
         _app(_server(alat: _alatMendesak()), sesi: _sesiSatu()),
@@ -944,8 +947,15 @@ void main() {
       expect(u.beranda, isTrue);
       expect(u.status.label, StatusBerlaku.lewatJadwal.label);
       expect(u.status.nada, NadaStatus.gagal);
-      expect(_latarUbin(tester, ubin), _w(false).ubinGagal);
-      expect(tester.getSize(ubin).height, greaterThanOrEqualTo(232));
+      expect(
+        _latarUbin(tester, ubin),
+        _s(false).surface,
+        reason: 'kartu alat netral; status hanya di lencana',
+      );
+      expect(
+        tester.getSize(ubin).height,
+        greaterThanOrEqualTo(UkuranUbin.alatBeranda),
+      );
 
       for (final teks in [
         'Lewat jadwal',
@@ -966,7 +976,7 @@ void main() {
       expect(find.text('Manometer'), findsNothing);
     });
 
-    testWidgets('segera jatuh tempo: ubin kuning, "hari lagi", tanggal', (
+    testWidgets('segera jatuh tempo: kartu netral, "hari lagi", tanggal', (
       tester,
     ) async {
       layarHp(tester, lebar: 392, tinggi: 2400);
@@ -983,7 +993,7 @@ void main() {
       await tester.pumpAndSettle();
       final ubin = find.byType(UbinAlat);
       expect(tester.widget<UbinAlat>(ubin).status.label, 'Segera jatuh tempo');
-      expect(_latarUbin(tester, ubin), _w(false).ubinAwas);
+      expect(_latarUbin(tester, ubin), _s(false).surface);
       expect(find.text('hari lagi'), findsOneWidget);
       expect(find.text('jatuh tempo 24 Nov 2026'), findsOneWidget);
     });
@@ -1033,7 +1043,7 @@ void main() {
       final ubin = find.byType(UbinAlat);
       expect(tester.widget<UbinAlat>(ubin).nama, 'Semua alat berlaku');
       expect(tester.widget<UbinAlat>(ubin).merkTipe, 'Berikutnya: Manometer');
-      expect(_latarUbin(tester, ubin), _w(false).ubinLulus);
+      expect(_latarUbin(tester, ubin), _s(false).surface);
       expect(find.text('45'), findsOneWidget);
       expect(find.text('Semua alat Anda berlaku.'), findsOneWidget);
     });
@@ -1108,7 +1118,10 @@ void main() {
       // Berdampingan, tinggi sama (grid bento).
       expect(tester.getTopLeft(sert).dy, tester.getTopLeft(pak).dy);
       expect(tester.getSize(sert).height, tester.getSize(pak).height);
-      expect(tester.getSize(sert).height, greaterThanOrEqualTo(188));
+      expect(
+        tester.getSize(sert).height,
+        greaterThanOrEqualTo(UkuranUbin.pasangan),
+      );
     });
 
     testWidgets('berisi: baris pertama = nomor dan nama terbaru; FAIL dan '
@@ -1406,7 +1419,7 @@ void main() {
       expect(tombol.penuh, isTrue);
       expect(
         tester.getSize(find.byType(TombolSidik)).height,
-        greaterThanOrEqualTo(56),
+        greaterThanOrEqualTo(UkuranBaris.tombolUtama),
       );
       // Pembaca layar mendengar angka BESERTA satuannya: "7 alat", bukan "7".
       final label = find.bySemanticsLabel('Lihat semua alat, 7 alat');
@@ -2037,32 +2050,34 @@ void main() {
       );
     });
 
-    testWidgets('tema gelap: ubin tetap pastel, tanpa luapan, teks terbaca', (
-      tester,
-    ) async {
-      layarHp(tester, lebar: 392, tinggi: 2600);
-      await tester.pumpWidget(_app(penuh, sesi: _sesiSatu(), gelap: true));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-      expect(_latarUbin(tester, find.byType(UbinAlat)), _w(true).ubinGagal);
-      expect(_w(true).ubinGagal, _w(false).ubinGagal);
-      expect(pelanggaranKontrasTeks(tester, find.byType(UbinAlat)), isEmpty);
-      expect(
-        pelanggaranKontrasTeks(tester, find.byType(KapsulJatuhTempo)),
-        isEmpty,
-      );
-      expect(
-        pelanggaranKontrasTeks(
-          tester,
-          find.widgetWithText(UbinRingkas, 'Sertifikat terbaru'),
-        ),
-        isEmpty,
-      );
-      expect(
-        pelanggaranKontrasTeks(tester, find.byType(KalimatUtama)),
-        isEmpty,
-      );
-    });
+    testWidgets(
+      'tema gelap: kartu alat mengikuti permukaan tema, ubin ringkasan '
+      'tetap muda, tanpa luapan, teks terbaca',
+      (tester) async {
+        layarHp(tester, lebar: 392, tinggi: 2600);
+        await tester.pumpWidget(_app(penuh, sesi: _sesiSatu(), gelap: true));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(_latarUbin(tester, find.byType(UbinAlat)), _s(true).surface);
+        expect(_w(true).ubinGagal, _w(false).ubinGagal);
+        expect(pelanggaranKontrasTeks(tester, find.byType(UbinAlat)), isEmpty);
+        expect(
+          pelanggaranKontrasTeks(tester, find.byType(KapsulJatuhTempo)),
+          isEmpty,
+        );
+        expect(
+          pelanggaranKontrasTeks(
+            tester,
+            find.widgetWithText(UbinRingkas, 'Sertifikat terbaru'),
+          ),
+          isEmpty,
+        );
+        expect(
+          pelanggaranKontrasTeks(tester, find.byType(KalimatUtama)),
+          isEmpty,
+        );
+      },
+    );
 
     testWidgets('tema terang: kontras ubin, kalimat, bantuan, banner offline', (
       tester,

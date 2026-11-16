@@ -158,7 +158,7 @@ class _JudulLayar extends StatelessWidget {
         'Sertifikat',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: context.teks.headlineMedium,
+        style: context.teks.displaySmall,
       ),
     ),
   );

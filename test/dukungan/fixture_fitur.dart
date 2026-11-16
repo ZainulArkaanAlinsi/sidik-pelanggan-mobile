@@ -40,6 +40,19 @@ Future<void> siapkanTesFitur() async {
     );
   }
   await inter.load();
+  // IBM Plex Mono (nomor, kode, angka sisa hari): tanpa ini nomor jatuh ke
+  // Ahem (selebar kotak) dan lebarnya tidak mewakili HP.
+  final plex = FontLoader('IBMPlexMono');
+  for (final f in ['Regular', 'Medium', 'SemiBold']) {
+    plex.addFont(
+      Future.value(
+        ByteData.sublistView(
+          File('assets/fonts/IBMPlexMono-$f.ttf').readAsBytesSync(),
+        ),
+      ),
+    );
+  }
+  await plex.load();
 }
 
 /// Tanggal "hari ini" yang dipakai semua test fitur ini.

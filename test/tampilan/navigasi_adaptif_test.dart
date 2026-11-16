@@ -38,10 +38,9 @@ Widget _rangka() => ProviderScope(
 void main() {
   setUpAll(siapkanTesFitur);
 
-  // P4: navigasi bawah menjadi dock melayang (DockNavigasi). Label hanya di
-  // butir aktif (KOMPONEN.md §Dock), jadi "lima label satu baris" diganti:
-  // tiap butir tetap punya tooltip dan sentuh >= 48 dp, dan label aktif satu
-  // baris. Detail dock ada di test/widgets/dock_navigasi_test.dart.
+  // R1: navigasi bawah = bilah solid (BilahNavigasi), semua menu berlabel.
+  // Tiap butir punya tooltip dan sentuh >= 48 dp, dan label satu baris.
+  // Detail bilah ada di test/widgets/bilah_navigasi_test.dart.
   testWidgets('HP 320 dp, huruf 1,3×: lima butir bertooltip, sentuh >= 48 dp', (
     tester,
   ) async {
@@ -49,12 +48,12 @@ void main() {
     await tester.pumpWidget(_rangka());
     await tester.pumpAndSettle();
 
-    expect(find.byType(DockNavigasi), findsOneWidget);
+    expect(find.byType(BilahNavigasi), findsOneWidget);
     expect(find.byType(NavigationRail), findsNothing);
     expect(tester.takeException(), isNull);
     for (final nama in _tab) {
       final butir = find.descendant(
-        of: find.byType(DockNavigasi),
+        of: find.byType(BilahNavigasi),
         matching: find.byTooltip(nama),
       );
       expect(butir, findsOneWidget, reason: 'tooltip $nama');
@@ -72,11 +71,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     final label = find.descendant(
-      of: find.byType(DockNavigasi),
+      of: find.byType(BilahNavigasi),
       matching: find.text('Beranda'),
     );
     expect(label, findsOneWidget);
-    // 14 sp / 20 dp: satu baris, tidak ikut membesar oleh huruf sistem 1,3×.
+    // 12 sp / 16 dp x 1,3: satu baris, dijepit 1,3× oleh bilah.
     expect(tester.getSize(label).height, lessThan(24));
   });
 
@@ -86,7 +85,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(
       find.descendant(
-        of: find.byType(DockNavigasi),
+        of: find.byType(BilahNavigasi),
         matching: find.byTooltip('Alat'),
       ),
     );
@@ -103,7 +102,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(DockNavigasi), findsNothing);
+    expect(find.byType(BilahNavigasi), findsNothing);
     for (final nama in _tab) {
       expect(
         find.descendant(
@@ -136,7 +135,7 @@ void main() {
     layarHp(tester, lebar: 599, tinggi: 800);
     await tester.pumpWidget(_rangka());
     await tester.pumpAndSettle();
-    expect(find.byType(DockNavigasi), findsOneWidget);
+    expect(find.byType(BilahNavigasi), findsOneWidget);
 
     layarHp(tester, lebar: 600, tinggi: 800);
     await tester.pumpAndSettle();

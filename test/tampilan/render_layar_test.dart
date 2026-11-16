@@ -574,11 +574,10 @@ const _tinggiPanjang = 3000.0;
 /// bawah lipatan sebelum lintasan itu ada, per `layar|ukuran`. Boleh mengecil,
 /// tidak boleh bertambah, dan tes gagal bila utangnya sudah lunas.
 ///
-/// - `akun|hp392`: kaki Akun (versi + build + ID pengguna, S17) adalah
-///   `SelectableText` dengan aksi tekan-lama 360x40 dp di HP 392. Di HP sempit
-///   (huruf 1,3x) teksnya membungkus lebih tinggi dan lolos. Dibereskan di
-///   paket layar Akun, bukan di PR gerbang.
-const _utangSentuhPanjang = <String, int>{'akun|hp392': 1};
+/// Kosong sejak R1: kaki Akun (versi + build + ID pengguna) dulu
+/// `SelectableText` 360x40 dp (utang `akun|hp392`), dan sesudah huruf mengecil
+/// (R1) juga 288x46 di HP sempit; sekarang diberi tinggi minimal 48 dp.
+const _utangSentuhPanjang = <String, int>{};
 
 /// Bandingkan jumlah target < 48 dp di [alasan] (teks `Evaluation.reason` dari
 /// `androidTapTargetGuideline`, `null` bila lolos) dengan [utang]. Mengembalikan

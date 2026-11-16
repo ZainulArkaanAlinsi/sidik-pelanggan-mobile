@@ -9,12 +9,12 @@ import '../core/tema/ukuran.dart';
 import '../core/tema/warna_sidik.dart';
 import 'tombol_bulat.dart';
 
-/// Kolom cari Bento Lab dengan petunjuk UTUH: pil putih setinggi 56 (padding 20
-/// kiri, 6 kanan), petunjuk 14/400 `teksKedua`, dan tombol bulat 44 navy di
-/// kanan. Pada 320 dp dengan huruf 1,3x, petunjuk "Cari nama, merk, atau nomor
-/// seri" di `KolomCari` terpotong menjadi "Cari nama, merk, at...". Di sini
-/// petunjuk boleh membungkus sampai dua baris ([petunjukBaris]) dan kolom
-/// tumbuh mengikutinya; 56 dp adalah minimum. Pembaca layar menerima
+/// Kolom cari dengan petunjuk UTUH: kotak putih bersudut 10 setinggi 48 (padding
+/// 16 kiri), petunjuk 13/400 `teksKedua`, dan tombol bulat 36 biru di kanan
+/// (area ketuk 48). Pada 320 dp dengan huruf 1,3x, petunjuk "Cari nama, merk,
+/// atau nomor seri" di `KolomCari` terpotong menjadi "Cari nama, merk, at...".
+/// Di sini petunjuk boleh membungkus sampai dua baris ([petunjukBaris]) dan
+/// kolom tumbuh mengikutinya; 48 dp adalah minimum. Pembaca layar menerima
 /// [petunjuk] penuh sebagai label (dari `hintText`; satu node text-field).
 ///
 /// Jeda ketik seperti `KolomCari`: [onCari] dipanggil sekali per kata, 350 ms
@@ -23,7 +23,7 @@ import 'tombol_bulat.dart';
 /// SEKARANG tanpa menunggu jeda, kecuali kata itu sudah dikirim. [aktif] false
 /// mematikan isian dan tombolnya (`TextField.enabled`, simpul semantik mati).
 ///
-/// Tepinya garis tegas 3:1 (`ColorScheme.outline`, 2 dp bernavy saat fokus),
+/// Tepinya garis tegas 3:1 (`ColorScheme.outline`, 2 dp biru saat fokus),
 /// bukan `garis` halus (1,4:1) yang tidak cukup menandai tepi kontrol.
 class KolomCariUtuh extends StatefulWidget {
   const KolomCariUtuh({
@@ -89,7 +89,7 @@ class _KolomCariUtuhState extends State<KolomCariUtuh> {
     final gaya = t.bodySmall?.copyWith(fontWeight: FontWeight.w400);
     OutlineInputBorder tepi(Color warna, [double tebal = Elevasi.garis]) =>
         OutlineInputBorder(
-          borderRadius: Bentuk.sudutPil,
+          borderRadius: Bentuk.sudutTombol,
           borderSide: BorderSide(color: warna, width: tebal),
         );
 
@@ -140,9 +140,12 @@ class _KolomCariUtuhState extends State<KolomCariUtuh> {
               disabledBorder: tepi(s.outlineVariant),
             ),
           ),
-          // Kotak sentuh 48 berpusat; lingkaran 44 jatuh 6 dp dari tepi kanan.
+          // Kotak sentuh 48 berpusat; lingkaran 36 jatuh 6 dp dari tepi kanan
+          // (kotak 48 menempel ke tepi: 6 dp sisa kotak + 0).
           PositionedDirectional(
-            end: Spasi.xs,
+            end:
+                UkuranKontrol.kolomCariAkhir -
+                (AreaSentuh.minimum - UkuranKontrol.tombolBulatKecil) / 2,
             top: 0,
             bottom: 0,
             child: Center(

@@ -17,7 +17,6 @@ import 'package:sidik_pelanggan/core/tema/bentuk.dart';
 import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/core/tema/ukuran.dart';
-import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/providers/data_provider.dart';
 import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
@@ -257,11 +256,11 @@ void main() {
         findsOneWidget,
       );
 
-      // Warna ubin mengikuti status (pastel tetap, terang maupun gelap).
-      final w = WarnaSidik.terang;
-      expect(_latarUbin(tester, _ubin('Oven Memmert')), w.ubinGagal);
-      expect(_latarUbin(tester, _ubin('Timbangan Analitik')), w.ubinAwas);
-      expect(_latarUbin(tester, _ubin('Termometer')), w.ubinLulus);
+      // Kartu alat NETRAL (permukaan tema): status hanya di lencana.
+      final permukaan = TemaSidik.terang.colorScheme.surface;
+      expect(_latarUbin(tester, _ubin('Oven Memmert')), permukaan);
+      expect(_latarUbin(tester, _ubin('Timbangan Analitik')), permukaan);
+      expect(_latarUbin(tester, _ubin('Termometer')), permukaan);
 
       // Tanpa jadwal: netral (putih), tanpa angka hari dan tanggal; nonaktif
       // juga netral. Keadaan belum ada keputusan/jadwal tidak pernah hijau.
@@ -469,7 +468,10 @@ void main() {
           tester.getSize(ubinKosong).height,
           greaterThanOrEqualTo(UbinKosongAlat.tinggiMin),
         );
-        expect(UbinKosongAlat.tinggiMin, greaterThanOrEqualTo(420));
+        expect(
+          UbinKosongAlat.tinggiMin,
+          UkuranUbin.alatBeranda + UkuranUbin.alat,
+        );
         final (_, kuning) = StatusTampil.ubinDari(
           tester.element(ubinKosong),
           NadaStatus.awas,
@@ -886,15 +888,16 @@ void main() {
       }
     });
 
-    testWidgets('tema gelap: ubin tetap pastel terang, tanpa luapan', (
-      tester,
-    ) async {
-      await _buka(tester, _server(), gelap: true);
-      expect(tester.takeException(), isNull);
-      final w = WarnaSidik.terang;
-      expect(_latarUbin(tester, _ubin('Oven Memmert')), w.ubinGagal);
-      expect(_latarUbin(tester, _ubin('Termometer')), w.ubinLulus);
-    });
+    testWidgets(
+      'tema gelap: kartu alat mengikuti permukaan tema, tanpa luapan',
+      (tester) async {
+        await _buka(tester, _server(), gelap: true);
+        expect(tester.takeException(), isNull);
+        final permukaan = TemaSidik.gelap.colorScheme.surface;
+        expect(_latarUbin(tester, _ubin('Oven Memmert')), permukaan);
+        expect(_latarUbin(tester, _ubin('Termometer')), permukaan);
+      },
+    );
   });
 
   group('Semantics dan sasaran sentuh', () {

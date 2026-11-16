@@ -8,12 +8,13 @@ import 'dasar/dasar_ubin.dart';
 import 'status_tampil.dart';
 import 'tombol_bulat.dart';
 
-/// Ubin menu Bento Lab (dua kolom): judul 17/24 (paling banyak dua baris,
-/// lebar paling banyak 100) di atas, penanda tombol bulat 40 navy di kiri bawah,
-/// dan di kanan bawah [visual] 100 ATAU tumpukan avatar 40 ([inisial], mis.
-/// anggota). Dipakai untuk pintu masuk (Pelacakan paket, Sertifikat, Anggota).
+/// Ubin menu (dua kolom): judul 16/22 (paling banyak dua baris, lebar paling
+/// banyak 100) di atas, penanda tombol bulat 40 navy di kiri bawah, dan di
+/// kanan bawah [visual] 100 ATAU tumpukan avatar 40 ([inisial], mis. anggota).
+/// Dipakai untuk pintu masuk (Pelacakan paket, Sertifikat, Anggota).
 ///
-/// Tinggi 140 adalah MINIMUM, sudut 28, padding 16; warna dari [nada]. Seluruh
+/// Tinggi 124 adalah MINIMUM, sudut 16, padding 16; warna dari [nada] (putih
+/// netral, atau warna muda status). Seluruh
 /// ubin SATU tombol bila [onTap] ada: tombol bulat di dalamnya hanya penanda
 /// (`TombolBulat.hiasan`, navy tetap di dua tema), tidak punya semantik atau
 /// ketukan sendiri, jadi
@@ -69,7 +70,7 @@ class UbinMenu extends StatelessWidget {
         children: [
           Column(
             mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ConstrainedBox(

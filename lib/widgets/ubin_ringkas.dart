@@ -9,14 +9,15 @@ import 'dasar/dasar_ubin.dart';
 import 'status_tampil.dart';
 import 'stempel.dart';
 
-/// Ubin pasangan Bento Lab (dua kolom, jarak [Spasi.antarUbin]): judul 17/24
-/// (paling banyak dua baris) → [kalimat] pendek 14 → (didorong ke bawah)
-/// [aksi] "Lihat semua" 12 bergaris bawah. Dipakai untuk ringkasan di Beranda
+/// Ubin pasangan (dua kolom, jarak [Spasi.antarUbin]): judul 16/22 (paling
+/// banyak dua baris) → [kalimat] pendek 13 → (didorong ke bawah) [aksi]
+/// "Lihat semua" 12 bergaris bawah. Dipakai untuk ringkasan di Beranda
 /// (sertifikat terbaru, paket) dan menggantikan kartu kecil.
 ///
-/// Tinggi 188 adalah MINIMUM dan sudut 28; warna dari [nada] (bawaan netral =
-/// permukaan putih tema; kuning, langit, hijau, koral dari status). Teks navy
-/// di atas pastel. [visual] 112 di kanan bawah, keluar 10, dipotong sudut
+/// Tinggi 132 adalah MINIMUM dan sudut 16; warna dari [nada] (bawaan netral =
+/// permukaan putih tema; krem, biru kelabu, hijau muda, merah muda dari
+/// status). Teks navy di atas warna muda. [visual] 112 di kanan bawah, keluar
+/// 10, dipotong sudut
 /// ubin, di BAWAH teks: teks tidak pernah ditutupinya. Di lebar < 340 dp
 /// pemasang menaruhnya satu kolom (`Spasi.batasKompak`).
 ///

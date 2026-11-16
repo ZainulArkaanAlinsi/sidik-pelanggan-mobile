@@ -173,7 +173,7 @@ class _SaringanTeksState extends State<SaringanTeks> {
                           if (p.jumlah != null)
                             TextSpan(
                               text: '  ${p.jumlah}',
-                              style: t.bodyMedium?.tabular,
+                              style: t.bodyLarge?.tabular,
                             ),
                         ],
                       ),

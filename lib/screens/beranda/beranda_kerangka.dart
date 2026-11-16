@@ -14,8 +14,8 @@ const double batasDuaKolomBeranda = 680;
 const double jarakKalimatBeranda = Spasi.lg + Spasi.xs;
 
 /// Kerangka Beranda saat memuat: bentuknya meniru isi yang akan datang
-/// (kepala, kalimat besar dua baris, ubin alat 232, tombol, panel kapsul, dua
-/// ubin pasangan, baris bantuan), bukan kartu kosong.
+/// (kepala, kalimat dua baris, ubin alat 160, tombol, panel kapsul, dua ubin
+/// pasangan, baris bantuan), bukan kartu kosong.
 ///
 /// STATIS: tanpa denyut dan tanpa animasi apa pun (GERAK.md: kerangka tetap,
 /// "kurangi gerak" tidak perlu menanganinya). Tetap bisa ditarik
@@ -36,14 +36,14 @@ class KerangkaBeranda extends StatelessWidget {
         const ubinAlat = _UbinKerangka(tinggi: UkuranUbin.alatBeranda);
         const tombol = _Balok(
           tinggi: UkuranBaris.tombolUtama,
-          sudut: Bentuk.pil,
+          sudut: Bentuk.tombol,
           tinggiPenuh: true,
         );
         const panel = _PanelKerangka();
         const pasangan = _PasanganKerangka();
         const bantuan = _Balok(
           tinggi: UkuranKontrol.tombolBulatBesar + 2 * Spasi.md,
-          sudut: Bentuk.pil,
+          sudut: Bentuk.tombol,
           tinggiPenuh: true,
         );
         const jarak = SizedBox(height: Spasi.antarUbin);
@@ -108,7 +108,7 @@ class KerangkaBeranda extends StatelessWidget {
 }
 
 /// Ubin alat Beranda yang daftar alatnya MASIH dimuat (hitungan server sudah
-/// ada, alat yang mendesak belum): bentuknya ubin 232, STATIS, dengan satu
+/// ada, alat yang mendesak belum): bentuknya ubin 160, STATIS, dengan satu
 /// kabar "Memuat daftar alat" untuk pembaca layar. Bukan "tidak ada alat".
 class UbinAlatMemuat extends StatelessWidget {
   const UbinAlatMemuat({super.key});
@@ -198,11 +198,14 @@ class _KalimatKerangka extends StatelessWidget {
   );
 }
 
-/// Ubin putih setinggi [tinggi] berisi tiga garis (stempel, nama, angka).
+/// Ubin putih setinggi [tinggi] berisi garis-garis isinya: ubin alat (stempel,
+/// nama, merk, angka) atau, bila [ringkas], ubin pasangan (judul, kalimat,
+/// tautan).
 class _UbinKerangka extends StatelessWidget {
-  const _UbinKerangka({required this.tinggi});
+  const _UbinKerangka({required this.tinggi, this.ringkas = false});
 
   final double tinggi;
+  final bool ringkas;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -212,24 +215,32 @@ class _UbinKerangka extends StatelessWidget {
         color: context.skema.surface,
         borderRadius: Bentuk.sudutUbin,
       ),
-      child: const Padding(
-        padding: EdgeInsets.all(UkuranUbin.paddingAlat),
+      child: Padding(
+        padding: const EdgeInsets.all(UkuranUbin.paddingAlat),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _Balok(
-              tinggi: UkuranKontrol.stempel,
-              lebar: 112,
-              sudut: Bentuk.pil,
-              diAtasPutih: true,
-            ),
-            SizedBox(height: Spasi.md),
-            _Balok(tinggi: Spasi.xl, lebar: 200, diAtasPutih: true),
-            SizedBox(height: Spasi.sm),
-            _Balok(tinggi: Spasi.md, lebar: 140, diAtasPutih: true),
-            Spacer(),
-            _Balok(tinggi: Spasi.xxl, lebar: 96, diAtasPutih: true),
-          ],
+          children: ringkas
+              ? const [
+                  _Balok(tinggi: Spasi.lg, lebar: 112, diAtasPutih: true),
+                  SizedBox(height: Spasi.sm),
+                  _Balok(tinggi: Spasi.md, lebar: 88, diAtasPutih: true),
+                  Spacer(),
+                  _Balok(tinggi: Spasi.md, lebar: 72, diAtasPutih: true),
+                ]
+              : const [
+                  _Balok(
+                    tinggi: UkuranKontrol.stempel,
+                    lebar: 96,
+                    sudut: Bentuk.stempel,
+                    diAtasPutih: true,
+                  ),
+                  SizedBox(height: Spasi.md),
+                  _Balok(tinggi: Spasi.lg, lebar: 200, diAtasPutih: true),
+                  SizedBox(height: Spasi.xs),
+                  _Balok(tinggi: Spasi.md, lebar: 140, diAtasPutih: true),
+                  Spacer(),
+                  _Balok(tinggi: Spasi.xl, lebar: 96, diAtasPutih: true),
+                ],
         ),
       ),
     ),
@@ -274,19 +285,21 @@ class _PanelKerangka extends StatelessWidget {
   );
 }
 
-/// Dua ubin pasangan (188) berdampingan; di bawah 340 dp bertumpuk.
+/// Dua ubin pasangan (132) berdampingan; di bawah 340 dp bertumpuk.
 class _PasanganKerangka extends StatelessWidget {
   const _PasanganKerangka();
 
   @override
   Widget build(BuildContext context) {
-    const satu = Expanded(child: _UbinKerangka(tinggi: UkuranUbin.pasangan));
+    const satu = Expanded(
+      child: _UbinKerangka(tinggi: UkuranUbin.pasangan, ringkas: true),
+    );
     if (MediaQuery.sizeOf(context).width < Spasi.batasKompak) {
       return const Column(
         children: [
-          _UbinKerangka(tinggi: UkuranUbin.pasangan),
+          _UbinKerangka(tinggi: UkuranUbin.pasangan, ringkas: true),
           SizedBox(height: Spasi.antarUbin),
-          _UbinKerangka(tinggi: UkuranUbin.pasangan),
+          _UbinKerangka(tinggi: UkuranUbin.pasangan, ringkas: true),
         ],
       );
     }

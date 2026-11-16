@@ -11,9 +11,10 @@ import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
 import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
 
 /// Gerbang desain Pelanggan, bagian 2: KONTRAS pasangan token (WCAG 2.x), tema
-/// terang DAN gelap. Arah "Bento Lab": navy + empat ubin pastel; semua pasangan
-/// di `docs/desain-ulang/DESIGN.md` §Kontras dihitung ulang di sini, dan dua
-/// pasangan yang DILARANG dipegang sebagai tes negatif.
+/// terang DAN gelap. Arah tenang-formal (REVISI 16 Nov): teks navy, aksi biru,
+/// pilihan biru muda, empat status bertinta gelap di atas warna muda; semua
+/// pasangan dihitung ulang di sini, dan pasangan yang DILARANG dipegang sebagai
+/// tes negatif.
 ///
 /// Tiga lapis:
 /// 1. Token mentah `PaletSidik` (tinta di atas permukaan, navy, status di atas
@@ -60,7 +61,7 @@ void main() {
           ? <(String, Color)>[
               ('kartu', PaletSidik.kartu),
               ('latar', PaletSidik.latar),
-              ('garis (permukaan tertinggi)', PaletSidik.garis),
+              ('latarTinggi', PaletSidik.latarTinggi),
             ]
           : <(String, Color)>[
               ('kartu', PaletSidik.kartuGelap),
@@ -74,10 +75,10 @@ void main() {
       final garisTegas = terang
           ? PaletSidik.garisTegas
           : PaletSidik.garisTegasGelap;
-      // Warna aksi: navy di tema terang, navyTeks (terang) di tema gelap.
-      final aksi = terang ? PaletSidik.navy : PaletSidik.navyTeks;
-      final padaAksi = terang ? PaletSidik.kartu : PaletSidik.navy;
-      final wadahAksi = terang ? PaletSidik.langit : PaletSidik.navyLembut;
+      // Warna aksi: biru (#1769C2) di tema terang, biruDiGelap di tema gelap.
+      final aksi = terang ? PaletSidik.biru : PaletSidik.biruDiGelap;
+      final padaAksi = terang ? PaletSidik.kartu : PaletSidik.latarGelap;
+      final wadahAksi = terang ? PaletSidik.biruMuda : PaletSidik.navyLembut;
       final padaWadahAksi = terang ? PaletSidik.navy : PaletSidik.teksGelap;
 
       test('tinta dan tinta kedua di semua permukaan', () {
@@ -85,9 +86,15 @@ void main() {
           cek('tinta/$apa', tinta, p);
           cek('tinta kedua/$apa', tinta2, p);
         }
+        if (terang) {
+          // Garis halus (permukaan tertinggi) tidak membawa teks aksi, tetapi
+          // tinta dan tinta kedua tetap terbaca di atasnya.
+          cek('tinta/garis', tinta, PaletSidik.garis);
+          cek('tinta kedua/garis', tinta2, PaletSidik.garis);
+        }
       });
 
-      test('warna aksi: teks, tombol utama, dan ubin ikon pastel', () {
+      test('warna aksi: teks, tombol utama, dan wadah biru muda', () {
         for (final (apa, p) in permukaan) {
           cek('aksi/$apa', aksi, p);
         }
@@ -103,20 +110,38 @@ void main() {
       test(
         'empat nada status: tinta di atas ubinnya, permukaan, dan latar',
         () {
-          // Terang: tinta navy di atas ubin pastel (hijau, kuning, koral,
-          // langit). Gelap: tinta pastel di atas latar gelap bernada sama.
+          // Terang: tinta GELAP di atas warna muda (hijau gelap di hijau
+          // muda, amber gelap di krem, merah gelap di merah muda, biru tua di
+          // biru kelabu muda). Gelap: tinta pastel di atas latar gelap
+          // bernada sama.
           final nada = terang
               ? <(String, Color, Color)>[
-                  ('lulus', PaletSidik.navy, PaletSidik.hijau),
-                  ('awas', PaletSidik.navy, PaletSidik.kuning),
-                  ('gagal', PaletSidik.navy, PaletSidik.koral),
-                  ('tunggu', PaletSidik.navy, PaletSidik.langit),
+                  ('lulus', PaletSidik.hijauTinta, PaletSidik.hijau),
+                  ('awas', PaletSidik.kuningTinta, PaletSidik.kuning),
+                  ('gagal', PaletSidik.galat, PaletSidik.koral),
+                  ('tunggu', PaletSidik.langitTinta, PaletSidik.langit),
                 ]
               : <(String, Color, Color)>[
-                  ('lulus', PaletSidik.hijau, PaletSidik.lulusLatarGelap),
-                  ('awas', PaletSidik.kuning, PaletSidik.awasLatarGelap),
-                  ('gagal', PaletSidik.koral, PaletSidik.gagalLatarGelap),
-                  ('tunggu', PaletSidik.langit, PaletSidik.tungguLatarGelap),
+                  (
+                    'lulus',
+                    PaletSidik.hijauTintaGelap,
+                    PaletSidik.lulusLatarGelap,
+                  ),
+                  (
+                    'awas',
+                    PaletSidik.kuningTintaGelap,
+                    PaletSidik.awasLatarGelap,
+                  ),
+                  (
+                    'gagal',
+                    PaletSidik.koralTintaGelap,
+                    PaletSidik.gagalLatarGelap,
+                  ),
+                  (
+                    'tunggu',
+                    PaletSidik.biruDiGelap,
+                    PaletSidik.tungguLatarGelap,
+                  ),
                 ];
           for (final (apa, ink, ubin) in nada) {
             cek('stempel $apa/ubin', ink, ubin);
@@ -128,15 +153,18 @@ void main() {
       );
 
       test(
-        'tinta kedua di atas ubin pastel (terang: hijau, kuning, langit)',
+        'tinta kedua di atas warna muda status dan biru muda (tema terang)',
         () {
           if (!terang) return;
-          // DESIGN.md: teksKedua ~5:1 di atas kuning/langit/hijau. Di atas
-          // koral TIDAK dipakai (lihat tes negatif di bawah).
+          // Warna status sekarang MUDA (bukan koral jenuh), jadi tinta kedua
+          // terbaca di atas keempatnya: larangan lama "teksKedua di atas
+          // koral" tidak berlaku lagi (koral #FDE8E6, bukan #F2957A).
           for (final ubin in [
             PaletSidik.hijau,
             PaletSidik.kuning,
             PaletSidik.langit,
+            PaletSidik.koral,
+            PaletSidik.biruMuda,
           ]) {
             cek('teksKedua/ubin', PaletSidik.teksKedua, ubin);
           }
@@ -165,18 +193,19 @@ void main() {
           // keempatnya wajib beda TERANGNYA (luminans relatif > 0,02), bukan
           // cuma beda warnanya.
           //
-          // Bento Lab: tinta status di tema terang SAMA (navy), jadi yang diadu
-          // adalah warna yang membawa makna: UBINNYA (terang) atau TINTANYA
-          // (gelap, tempat pastel menjadi tinta). DESIGN.md: luminans hijau 0,73,
-          // langit 0,70, kuning 0,67, koral 0,42; hijau, langit, dan kuning
-          // berdekatan (selisih ~0,03), lolos tipis. Karena itu pengaman
-          // utamanya BUKAN warna: tiap stempel SELALU membawa ikon + kata
-          // (diuji di `token_tema_test.dart`). Aturan ini lapis kedua.
+          // Revisi: latar status di tema terang sengaja MUDA dan nyaris sama
+          // terangnya, jadi yang membawa makna adalah TINTANYA (gelap di tema
+          // terang, pastel di tema gelap). Tinta terang terang dibuat
+          // berjenjang (biru tua < hijau gelap < merah gelap < amber, selisih
+          // > 0,02) supaya status tetap terbaca di cetakan hitam-putih.
+          // Pengaman utamanya tetap BUKAN warna: tiap lencana SELALU membawa
+          // ikon + kata (diuji di `token_tema_test.dart`). Aturan ini lapis
+          // kedua.
           final pembawa = <String, double>{
-            'lulus': _luminansi(terang ? w.lulusLatar : w.lulus),
-            'gagal': _luminansi(terang ? w.gagalLatar : w.gagal),
-            'awas': _luminansi(terang ? w.awasLatar : w.awas),
-            'tunggu': _luminansi(terang ? w.tungguLatar : w.tunggu),
+            'lulus': _luminansi(w.lulus),
+            'gagal': _luminansi(w.gagal),
+            'awas': _luminansi(w.awas),
+            'tunggu': _luminansi(w.tunggu),
           };
           final kunci = pembawa.keys.toList();
           for (var a = 0; a < kunci.length; a++) {
@@ -220,6 +249,9 @@ void main() {
 
       test('primary sebagai TEKS/ikon (tautan, label navigasi terpilih)', () {
         for (final (apa, p) in permukaan) {
+          // surfaceContainerHighest = garis dekoratif (jalur kerangka, tepi
+          // halus): tidak membawa teks aksi.
+          if (apa == 'surfaceContainerHighest') continue;
           cek('primary/$apa', s.primary, p);
         }
         cek('primary/primaryContainer', s.primary, s.primaryContainer);
@@ -488,11 +520,14 @@ void main() {
     });
   }
 
-  group('pasangan merek Bento Lab (DESIGN.md §Kontras)', () {
-    test('navy di atas putih, latar, dan keempat ubin lebih dari 7:1', () {
+  group('pasangan merek (REVISI 16 Nov)', () {
+    test('navy di atas putih, latar, biru muda, dan keempat warna status '
+        'muda lebih dari 7:1', () {
       for (final (apa, ubin) in <(String, Color)>[
         ('kartu', PaletSidik.kartu),
         ('latar', PaletSidik.latar),
+        ('latarTinggi', PaletSidik.latarTinggi),
+        ('biruMuda', PaletSidik.biruMuda),
         ('kuning', PaletSidik.kuning),
         ('hijau', PaletSidik.hijau),
         ('langit', PaletSidik.langit),
@@ -502,19 +537,34 @@ void main() {
         expect(
           r,
           greaterThan(7),
-          reason: 'navy/$apa cuma ${r.toStringAsFixed(2)}:1 (DESIGN.md > 7)',
+          reason: 'navy/$apa cuma ${r.toStringAsFixed(2)}:1 (harus > 7)',
         );
       }
     });
 
-    test('putih dan navyTeks di atas navy (dock, ubin navy, toast)', () {
-      expect(_rasio(PaletSidik.kartu, PaletSidik.navy), greaterThan(15));
-      expect(_rasio(PaletSidik.navyTeks, PaletSidik.navy), greaterThan(10));
-      // Butir dock aktif dan tombol sakelar: kuning di atas navy (komponen UI).
+    test('putih dan navyTeks di atas navy (snack bar)', () {
+      expect(_rasio(PaletSidik.kartu, PaletSidik.navy), greaterThan(12));
+      expect(_rasio(PaletSidik.navyTeks, PaletSidik.navy), greaterThan(7));
+      // Teks aksi di snack bar (tema terang): biru terang di atas navy.
       expect(
-        _rasio(PaletSidik.kuning, PaletSidik.navy),
-        greaterThanOrEqualTo(ambangKomponen),
+        _rasio(PaletSidik.biruDiGelap, PaletSidik.navy),
+        greaterThanOrEqualTo(ambangTeks),
       );
+    });
+
+    test('biru aksi: putih di atasnya, dan terbaca di atas putih, latar, '
+        'dan biru muda (>= 4,5:1)', () {
+      expect(
+        _rasio(PaletSidik.kartu, PaletSidik.biru),
+        greaterThanOrEqualTo(ambangTeks),
+      );
+      for (final p in [
+        PaletSidik.kartu,
+        PaletSidik.latar,
+        PaletSidik.biruMuda,
+      ]) {
+        expect(_rasio(PaletSidik.biru, p), greaterThanOrEqualTo(ambangTeks));
+      }
     });
 
     test('merah tua galat terbaca di atas putih dan latar, dan sebaliknya', () {
@@ -527,11 +577,14 @@ void main() {
       );
     });
 
-    test('teksKedua di atas hijau, kuning, dan langit tetap >= 4,5:1', () {
+    test('teksKedua di atas hijau, kuning, langit, koral, dan biru muda '
+        'tetap >= 4,5:1', () {
       for (final ubin in [
         PaletSidik.hijau,
         PaletSidik.kuning,
         PaletSidik.langit,
+        PaletSidik.koral,
+        PaletSidik.biruMuda,
       ]) {
         expect(
           _rasio(PaletSidik.teksKedua, ubin),
@@ -542,26 +595,11 @@ void main() {
 
     // Tes NEGATIF: pasangan yang DILARANG desain. Kalau tes ini gagal berarti
     // palet bergeser dan larangannya bisa dicabut (atau warnanya keliru).
-    test('DILARANG: teksKedua di atas koral (3,3:1, di bawah 4,5)', () {
-      final r = _rasio(PaletSidik.teksKedua, PaletSidik.koral);
-      expect(
-        r,
-        lessThan(ambangTeks),
-        reason:
-            'teksKedua/koral ${r.toStringAsFixed(2)}:1 sekarang lolos: '
-            'periksa DESIGN.md §Kontras lalu cabut larangannya',
-      );
-      // Tinta navy-lah yang dipakai di atas koral.
-      expect(
-        _rasio(PaletSidik.navy, PaletSidik.koral),
-        greaterThanOrEqualTo(ambangTeks),
-      );
-    });
-
+    // (Larangan "teksKedua di atas koral" dicabut: koral kini merah muda.)
     test(
-      'DILARANG: garis halus (#D5DAE3) sebagai satu-satunya tepi kontrol',
+      'DILARANG: garis halus (#DCE5EE) sebagai satu-satunya tepi kontrol',
       () {
-        // 1,4:1 di atas putih: dekoratif saja. Tepi kontrol memakai garisTegas.
+        // 1,3:1 di atas putih: dekoratif saja. Tepi kontrol memakai garisTegas.
         final r = _rasio(PaletSidik.garis, PaletSidik.kartu);
         expect(r, lessThan(ambangKomponen));
         expect(
@@ -569,6 +607,20 @@ void main() {
           greaterThanOrEqualTo(ambangKomponen),
         );
         expect(TemaSidik.terang.colorScheme.outline, PaletSidik.garisTegas);
+      },
+    );
+
+    test(
+      'DILARANG: biru muda (#EAF3FF) sebagai satu-satunya penanda pilihan',
+      () {
+        // 1,1:1 di atas putih: pilihan aktif wajib ikut tepi biru, ikon terisi,
+        // atau indikator bentuk (REVISI-1 §2: "dipadukan border atau indikator").
+        final r = _rasio(PaletSidik.biruMuda, PaletSidik.kartu);
+        expect(r, lessThan(ambangKomponen));
+        expect(
+          _rasio(PaletSidik.biru, PaletSidik.kartu),
+          greaterThanOrEqualTo(ambangKomponen),
+        );
       },
     );
   });

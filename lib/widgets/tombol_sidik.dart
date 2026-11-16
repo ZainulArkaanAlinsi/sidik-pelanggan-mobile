@@ -10,10 +10,10 @@ import 'dasar/cincin_fokus.dart';
 
 /// Ragam tombol. Satu layar cuma boleh punya SATU [RagamTombol.utama].
 enum RagamTombol {
-  /// Isi navy, pil 56. Aksi utama layar.
+  /// Isi biru, tinggi 48, sudut 10. Satu aksi dominan per bagian.
   utama,
 
-  /// Putih bergaris tegas, pil 48. Aksi pendamping.
+  /// Putih bergaris tegas, tinggi 48. Aksi pendamping.
   sekunder,
 
   /// Hanya teks. Aksi tersier (Lupa sandi, Lewati).
@@ -23,19 +23,19 @@ enum RagamTombol {
   bahaya,
 }
 
-/// Tombol aplikasi Bento Lab di atas `FilledButton`/`OutlinedButton`/`TextButton`:
-/// pil, ripple standar, tinggi minimal 48 dp (56 dp untuk [RagamTombol.utama],
-/// dari tema), tumbuh ke bawah bila label membungkus (huruf besar di layar
-/// sempit). Ditekan: skala 0,97 selama 120 ms ([TekanSkala], mati bila tombol
-/// mati atau "kurangi gerak" menyala). Papan ketik: cincin fokus di luar pil
+/// Tombol aplikasi di atas `FilledButton`/`OutlinedButton`/`TextButton`:
+/// persegi bersudut 10, ripple standar, tinggi minimal 48 dp (dari tema),
+/// tumbuh ke bawah bila label membungkus (huruf besar di layar sempit).
+/// Ditekan: skala 0,97 selama 120 ms ([TekanSkala], mati bila tombol mati atau
+/// "kurangi gerak" menyala). Papan ketik: cincin fokus di luar tombol
 /// ([CincinFokus]).
 ///
 /// [sibuk] mengganti ikon dengan pemutar dan mematikan tombol: per tombol,
 /// bukan satu penanda untuk seluruh layar. [penuh] membentang selebar induk.
 ///
-/// [jumlah] (hanya [RagamTombol.utama]): lencana bulat 40 kuning di ujung
-/// kanan, mis. "Periksa alat" dengan 2 alat menunggu; padding 22 kiri dan 8
-/// kanan. Pembaca layar menerima "label, jumlah" (atau "label, jumlah satuan"
+/// [jumlah] (hanya [RagamTombol.utama]): lencana bulat 28 putih bertinta biru
+/// di ujung kanan, mis. "Periksa alat" dengan 2 alat menunggu; padding 20 kiri
+/// dan 8 kanan. Pembaca layar menerima "label, jumlah" (atau "label, jumlah satuan"
 /// bila [satuanJumlah] ada, mis. "Lihat semua alat, 7 alat"). Angka SELALU
 /// ditemani label, jadi tombolnya tetap bermakna tanpa warna.
 class TombolSidik extends StatelessWidget {
@@ -127,7 +127,7 @@ class TombolSidik extends StatelessWidget {
     };
 
     final bungkus = CincinFokus(
-      sudut: Bentuk.sudutPil,
+      sudut: Bentuk.sudutTombol,
       child: TekanSkala(aktif: aksi != null, child: tombol),
     );
     return penuh ? SizedBox(width: double.infinity, child: bungkus) : bungkus;

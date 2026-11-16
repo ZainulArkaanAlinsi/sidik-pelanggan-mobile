@@ -27,16 +27,16 @@ abstract final class AreaSentuh {
   static const double minimum = 48;
 }
 
-/// Tinggi baris dan tombol. Pelanggan lega: baris daftar 72 dp (Lab 64).
+/// Tinggi baris dan tombol (REVISI 16 Nov: ringkas, tombol 44-48).
 abstract final class UkuranBaris {
   /// Tinggi minimum baris daftar dua sampai empat baris teks.
-  static const double minimum = 72;
+  static const double minimum = 64;
 
-  /// Tombol utama: satu per layar, dijangkau ibu jari.
-  static const double tombolUtama = 56;
+  /// Tombol utama: satu per bagian, dijangkau ibu jari (48; revisi 44-48).
+  static const double tombolUtama = 48;
 
   /// Lebar kolom angka-hari di awal baris (diskalakan dengan huruf).
-  static const double kolomAngka = 56;
+  static const double kolomAngka = 48;
 }
 
 /// Tik pada jejak tahap dan peta jatuh tempo (motif skala, dipakai hemat).
@@ -81,15 +81,16 @@ abstract final class SkalaHuruf {
   static const double nomorMinimum = 12;
 }
 
-// ── Bento Lab: ukuran komponen (docs/desain-ulang/UKURAN.md, tokens.json) ────
-// dp pada layar rujukan 390. Tinggi ubin adalah MINIMUM: pada skala huruf
-// sistem di atas 1,0 ubin tumbuh. Pakai `ConstrainedBox(minHeight:)`, jangan
-// `SizedBox(height:)`. Komponen baru (P2 dst.) membaca angkanya dari sini.
+// ── Ukuran komponen (docs/desain-ulang/tokens.json, diselaraskan ke REVISI 16
+// Nov 2026) ── dp pada layar rujukan 390. Tinggi ubin adalah MINIMUM: pada
+// skala huruf sistem di atas 1,0 ubin tumbuh. Pakai
+// `ConstrainedBox(minHeight:)`, jangan `SizedBox(height:)`. Komponen baru
+// membaca angkanya dari sini.
 
 /// Kontrol: tombol bulat, saringan, segmen, kolom cari, sakelar, stempel.
 abstract final class UkuranKontrol {
-  /// Tombol bulat kecil, di dalam kolom cari (navy).
-  static const double tombolBulatKecil = 44;
+  /// Tombol bulat kecil, di dalam kolom cari (biru; area ketuk tetap 48).
+  static const double tombolBulatKecil = 36;
 
   /// Tombol bulat di kepala layar (kembali, putih).
   static const double tombolBulat = 48;
@@ -97,53 +98,53 @@ abstract final class UkuranKontrol {
   /// Tombol bulat aksi di ubin (kuning/navy).
   static const double tombolBulatBesar = 52;
 
-  /// Saringan pil (tinggi); jumlahnya bulat 32.
-  static const double saringan = 44;
+  /// Saringan (tinggi visual; area ketuk tetap 48); jumlahnya bulat 24.
+  static const double saringan = 40;
 
   /// Jumlah di dalam saringan (bulat).
-  static const double jumlahSaringan = 32;
+  static const double jumlahSaringan = 24;
 
-  /// Segmen dua pilihan: tinggi luar (padding 6) dan tinggi pil dalam.
-  static const double segmenLuar = 56;
-  static const double segmenDalam = 44;
+  /// Segmen dua pilihan: tinggi luar (padding 4) dan tinggi pilihan dalam.
+  static const double segmenLuar = 48;
+  static const double segmenDalam = 40;
 
-  /// Kolom cari pil (tombol bulat 44 di kanan).
-  static const double kolomCari = 56;
+  /// Kolom cari (tombol bulat 36 di kanan; area ketuknya 48).
+  static const double kolomCari = 48;
 
   /// Sakelar: rel 56 x 36, tombol 28, padding 4.
   static const double sakelarLebar = 56;
   static const double sakelarTinggi = 36;
   static const double sakelarTombol = 28;
 
-  /// Stempel status: pil setinggi 30 (radius [Bentuk.stempel]).
-  static const double stempel = 30;
+  /// Lencana status: setinggi 24 (radius [Bentuk.stempel]).
+  static const double stempel = 24;
 
-  /// Jarak ikon ke kata di stempel (6).
-  static const double stempelJarak = 6;
+  /// Jarak ikon ke kata di lencana status (4).
+  static const double stempelJarak = 4;
 
-  /// Tombol bulat di ubin menu dan lencana jumlah di tombol utama (40).
+  /// Tombol bulat di ubin menu (40) dan lencana jumlah di tombol utama (28).
   static const double tombolBulatUbin = 40;
-  static const double lencanaTombol = 40;
+  static const double lencanaTombol = 28;
 
-  /// Tombol utama dengan lencana: padding awal 22 (akhir [Spasi.sm]).
-  static const double tombolUtamaAwal = 22;
+  /// Tombol utama dengan lencana: padding awal 20 (akhir [Spasi.sm]).
+  static const double tombolUtamaAwal = 20;
 
   /// Tombol sekunder: padding mendatar 20.
   static const double tombolSekunder = 20;
 
-  /// Saringan pil: padding akhir 6 (awal [Spasi.lg]); jarak antar-saringan
-  /// [Spasi.sm].
-  static const double saringanAkhir = 6;
+  /// Saringan: padding akhir 4 bila ada jumlah (awal [Spasi.lg]); jarak
+  /// antar-saringan [Spasi.sm].
+  static const double saringanAkhir = 4;
 
-  /// Segmen: padding luar dan jarak antar-segmen 6.
-  static const double segmenPadding = 6;
+  /// Segmen: padding luar dan jarak antar-segmen 4.
+  static const double segmenPadding = 4;
 
-  /// Kolom cari: padding awal 20 dan akhir 6 (tombol bulat 44 di kanan).
-  static const double kolomCariAwal = 20;
+  /// Kolom cari: padding awal 16 dan akhir 6 (tombol bulat 36 di kanan).
+  static const double kolomCariAwal = 16;
   static const double kolomCariAkhir = 6;
 
-  /// Panel berisi baris: padding 6 di semua sisi.
-  static const double panelBaris = 6;
+  /// Panel berisi baris: padding 4 di semua sisi.
+  static const double panelBaris = 4;
 }
 
 /// Cincin fokus papan ketik: di LUAR isi, dengan celah, supaya tidak menutupi
@@ -162,31 +163,32 @@ abstract final class UkuranFokus {
 
 /// Baris, ubin, dan grafik.
 abstract final class UkuranUbin {
-  /// Baris menu: tinggi 64, ubin ikon 44.
-  static const double barisMenu = 64;
-  static const double ubinIkon = 44;
+  /// Baris menu: tinggi 56, ubin ikon 40.
+  static const double barisMenu = 56;
+  static const double ubinIkon = 40;
 
-  /// Baris daftar: sama dengan [UkuranBaris.minimum] (72).
-  static const double barisDaftar = 72;
+  /// Baris daftar: sama dengan [UkuranBaris.minimum] (64).
+  static const double barisDaftar = 64;
 
-  /// Ubin alat: 196 (Beranda 232).
-  static const double alat = 196;
-  static const double alatBeranda = 232;
+  /// Ubin alat: 144 (Beranda 160). Minimum; tumbuh bersama isi dan huruf.
+  static const double alat = 144;
+  static const double alatBeranda = 160;
 
-  /// Ubin pasangan (2 kolom, 188) dan ubin menu (2 kolom, 140).
-  static const double pasangan = 188;
-  static const double menu = 140;
+  /// Ubin pasangan (2 kolom, 132) dan ubin menu (2 kolom, 124).
+  static const double pasangan = 132;
+  static const double menu = 124;
 
-  /// Kapsul jatuh tempo: rel 124, isi paling pendek 44.
-  static const double kapsulRel = 124;
-  static const double kapsulMin = 44;
+  /// Kapsul jatuh tempo: rel 100, isi paling pendek 40.
+  static const double kapsulRel = 100;
+  static const double kapsulMin = 40;
 
   /// Avatar inisial: 48 (daftar) dan 88 (profil).
   static const double avatar = 48;
   static const double avatarBesar = 88;
 
-  /// Padding dalam ubin alat (18); ubin pasangan dan menu memakai [Spasi.lg].
-  static const double paddingAlat = 18;
+  /// Padding dalam ubin alat dan panel isi bebas (16, sama dengan
+  /// [Spasi.lg]); ubin pasangan dan menu memakai [Spasi.lg] juga.
+  static const double paddingAlat = 16;
 
   /// Lebar judul ubin menu paling banyak (dua baris).
   static const double judulMenuMaks = 100;
@@ -195,17 +197,24 @@ abstract final class UkuranUbin {
   static const double avatarUbin = 40;
 }
 
-/// Dock navigasi melayang (HP, di bawah [Spasi.batasLebar]).
-abstract final class UkuranDock {
+/// Bilah navigasi bawah solid (HP, di bawah [Spasi.batasLebar]; REVISI-2
+/// butir 13): permukaan putih selebar layar, garis tipis di atasnya, semua
+/// menu berlabel. Tinggi di bawah ini TIDAK termasuk tepi sistem (gesture bar),
+/// yang ditambahkan di bawahnya di dalam permukaan yang sama.
+abstract final class UkuranBilah {
+  /// Tinggi isi bilah (ikon + label), minimum; tumbuh bersama huruf.
   static const double tinggi = 64;
-  static const double butir = 48;
 
-  /// Jarak dock dari tepi bawah sistem.
-  static const double dariBawah = 16;
+  /// Ikon butir.
+  static const double ikon = 24;
 
-  /// Ikon butir tidak aktif (22) dan butir aktif di dalam pil (20).
-  static const double ikon = 22;
-  static const double ikonAktif = 20;
+  /// Indikator aktif di belakang ikon (biru muda): 56 x 32.
+  static const double indikatorLebar = 56;
+  static const double indikatorTinggi = 32;
+
+  /// Huruf label butir mengikuti skala sistem paling banyak sampai kali ini;
+  /// bila masih tidak muat, label mengecil (tidak pernah terpotong).
+  static const double skalaLabel = 1.3;
 }
 
 /// Visual alat (gambar milik sendiri, kanvas 240 x 240).
@@ -228,21 +237,22 @@ abstract final class UkuranVisual {
   static const double keluarKecil = 10;
 }
 
-/// Layar auth (Sambutan, Masuk, Lupa sandi, Terima undangan): susunan E0 Masuk
-/// (ELEMEN.md) dengan palet Bento. Hero kuning di atas, plat logo putih di
-/// dalamnya, kartu putih yang menumpang ke tepi bawah hero.
+/// Layar auth (Sambutan, Masuk, Lupa sandi, Terima undangan): susunan E0 Masuk.
+/// Kepala biru muda di atas, plat logo putih di dalamnya, kartu putih yang
+/// menumpang ke tepi bawah kepala. Diperkecil oleh REVISI 16 Nov ("kurangi
+/// bidang berwarna dan logo besar"); penyusunan ulang layarnya di PR berikut.
 abstract final class UkuranAuth {
-  /// Tinggi hero paling kecil di layar akar (Sambutan, Masuk), diukur dari
-  /// tepi atas layar sampai tepi bawah warna kuning (kartu ikut menumpang
+  /// Tinggi kepala paling kecil di layar akar (Sambutan, Masuk), diukur dari
+  /// tepi atas layar sampai tepi bawah warna kepala (kartu ikut menumpang
   /// di dalamnya). Tumbuh bila isi (huruf besar, status bar) lebih tinggi.
-  static const double hero = 330;
+  static const double hero = 240;
 
-  /// Kartu menumpang ke dalam hero sedalam ini.
-  static const double kartuTumpang = 36;
+  /// Kartu menumpang ke dalam kepala sedalam ini.
+  static const double kartuTumpang = 24;
 
   /// Plat logo putih di layar akar; logo di dalamnya = plat - 2 x `Spasi.lg`.
-  static const double platLogo = 104;
+  static const double platLogo = 80;
 
-  /// Plat logo di layar anak (Lupa sandi, Terima undangan): hero pendek.
-  static const double platLogoAnak = 80;
+  /// Plat logo di layar anak (Lupa sandi, Terima undangan): kepala pendek.
+  static const double platLogoAnak = 64;
 }

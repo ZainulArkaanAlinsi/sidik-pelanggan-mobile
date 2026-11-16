@@ -220,14 +220,21 @@ class AkunScreen extends ConsumerWidget {
             onPressed: () => _keluarSemua(context, ref),
           ),
           const SizedBox(height: Spasi.lg),
-          SelectableText(
-            teksVersi(
-              versi: paket?.versi ?? '-',
-              build: paket?.build ?? '-',
-              idPengguna: sesi.akun.id,
+          // Sasaran tekan-lama (salin) minimal 48 dp walau teksnya hanya satu
+          // atau dua baris kecil.
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: AreaSentuh.minimum),
+            child: Center(
+              child: SelectableText(
+                teksVersi(
+                  versi: paket?.versi ?? '-',
+                  build: paket?.build ?? '-',
+                  idPengguna: sesi.akun.id,
+                ),
+                textAlign: TextAlign.center,
+                style: t.bodySmall,
+              ),
             ),
-            textAlign: TextAlign.center,
-            style: t.bodySmall,
           ),
         ],
       ),

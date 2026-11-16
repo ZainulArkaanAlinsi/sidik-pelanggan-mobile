@@ -220,12 +220,12 @@ void main() {
           await _pasang(tester, layar, gelap: gelap);
           final w = _tema(gelap).extension<WarnaSidik>()!;
 
-          // Ubin Bento tetap terang di tema gelap: kuning yang SAMA.
+          // Kepala biru muda tetap terang di tema gelap: warna yang SAMA.
           final hero = tester.widget<ColoredBox>(
             find.byKey(KerangkaAuth.kunciHero),
           );
-          expect(hero.color, w.ubinAwas);
-          expect(hero.color, PaletSidik.kuning);
+          expect(hero.color, w.ubinBiru);
+          expect(hero.color, PaletSidik.biruMuda);
 
           final plat = tester.widget<DecoratedBox>(
             find.byKey(KerangkaAuth.kunciPlat),
@@ -258,7 +258,7 @@ void main() {
           expect(
             t.bottom,
             UkuranAuth.hero,
-            reason: 'kuning berakhir 330 dp dari atas; kartu menumpang 36',
+            reason: 'biru muda berakhir 240 dp dari atas; kartu menumpang 24',
           );
           expect(k.left, Spasi.sisi);
           expect(k.right, 392 - Spasi.sisi);

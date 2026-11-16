@@ -56,9 +56,9 @@ void main() {
       expect(potongan['siap diambil']!.warna, w.lulus);
       expect(potongan['1 alat ']!.warna, s.onSurface);
       expect(potongan['.']!.warna, s.onSurface);
-      // Kalimat 32 sp (kalimat utama), dateline 14 sp (keterangan).
-      expect(potongan['lewat jadwal']!.ukuran, 32);
-      expect(potongan['Jumat, 13 November 2026']!.ukuran, 14);
+      // Kalimat 24 sp (kalimat utama), dateline 13 sp (keterangan).
+      expect(potongan['lewat jadwal']!.ukuran, 24);
+      expect(potongan['Jumat, 13 November 2026']!.ukuran, 13);
     });
 
     testWidgets('nada awas berwarna awas; netral dan tunggu tetap tinta', (
@@ -269,14 +269,15 @@ void main() {
     ];
 
     testWidgets(
-      'nomor seri sebagai identitas: 22 sp, selebar tetap, nol bergaris',
+      'nomor seri sebagai identitas: 20 sp, IBM Plex Mono, nol bergaris',
       (tester) async {
         await tester.pumpWidget(
           aplikasiUji(const PlatNama(seri: '2201-0457', fakta: fakta)),
         );
         expect(find.text('No. seri'), findsOneWidget);
         final seri = tester.widget<Text>(find.text('2201-0457')).style!;
-        expect(seri.fontSize, 22);
+        expect(seri.fontSize, 20);
+        expect(seri.fontFamily, 'IBMPlexMono');
         expect(seri.fontFeatures, contains(const FontFeature.slashedZero()));
         expect(seri.fontFeatures, contains(const FontFeature.tabularFigures()));
       },

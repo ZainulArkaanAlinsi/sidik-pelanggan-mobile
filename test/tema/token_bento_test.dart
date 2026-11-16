@@ -14,10 +14,12 @@ import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
 
 /// Gerbang desain Pelanggan, bagian 5: token Dart = `docs/desain-ulang/tokens.json`.
 ///
-/// Paket desain Bento Lab menulis semua angkanya di satu berkas. Tes ini
-/// mencocokkan nilai itu dengan token di `lib/core/tema/`, supaya angka di
-/// kode tidak diam-diam menyimpang dari desain (atau sebaliknya). Mengubah
-/// salah satunya = keputusan desain: ubah dua-duanya dan jelaskan di PR.
+/// Berkas itu (diselaraskan ke REVISI 16 Nov 2026, lihat
+/// `docs/desain-ulang/REVISI-16NOV.md`) menulis semua angka desain di satu
+/// tempat. Tes ini mencocokkan nilainya dengan token di `lib/core/tema/`,
+/// supaya angka di kode tidak diam-diam menyimpang dari desain (atau
+/// sebaliknya). Mengubah salah satunya = keputusan desain: ubah dua-duanya dan
+/// jelaskan di PR. (Nama berkas tes dipertahankan dari arah lama.)
 ///
 /// Yang SENGAJA tidak sama dengan tokens.json dicatat di tes bernama
 /// "penyimpangan" di bawah, lengkap dengan alasannya.
@@ -31,10 +33,12 @@ void main() {
       '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
 
   group('warna: PaletSidik = tokens.json', () {
-    test('merek, ubin, dan netral', () {
+    test('teks, aksi, latar, status muda, dan netral', () {
       final w = bagian('warna');
       final dart = <String, Color>{
         'navy': PaletSidik.navy,
+        'biru': PaletSidik.biru,
+        'biruMuda': PaletSidik.biruMuda,
         'navyLembut': PaletSidik.navyLembut,
         'navyTeks': PaletSidik.navyTeks,
         'kuning': PaletSidik.kuning,
@@ -43,6 +47,7 @@ void main() {
         'langit': PaletSidik.langit,
         'latar': PaletSidik.latar,
         'kartu': PaletSidik.kartu,
+        'latarTinggi': PaletSidik.latarTinggi,
         'teksKedua': PaletSidik.teksKedua,
         'garis': PaletSidik.garis,
         'kobaltLogo': PaletSidik.kobaltLogo,
@@ -53,9 +58,29 @@ void main() {
       }
     });
 
-    test('status terang: latar = ubin, tinta = navy', () {
+    test('REVISI-1 §2: nilai persis dari dokumen revisi', () {
+      expect(hex(PaletSidik.latar), '#F4F7FB');
+      expect(hex(PaletSidik.kartu), '#FFFFFF');
+      expect(hex(PaletSidik.navy), '#102A43');
+      expect(hex(PaletSidik.teksKedua), '#526477');
+      expect(hex(PaletSidik.biru), '#1769C2');
+      expect(hex(PaletSidik.biruMuda), '#EAF3FF');
+      expect(hex(PaletSidik.garis), '#DCE5EE');
+      // Skema tema terang memakainya: aksi biru, teks navy, pilihan biru muda.
+      final s = TemaSidik.terang.colorScheme;
+      expect(s.primary, PaletSidik.biru);
+      expect(s.onSurface, PaletSidik.navy);
+      expect(s.onSurfaceVariant, PaletSidik.teksKedua);
+      expect(s.primaryContainer, PaletSidik.biruMuda);
+      expect(s.surface, PaletSidik.kartu);
+      expect(TemaSidik.terang.scaffoldBackgroundColor, PaletSidik.latar);
+      expect(s.outlineVariant, PaletSidik.garis);
+    });
+
+    test('status terang: tinta gelap di atas latar muda', () {
       final st = bagian('status');
       final warna = bagian('warna');
+      final tinta = bagian('tintaStatus');
       final dart = WarnaSidik.terang;
       final pasangan = <String, (Color, Color)>{
         'lulus': (dart.lulus, dart.lulusLatar),
@@ -72,9 +97,12 @@ void main() {
         );
         expect(
           hex(e.value.$1),
-          (warna[spek['tinta']] as String).toUpperCase(),
+          (tinta[spek['tinta']] as String).toUpperCase(),
           reason: '${e.key}: tinta',
         );
+        // Tinta GELAP (bukan navy sama-rata): status dibedakan ikon + kata +
+        // tinta yang berjenjang terangnya.
+        expect(e.value.$1, isNot(PaletSidik.navy), reason: e.key);
       }
     });
   });
@@ -83,13 +111,24 @@ void main() {
     test('sudut', () {
       final s = bagian('sudut');
       expect(<String, num>{
+        'stempel': Bentuk.stempel,
+        'tombol': Bentuk.tombol,
         'ikon': Bentuk.ikon,
         'kapsul': Bentuk.kapsul,
         'panel': Bentuk.panel,
         'ubin': Bentuk.ubin,
-        'dock': Bentuk.dock,
+        'penanda': Bentuk.penanda,
         'pil': Bentuk.pil,
       }, s);
+    });
+
+    test('REVISI-1 §3: kartu 12-16, tombol dan isian 8-12', () {
+      for (final r in [Bentuk.panel, Bentuk.ubin]) {
+        expect(r, inInclusiveRange(12, 16));
+      }
+      for (final r in [Bentuk.tombol, Bentuk.ikon, Bentuk.kapsul]) {
+        expect(r, inInclusiveRange(8, 12));
+      }
     });
 
     test('spasi', () {
@@ -128,8 +167,11 @@ void main() {
         'ubinIkon': UkuranUbin.ubinIkon,
         'avatar': UkuranUbin.avatar,
         'avatarBesar': UkuranUbin.avatarBesar,
-        'dock': UkuranDock.tinggi,
-        'butirDock': UkuranDock.butir,
+        'bilah': UkuranBilah.tinggi,
+        'indikatorBilah': [
+          UkuranBilah.indikatorLebar,
+          UkuranBilah.indikatorTinggi,
+        ],
         'ubinAlat': UkuranUbin.alat,
         'ubinAlatBeranda': UkuranUbin.alatBeranda,
         'ubinPasangan': UkuranUbin.pasangan,
@@ -146,8 +188,13 @@ void main() {
       }
       // Baris daftar sama di dua token (tidak boleh menyimpang).
       expect(UkuranUbin.barisDaftar, UkuranBaris.minimum);
-      // Dock dari bawah ada di tokens.json sebagai "melayang 16" (UKURAN.md).
-      expect(UkuranDock.dariBawah, 16);
+    });
+
+    test('REVISI-1 §3: tombol dan isian utama 44-48 dp', () {
+      expect(UkuranBaris.tombolUtama, inInclusiveRange(44, 48));
+      expect(UkuranKontrol.kolomCari, inInclusiveRange(44, 48));
+      expect(UkuranKontrol.segmenLuar, inInclusiveRange(44, 48));
+      expect(AreaSentuh.minimum, greaterThanOrEqualTo(44));
     });
   });
 
@@ -165,10 +212,13 @@ void main() {
         'judulBar': t.titleLarge,
         'judulBagian': t.titleMedium,
         'label': t.titleSmall,
+        'isiBacaan': t.bodyLarge,
+        'isi': t.bodyMedium,
         'keterangan': t.bodySmall,
         'stempel': t.labelMedium,
       };
-      expect(h['keluarga'], 'Inter');
+      expect(h['keluarga'], TipografiSidik.keluarga);
+      expect(h['keluargaAngka'], TipografiSidik.keluargaAngka);
       for (final e in dart.entries) {
         final spek = (h[e.key] as List).cast<num>();
         final g = e.value!;
@@ -178,44 +228,77 @@ void main() {
           closeTo(spek[1], 1e-9),
           reason: '${e.key}: tinggi baris',
         );
-        // PENYIMPANGAN (utang): tokens.json meminta 800 untuk tingkat tebal,
-        // tetapi Inter yang dibundel tak punya 800: tampil sebagai
-        // `TipografiSidik.beratTebal` (700). Lihat tema_sidik_test.dart.
-        final berat = spek[2].toInt();
-        final tampil = berat == 800
-            ? TipografiSidik.beratTebal
-            : FontWeight.values[(berat ~/ 100) - 1];
-        expect(g.fontWeight, tampil, reason: '${e.key}: berat');
+        expect(
+          g.fontWeight ?? FontWeight.w400,
+          FontWeight.values[(spek[2].toInt() ~/ 100) - 1],
+          reason: '${e.key}: berat',
+        );
+      }
+      // Tanpa spasi huruf negatif (judul besar yang dirapatkan menyempit di
+      // layar sempit dengan huruf diperbesar).
+      for (final e in dart.entries) {
+        expect(e.value!.letterSpacing ?? 0, 0, reason: '${e.key}: spasi huruf');
       }
     });
+
+    test('REVISI-1 §3: judul halaman 22-24, judul bagian 16-18, isi 14-16, '
+        'metadata 12-13', () {
+      final t = TemaSidik.terang.textTheme;
+      expect(t.displaySmall!.fontSize, inInclusiveRange(22, 24));
+      expect(t.titleMedium!.fontSize, inInclusiveRange(16, 18));
+      expect(t.bodyLarge!.fontSize, inInclusiveRange(14, 16));
+      expect(t.bodyMedium!.fontSize, inInclusiveRange(14, 16));
+      expect(t.bodySmall!.fontSize, inInclusiveRange(12, 13));
+      expect(t.labelMedium!.fontSize, inInclusiveRange(12, 13));
+    });
+
+    test(
+      'angka (sisa hari, KPI) memakai IBM Plex Mono; teks memakai Inter',
+      () {
+        final t = TemaSidik.terang.textTheme;
+        expect(t.displayLarge!.fontFamily, TipografiSidik.keluargaAngka);
+        expect(
+          TipografiSidik.angkaSorot(teks: PaletSidik.navy).fontFamily,
+          TipografiSidik.keluargaAngka,
+        );
+        expect(t.bodyMedium!.fontFamily, TipografiSidik.keluarga);
+        expect(t.bodyMedium!.nomor.fontFamily, TipografiSidik.keluargaAngka);
+      },
+    );
   });
 
-  group('penyimpangan sadar dari tokens.json / DESIGN.md', () {
+  group('penyimpangan sadar dari tokens.json', () {
     test('tepi kontrol = garisTegas, bukan garis (WCAG 3:1)', () {
-      // tokens.json `garis` (#D5DAE3) dipakai untuk pemisah dan garis halus.
+      // tokens.json `garis` (#DCE5EE) dipakai untuk pemisah dan garis halus.
       // Tepi isian, tombol sekunder, dan sakelar mati memakai garisTegas
-      // (#6B7588, nilai Jejak) agar lolos 3:1; lihat kontras_tema_test.dart.
+      // (#66788A) agar lolos 3:1; lihat kontras_tema_test.dart.
       expect(TemaSidik.terang.colorScheme.outlineVariant, PaletSidik.garis);
       expect(TemaSidik.terang.colorScheme.outline, PaletSidik.garisTegas);
     });
 
-    test('tema gelap: tinta status pastel, bukan navy', () {
-      // DESIGN.md §Mode gelap: "ubin tetap terang, tinta navy". Tinta status
-      // juga dipakai langsung sebagai teks di atas halaman, jadi di tema
-      // gelap tinta = pastel dan latar = nada gelap yang sama.
+    test('tema gelap: tinta status pastel, bukan tinta gelap tema terang', () {
+      // Tinta status juga dipakai langsung sebagai teks di atas halaman, jadi
+      // di tema gelap tinta = pastel dan latar = nada gelap yang sama.
       final g = WarnaSidik.gelap;
-      expect(g.lulus, PaletSidik.hijau);
-      expect(g.awas, PaletSidik.kuning);
-      expect(g.gagal, PaletSidik.koral);
-      expect(g.tunggu, PaletSidik.langit);
-      expect(g.lulus, isNot(PaletSidik.navy));
+      expect(g.lulus, PaletSidik.hijauTintaGelap);
+      expect(g.awas, PaletSidik.kuningTintaGelap);
+      expect(g.gagal, PaletSidik.koralTintaGelap);
+      expect(g.tunggu, PaletSidik.biruDiGelap);
+      expect(g.lulus, isNot(WarnaSidik.terang.lulus));
     });
 
-    test('error: merah tua galat (ELEMEN.md), bukan koral', () {
-      // Koral = status gagal (ubin). Galat isian dan tombol bahaya memakai
-      // merah tua #A3261A (ELEMEN.md §Dialog konfirmasi) agar lolos 4,5:1.
+    test('error: merah tua galat, bukan merah muda', () {
+      // Merah muda (`koral`) = latar status gagal. Galat isian dan tombol
+      // bahaya memakai merah tua #A3261A agar lolos 4,5:1; tinta status gagal
+      // di tema terang memakai warna yang sama.
       expect(hex(PaletSidik.galat), '#A3261A');
       expect(TemaSidik.terang.colorScheme.error, PaletSidik.galat);
+      expect(WarnaSidik.terang.gagal, PaletSidik.galat);
+    });
+
+    test('UbinBiru (kepala layar masuk) sama di dua tema', () {
+      expect(WarnaSidik.terang.ubinBiru, PaletSidik.biruMuda);
+      expect(WarnaSidik.gelap.ubinBiru, PaletSidik.biruMuda);
     });
   });
 }

@@ -2,14 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../core/motion/app_motion.dart';
 import '../core/tema/bentuk.dart';
 import '../core/tema/elevasi.dart';
 import '../core/tema/spasi.dart';
 import '../core/tema/tipografi.dart';
 import '../core/tema/ukuran.dart';
 import '../core/tema/warna_sidik.dart';
-import 'dasar/kontrol_ketuk.dart';
+import 'dasar/cincin_fokus.dart';
 import 'logo_sidik.dart';
 
 /// Satu tujuan di navigasi utama: ikon (dan ikon terpilih), label satu baris,
@@ -37,8 +36,8 @@ class TujuanNavigasi {
   /// Teks lencana: angka, atau "99+" di atas 99.
   String get _teksLencana => lencana > 99 ? '99+' : '$lencana';
 
-  /// Ikon untuk rel, lencana bawaan `Badge` di sudutnya. Dock menggambar
-  /// lencananya sendiri (koral) di lapisan terpisah: lihat [_ButirDock].
+  /// Ikon untuk rel, lencana bawaan `Badge` di sudutnya. Bilah menggambar
+  /// lencananya sendiri (merah galat) di [_ButirBilah].
   Widget _ikon(IconData data) {
     final isi = Icon(data);
     if (lencana <= 0) return isi;
@@ -48,15 +47,16 @@ class TujuanNavigasi {
 
 /// Navigasi utama yang menyesuaikan lebar layar, tanpa dependensi tambahan.
 ///
-/// - Lebar < [Spasi.batasLebar] (HP): isi di atas, [DockNavigasi] navy
-///   melayang di bawah (KOMPONEN.md §Dock). Isi berakhir DI ATAS pita dock
-///   (16 + 64 + 16 + tepi sistem), jadi tidak ada isi yang tertutup dock.
+/// - Lebar < [Spasi.batasLebar] (HP): isi di atas, [BilahNavigasi] solid di
+///   bawah (REVISI-2 butir 13): permukaan putih selebar layar, garis tipis di
+///   atasnya, SEMUA menu berlabel, indikator aktif biru muda. Isi berakhir DI
+///   ATAS bilah (dan di atas [penutup]), jadi tidak ada isi yang tertutup.
 /// - Lebar >= [Spasi.batasLebar] (tablet): [NavigationRail] di kiri berlogo,
 ///   isi di sebelah kanan (isinya sendiri dipusatkan dan dibatasi lebarnya
 ///   oleh `HalamanSidik`).
 ///
 /// [penutup] = widget di dasar area isi (banner pembaruan); di HP ia duduk di
-/// atas dock, bukan di bawahnya.
+/// atas bilah, bukan di bawahnya.
 class NavigasiUtama extends StatelessWidget {
   const NavigasiUtama({
     super.key,
@@ -84,12 +84,11 @@ class NavigasiUtama extends StatelessWidget {
   }
 
   Widget _bawah(BuildContext context) {
-    // Tepi bawah sistem dipakai pita dock di bawah: isi tab tidak boleh
-    // menambahkannya lagi.
-    final tepi = MediaQuery.paddingOf(context).bottom;
     return Column(
       children: [
         Expanded(
+          // Tepi bawah sistem dipakai bilah di bawah (di dalam permukaannya):
+          // isi tab tidak boleh menambahkannya lagi.
           child: MediaQuery.removePadding(
             context: context,
             removeBottom: true,
@@ -97,22 +96,7 @@ class NavigasiUtama extends StatelessWidget {
           ),
         ),
         ?penutup,
-        // Pita dock: 16 di atas, dock 64, lalu 16 + tepi sistem di bawah.
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            Spasi.sm,
-            Spasi.lg,
-            Spasi.sm,
-            UkuranDock.dariBawah + tepi,
-          ),
-          child: Center(
-            child: DockNavigasi(
-              indeks: indeks,
-              onPilih: onPilih,
-              tujuan: tujuan,
-            ),
-          ),
-        ),
+        BilahNavigasi(indeks: indeks, onPilih: onPilih, tujuan: tujuan),
       ],
     );
   }
@@ -161,83 +145,33 @@ class NavigasiUtama extends StatelessWidget {
   }
 }
 
-/// Susunan dock pada satu lebar layar. Dipilih SEKALI untuk semua tujuan
-/// (menurut label terpanjang) supaya jarak antar-butir tidak melompat saat tab
-/// berganti.
-@immutable
-class _Susunan {
-  const _Susunan({
-    required this.padPil,
-    required this.jarakIkon,
-    required this.jarakButir,
-    required this.label,
-  });
-
-  /// Padding mendatar pil aktif, jarak ikon ke label, jarak antar-butir.
-  final double padPil;
-  final double jarakIkon;
-  final double jarakButir;
-
-  /// False = pil aktif hanya ikon (label tidak muat; tetap dibaca pembaca
-  /// layar dan tooltip).
-  final bool label;
-
-  /// Spesifikasi KOMPONEN.md §Dock: padding 16, ikon-label 8, jarak 4.
-  static const normal = _Susunan(
-    padPil: Spasi.lg,
-    jarakIkon: Spasi.sm,
-    jarakButir: Spasi.xs,
-    label: true,
-  );
-
-  /// Layar sempit (360 dp): padding 12, ikon-label 4, butir berimpit.
-  static const rapat = _Susunan(
-    padPil: Spasi.md,
-    jarakIkon: Spasi.xs,
-    jarakButir: 0,
-    label: true,
-  );
-
-  /// Layar tersempit (320 dp): pil hanya berisi ikon.
-  static const ikonSaja = _Susunan(
-    padPil: 0,
-    jarakIkon: 0,
-    jarakButir: Spasi.xs,
-    label: false,
-  );
-
-  double lebarAktif(double lebarLabel) => label
-      ? 2 * padPil + UkuranDock.ikonAktif + jarakIkon + lebarLabel
-      : UkuranDock.butir;
-
-  /// Lebar dock bila tujuan aktifnya berlabel selebar [lebarLabel].
-  double lebarDock(int jumlah, double lebarLabel) =>
-      2 * Spasi.sm +
-      (jumlah - 1) * (UkuranDock.butir + jarakButir) +
-      lebarAktif(lebarLabel);
-}
-
-/// Dock navigasi navy melayang untuk HP (KOMPONEN.md §Dock): tinggi 64, sudut
-/// [Bentuk.dock], padding 8, bayangan navy ([Elevasi.dockGeser] dan kawan-kawan).
-/// Butir 48 x 48 berikon putih; butir aktif = pil kuning berikon + label.
-/// Pil meluncur ke butir baru selama [AppMotion.sedang] ("kurangi gerak" =
-/// langsung).
+/// Bilah navigasi bawah solid untuk HP (REVISI-2 butir 13): permukaan putih
+/// selebar layar dengan garis [Elevasi.garis] di atasnya (tanpa bayangan),
+/// SEMUA tujuan berlabel (ikon 24 + satu baris kata 12), butir aktif ditandai
+/// indikator biru muda 56 x 32 di belakang ikon, ikon terisi, dan kata
+/// semibold navy; butir lain ikon garis dan kata medium berwarna teks kedua.
+/// Aktif tidak hanya dibedakan warna: bentuk ikon, berat huruf, dan indikator
+/// ikut berubah.
 ///
-/// Tiap butir adalah satu simpul pembaca layar berlabel (`tooltip ?? label`)
-/// dengan `selected` benar, petunjuk posisi ("Tab 2 dari 5", sama dengan
-/// `NavigationBar` sebelumnya), area sentuh >= 48 dp, dan tooltip: butir tidak
-/// aktif tidak menampilkan label. Label aktif tidak ikut membesar melebihi
-/// 1,0x (sama dengan navigasi bawah sebelumnya); bila label terpanjang tidak
-/// muat di lebar yang ada, jarak dirapatkan, lalu pil aktif hanya berikon.
+/// Tinggi isi minimal [UkuranBilah.tinggi] (64) ditambah tepi sistem (gesture
+/// bar) di bawah, di dalam permukaan yang sama. Lima butir sama lebar; label
+/// mengikuti huruf sistem sampai [UkuranBilah.skalaLabel] (1,3x), lalu SEMUA
+/// label mengecil bersama (satu faktor, ukuran sama di tiap butir) sampai kata
+/// terpanjang muat di selnya, jadi tidak pernah terpotong di 320 dp. Butir
+/// tertinggi boleh tumbuh; semua butir sama tinggi.
 ///
-/// Tema gelap: navy dock nyaris sama dengan latar (1,16:1) dan bayangan navy
-/// tidak terlihat di atasnya, jadi dock diberi garis tepi tipis `outline`
-/// (>= 3:1 terhadap latar). Tema terang tanpa garis.
+/// Tiap butir adalah SATU simpul pembaca layar berlabel (`tooltip ?? label`)
+/// dengan `selected` benar dan petunjuk posisi ("Tab 2 dari 5", dari
+/// lokalisasi Material, sama dengan `NavigationBar`). Seluruh butir
+/// (selebar sepertiga layar, setinggi bilah) menerima ketukan, jadi area sentuh
+/// jauh di atas 48 dp. Papan ketik: Tab berpindah butir, Enter/Spasi memilih,
+/// cincin fokus muncul. Lencana jumlah (notifikasi) merah galat berangka putih,
+/// "99+" di atas 99, keluar dari pembaca layar (hitungannya sudah ada di label).
 ///
-/// Dock tidak menempatkan dirinya: [NavigasiUtama] memberinya pita (jarak dari
-/// tepi sistem) dan batas lebar.
-class DockNavigasi extends StatelessWidget {
-  const DockNavigasi({
+/// Bilah tidak menempatkan dirinya: [NavigasiUtama] meletakkannya di dasar
+/// kolom, di bawah banner pembaruan.
+class BilahNavigasi extends StatelessWidget {
+  const BilahNavigasi({
     super.key,
     required this.indeks,
     required this.onPilih,
@@ -248,145 +182,100 @@ class DockNavigasi extends StatelessWidget {
   final ValueChanged<int> onPilih;
   final List<TujuanNavigasi> tujuan;
 
-  /// Kunci pil kuning, untuk tes.
-  @visibleForTesting
-  static const Key kunciPil = ValueKey<String>('dock-pil');
-
-  static double _ukurLebar(BuildContext context, String teks, TextStyle gaya) {
-    final ukur = TextPainter(
-      text: TextSpan(
-        text: teks,
-        style: DefaultTextStyle.of(context).style.merge(gaya),
-      ),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      maxLines: 1,
-    )..layout();
-    final lebar = ukur.width;
-    ukur.dispose();
-    return lebar;
+  /// Skala huruf label yang dipakai SEMUA butir pada lebar bilah [lebar]:
+  /// huruf sistem (sudah dijepit [UkuranBilah.skalaLabel] oleh pemanggil)
+  /// dikali faktor <= 1 supaya kata terpanjang (dalam berat terpilih, yang
+  /// terlebar) muat di sel selebar lebar / jumlah dikurangi jarak kiri-kanan.
+  double _skalaLabel(BuildContext context, double lebar) {
+    final dasar = (context.teks.labelMedium ?? const TextStyle()).copyWith(
+      fontWeight: TipografiSidik.beratLencana,
+    );
+    final ukuran = dasar.fontSize ?? 12;
+    final sistem = MediaQuery.textScalerOf(context).scale(ukuran) / ukuran;
+    var terlebar = 0.0;
+    for (final t in tujuan) {
+      final ukur = TextPainter(
+        text: TextSpan(text: t.label, style: dasar),
+        textDirection: Directionality.of(context),
+        textScaler: TextScaler.linear(sistem),
+        maxLines: 1,
+      )..layout();
+      terlebar = math.max(terlebar, ukur.width);
+      ukur.dispose();
+    }
+    // Jarak kiri-kanan tiap kata hanya Spasi.xs / 2: di 320 dp kata terpanjang
+    // masih tetap >= 12 sp efektif.
+    final muat = lebar / tujuan.length - Spasi.xs;
+    final faktor = terlebar <= muat || terlebar == 0 ? 1.0 : muat / terlebar;
+    return sistem * faktor;
   }
+
+  /// Kunci indikator biru muda butir aktif, untuk tes.
+  @visibleForTesting
+  static const Key kunciIndikator = ValueKey<String>('bilah-indikator');
 
   @override
   Widget build(BuildContext context) {
     assert(
       indeks >= 0 && indeks < tujuan.length,
-      'indeks dock di luar daftar tujuan',
+      'indeks bilah di luar daftar tujuan',
     );
-    final w = context.warna;
-    final gelap = Theme.of(context).brightness == Brightness.dark;
-    return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: 1,
-      child: LayoutBuilder(
-        builder: (context, batas) {
-          final durasi = AppMotion.hormati(context, AppMotion.sedang);
-          final gaya = (context.teks.bodySmall ?? const TextStyle()).copyWith(
-            fontWeight: TipografiSidik.beratTebal,
-            color: w.tintaUbin,
-          );
-          final lebarLabel = [
-            for (final t in tujuan) _ukurLebar(context, t.label, gaya),
-          ];
-          final terpanjang = lebarLabel.fold<double>(0, math.max);
-          final susunan = [_Susunan.normal, _Susunan.rapat].firstWhere(
-            (s) => s.lebarDock(tujuan.length, terpanjang) <= batas.maxWidth,
-            orElse: () => _Susunan.ikonSaja,
-          );
-          final lebarAktif = susunan.lebarAktif(lebarLabel[indeks]);
-          return DecoratedBox(
-            decoration: BoxDecoration(
-              color: w.tintaUbin,
-              borderRadius: Bentuk.sudutDock,
-              // Digambar di dalam kotak dock (tidak menambah ukuran).
-              border: gelap
-                  ? Border.all(
-                      color: context.skema.outline,
-                      width: Elevasi.garis,
-                    )
-                  : null,
-              boxShadow: [
-                BoxShadow(
-                  color: w.tintaUbin.withValues(alpha: Elevasi.dockOpasitas),
-                  offset: const Offset(0, Elevasi.dockGeser),
-                  blurRadius: Elevasi.dockBlur,
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(Spasi.sm),
-              child: Stack(
-                // Susunan berganti (lebar layar berubah): bangun ulang tanpa
-                // meluncur; lebar butir yang masih menyusut di susunan baru
-                // akan membuat baris meluap sesaat.
-                key: ValueKey<_Susunan>(susunan),
-                children: [
-                  AnimatedPositioned(
-                    duration: durasi,
-                    curve: AppMotion.masuk,
-                    left: indeks * (UkuranDock.butir + susunan.jarakButir),
-                    top: 0,
-                    width: lebarAktif,
-                    height: UkuranDock.butir,
-                    child: ExcludeSemantics(
-                      child: DecoratedBox(
-                        key: kunciPil,
-                        decoration: BoxDecoration(
-                          color: w.ubinAwas,
-                          borderRadius: Bentuk.sudutPil,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+    final s = context.skema;
+    final tepi = MediaQuery.paddingOf(context).bottom;
+    return Material(
+      color: s.surface,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            top: BorderSide(color: s.outlineVariant, width: Elevasi.garis),
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: tepi),
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: UkuranBilah.skalaLabel,
+            // LayoutBuilder DI LUAR IntrinsicHeight (ia tidak bisa menjawab
+            // ukuran intrinsik).
+            child: LayoutBuilder(
+              builder: (context, batas) {
+                final skala = _skalaLabel(context, batas.maxWidth);
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      for (var i = 0; i < tujuan.length; i++) ...[
-                        if (i > 0) SizedBox(width: susunan.jarakButir),
-                        _ButirDock(
-                          tujuan: tujuan[i],
-                          posisi: i,
-                          jumlah: tujuan.length,
-                          terpilih: i == indeks,
-                          onTap: () => onPilih(i),
-                          susunan: susunan,
-                          lebar: i == indeks ? lebarAktif : UkuranDock.butir,
-                          durasi: durasi,
-                          gaya: gaya,
+                      for (var i = 0; i < tujuan.length; i++)
+                        Expanded(
+                          child: _ButirBilah(
+                            tujuan: tujuan[i],
+                            posisi: i,
+                            jumlah: tujuan.length,
+                            terpilih: i == indeks,
+                            skalaLabel: skala,
+                            onTap: () => onPilih(i),
+                          ),
                         ),
-                      ],
                     ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
 }
 
-/// Satu butir dock: kontrol ketuk Bento ([KontrolKetuk]: semantik tombol,
-/// `selected`, area sentuh >= 48 dp, umpan balik tekan, cincin fokus) yang
-/// transparan di atas pil kuning, ditambah tooltip dan petunjuk posisi tab.
-///
-/// Lencana TIDAK digambar di dalam [KontrolKetuk]: kontrol itu memotong isinya
-/// ke kotak 48 dp-nya (`Material` ber-`clipBehavior`), sedangkan "99+" menjorok
-/// keluar dari kotak itu dan jadi terpotong. Lencana digambar di lapisan atas
-/// butir tanpa klip, ditambatkan ke ikon lewat [LayerLink] supaya ikut ikon
-/// ketika pil meluncur. Lapisan itu tidak menerima ketukan dan tidak masuk
-/// semantik (hitungannya sudah ada di label butir).
-class _ButirDock extends StatefulWidget {
-  const _ButirDock({
+/// Satu butir bilah: ikon di atas indikator, kata di bawahnya. Lihat
+/// [BilahNavigasi] untuk semantik dan ukuran.
+class _ButirBilah extends StatelessWidget {
+  const _ButirBilah({
     required this.tujuan,
     required this.posisi,
     required this.jumlah,
     required this.terpilih,
+    required this.skalaLabel,
     required this.onTap,
-    required this.susunan,
-    required this.lebar,
-    required this.durasi,
-    required this.gaya,
   });
 
   final TujuanNavigasi tujuan;
@@ -395,122 +284,101 @@ class _ButirDock extends StatefulWidget {
   final int posisi;
   final int jumlah;
   final bool terpilih;
+
+  /// Skala huruf label (sama untuk semua butir): huruf sistem (dijepit 1,3x)
+  /// dikali faktor pengecil bila kata terpanjang tidak muat.
+  final double skalaLabel;
   final VoidCallback onTap;
-  final _Susunan susunan;
-  final double lebar;
-  final Duration durasi;
-  final TextStyle gaya;
-
-  @override
-  State<_ButirDock> createState() => _ButirDockState();
-}
-
-class _ButirDockState extends State<_ButirDock> {
-  /// Menambatkan lapisan lencana ke ikon butir.
-  final LayerLink _tautanIkon = LayerLink();
 
   @override
   Widget build(BuildContext context) {
-    final w = context.warna;
-    final tema = Theme.of(context);
-    final tujuan = widget.tujuan;
-    final terpilih = widget.terpilih;
+    final s = context.skema;
     final nama = tujuan.tooltip ?? tujuan.label;
-    final ukuranIkon = terpilih ? UkuranDock.ikonAktif : UkuranDock.ikon;
-    final isi = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Warna ikon ikut meluncur bersama pil: putih di atas navy, navy di
-        // atas kuning.
-        CompositedTransformTarget(
-          link: _tautanIkon,
-          child: TweenAnimationBuilder<Color?>(
-            tween: ColorTween(end: terpilih ? w.tintaUbin : w.kertasUbin),
-            duration: widget.durasi,
-            builder: (context, warna, _) => IconTheme(
-              data: IconThemeData(size: ukuranIkon, color: warna),
-              child: Icon(terpilih ? tujuan.ikonAktif : tujuan.ikon),
-            ),
-          ),
-        ),
-        if (terpilih && widget.susunan.label) ...[
-          SizedBox(width: widget.susunan.jarakIkon),
-          Text(
-            tujuan.label,
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.clip,
-            style: widget.gaya,
-          ),
-        ],
-      ],
+    final warnaIkon = terpilih ? s.onPrimaryContainer : s.onSurfaceVariant;
+    final gayaLabel = context.teks.labelMedium?.copyWith(
+      color: terpilih ? s.onSurface : s.onSurfaceVariant,
+      fontWeight: terpilih
+          ? TipografiSidik.beratLencana
+          : TipografiSidik.beratLabel,
     );
-    final kontrol = Tooltip(
-      message: nama,
-      preferBelow: false,
-      // Pembaca layar sudah menerima `nama` dari KontrolKetuk: tooltip tidak
-      // boleh membacakannya dua kali.
-      excludeFromSemantics: true,
-      child: Theme(
-        // Cincin fokus memakai `primary`: navy di atas dock navy tidak
-        // terlihat. Putih di atas navy = 15:1, di dua tema.
-        data: tema.copyWith(
-          colorScheme: tema.colorScheme.copyWith(primary: w.kertasUbin),
+
+    Widget ikon = Icon(
+      terpilih ? tujuan.ikonAktif : tujuan.ikon,
+      size: UkuranBilah.ikon,
+      color: warnaIkon,
+    );
+    if (tujuan.lencana > 0) {
+      ikon = ExcludeSemantics(
+        child: Badge(
+          backgroundColor: s.error,
+          textColor: s.onError,
+          label: Text(tujuan._teksLencana),
+          child: ikon,
         ),
-        // Petunjuk posisi menyatu ke simpul butir (bukan simpul tambahan),
-        // dibacakan setelah label; teksnya dari lokalisasi Material
-        // ("Tab 2 dari 5"), sama dengan `NavigationBar` sebelumnya.
-        child: Semantics(
-          hint: MaterialLocalizations.of(
-            context,
-          ).tabLabel(tabIndex: widget.posisi + 1, tabCount: widget.jumlah),
-          child: KontrolKetuk(
-            onTap: widget.onTap,
-            semantik: nama,
-            terpilih: terpilih,
-            warna: Colors.transparent,
-            sudut: Bentuk.sudutPil,
-            child: AnimatedContainer(
-              duration: widget.durasi,
-              curve: AppMotion.masuk,
-              width: widget.lebar,
-              height: UkuranDock.butir,
-              // Klip ini hanya untuk ikon dan label (label yang melebar saat
-              // pil masih meluncur); lencana ada di luarnya.
-              child: ClipRect(
-                child: OverflowBox(
-                  minWidth: 0,
-                  maxWidth: double.infinity,
-                  child: isi,
+      );
+    }
+
+    return Semantics(
+      button: true,
+      enabled: true,
+      selected: terpilih,
+      label: nama,
+      // Petunjuk posisi menyatu ke simpul butir (bukan simpul tambahan),
+      // dibacakan setelah label; teksnya dari lokalisasi Material ("Tab 2 dari
+      // 5"), sama dengan `NavigationBar`.
+      hint: MaterialLocalizations.of(
+        context,
+      ).tabLabel(tabIndex: posisi + 1, tabCount: jumlah),
+      onTap: onTap,
+      excludeSemantics: true,
+      // Tooltip (tekan lama) memuat nama lengkap, termasuk jumlah belum dibaca;
+      // pembaca layar sudah menerimanya dari simpul butir, jadi tidak dobel.
+      child: Tooltip(
+        message: nama,
+        preferBelow: false,
+        excludeFromSemantics: true,
+        child: CincinFokus(
+          sudut: Bentuk.sudutKapsul,
+          child: InkWell(
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: UkuranBilah.tinggi),
+              child: Padding(
+                // Tanpa jarak kiri-kanan: kata sudah dimuatkan ke sel dengan
+                // sisa Spasi.xs (lihat `_skalaLabel`).
+                padding: const EdgeInsets.only(top: Spasi.sm, bottom: Spasi.xs),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: UkuranBilah.indikatorLebar,
+                      height: UkuranBilah.indikatorTinggi,
+                      child: DecoratedBox(
+                        key: terpilih ? BilahNavigasi.kunciIndikator : null,
+                        decoration: BoxDecoration(
+                          color: terpilih
+                              ? s.primaryContainer
+                              : Colors.transparent,
+                          borderRadius: Bentuk.sudutPil,
+                        ),
+                        child: Center(child: ikon),
+                      ),
+                    ),
+                    const SizedBox(height: Spasi.xs),
+                    Text(
+                      tujuan.label,
+                      maxLines: 1,
+                      softWrap: false,
+                      textScaler: TextScaler.linear(skalaLabel),
+                      style: gayaLabel,
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
       ),
-    );
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        kontrol,
-        if (tujuan.lencana > 0)
-          IgnorePointer(
-            child: ExcludeSemantics(
-              child: CompositedTransformFollower(
-                link: _tautanIkon,
-                showWhenUnlinked: false,
-                // Lencana koral dengan angka navy (kontras > 4,5:1); kotak
-                // `ukuranIkon` menggantikan ikon sebagai sauh `Badge`.
-                child: Badge(
-                  backgroundColor: w.ubinGagal,
-                  textColor: w.tintaUbin,
-                  label: Text(tujuan._teksLencana),
-                  child: SizedBox.square(dimension: ukuranIkon),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

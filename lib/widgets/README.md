@@ -11,7 +11,7 @@ ulang di sini. Lihat `lib/core/tema/README.md`.
 | `halaman_sidik.dart` | `HalamanSidik`: Scaffold + AppBar bertema + isi dipusatkan (`lebarMaks` untuk layar dua kolom). Dipakai semua layar. |
 | `konten_tengah.dart` | `KontenTengah`: isi dibatasi ±720 dp dan dipusatkan di layar lebar. |
 | `kolom_formulir.dart` | `KolomFormulir`: kolom sempit (440 dp) bergulir untuk Sambutan, Masuk, dan layar keadaan penuh. |
-| `navigasi_utama.dart` | `NavigasiUtama` + `TujuanNavigasi` + `DockNavigasi`: di HP dock navy melayang (KOMPONEN.md §Dock; pil kuning meluncur ke butir aktif, label hanya di butir aktif, jarak dirapatkan lalu pil berikon saja bila label tidak muat; isi berakhir di atas pita dock), rel samping di >= 600 dp (`LayoutBuilder`, tanpa paket). Dibangun di atas `KontrolKetuk`. |
+| `navigasi_utama.dart` | `NavigasiUtama` + `TujuanNavigasi` + `BilahNavigasi`: di HP bilah bawah SOLID (REVISI-2 butir 13): putih selebar layar, garis 1 dp di atas, tanpa bayangan, SEMUA menu berlabel, indikator aktif biru muda 56 x 32 + ikon terisi + kata semibold, lencana notifikasi merah galat; tepi sistem di dalam permukaan; banner pembaruan menempel di atasnya dan isi berakhir di atas keduanya; label mengikuti huruf sistem sampai 1,3x lalu mengecil (tidak terpotong). Rel samping di >= 600 dp (`LayoutBuilder`, tanpa paket). |
 | `bagian_sidik.dart` | `BagianSidik` (judul bagian) dan `AksiBagian` ("Lihat semua"). |
 
 ## Isi
@@ -47,11 +47,11 @@ dari token, tanpa paket atau font baru; tiap komponen punya tes widget di
 
 | Berkas | Komponen | Menggantikan |
 |---|---|---|
-| `panel_sidik.dart` | `PanelSidik`: satu panel sudut 28, butir dipisah garis halus. Satu butir = satu baris. `padding`: `paddingBaris` (6) atau `paddingIsi` (18); bawaan nol. | `KartuSidik` per butir |
-| `baris_sidik.dart` | `BarisSidik` + `tataLetakKompak`: baris min 72 dp, slot angka/judul/keterangan/akhir, kompak di < 340 dp atau huruf > 1,15x, `gayaNomor`. | `KartuPaket`, `KartuSertifikat`, `BarisMenu` |
+| `panel_sidik.dart` | `PanelSidik`: satu panel sudut 16, butir dipisah garis halus. Satu butir = satu baris. `padding`: `paddingBaris` (4) atau `paddingIsi` (16); bawaan nol. | `KartuSidik` per butir |
+| `baris_sidik.dart` | `BarisSidik` + `tataLetakKompak`: baris min 64 dp, slot angka/judul/keterangan/akhir, kompak di < 340 dp atau huruf > 1,15x, `gayaNomor`. | `KartuPaket`, `KartuSertifikat`, `BarisMenu` |
 | `baris_alat.dart` | `BarisAlat`: sisa hari memimpin, nama dan merk paling banyak 2 baris, nomor seri sendiri, jejak tahap bila di lab; belum ada jadwal = satu baris di atas nama. Daftar "Alat saya" tidak memakainya lagi (kini `UbinAlat`). | kartu alat lama |
 | `angka_hari.dart` | `AngkaHari` (kolom, kompak, bintang 44) dan `AngkaKata`. | ikon kalender + `Format.sisaHari` |
-| `stempel.dart` | `Stempel`: pil 30 (sudut 15), ikon 14 + kata 12/700, latar pastel status bertinta navy; `tenang` = tanpa latar; `diAtasUbin` = navy + putih (gagal) atau putih + navy di atas ubin berwarna. | `ChipStatus` |
+| `stempel.dart` | `Stempel` (lencana status): tinggi 24, sudut 6, ikon 14 + kata 12/600, tinta GELAP di atas warna MUDA statusnya (tema gelap: pastel di atas latar gelap); `tenang` = tanpa latar; `diAtasUbin` = navy di atas putih untuk lencana di atas ubin berwarna muda. | `ChipStatus` |
 | `jejak_tahap.dart` | `JejakTahap` + `posisiTahap`: satu tik per langkah `garis_waktu`, kata wajib. | ikon radio/centang bawaan |
 | `tik_paket.dart` | `TikPaket`: satu tik per alat dalam paket, "N dari M alat selesai". | teks "N dari M" saja |
 | `garis_waktu_tahap.dart` | `GarisWaktuTahap`: garis waktu tegak + `menunggu()` ("Menunggu: A dan B"). | `_Langkah` di paket detail |
@@ -63,35 +63,36 @@ dari token, tanpa paket atau font baru; tiap komponen punya tes widget di
 | `fakta.dart` | `Fakta`: "label  nilai" yang membungkus di 320 dp. | `BarisInfo` |
 | `nomor_sidik.dart` | `NomorSidik`: nomor tidak putus di tengah (1 baris, mengecil sampai 12 sp, lalu membungkus di "/"). | nomor order yang putus |
 | `saringan_teks.dart` | `SaringanTeks` + `PilihanSaringan`: kata + jumlah, garis bawah terpilih, tepi memudar hanya bila bisa digeser. | `ChoiceChip` x5, `SegmentedButton` |
-| `kolom_cari_utuh.dart` | `KolomCariUtuh`: pil 56 dengan tombol bulat "Cari" 44, petunjuk membungkus (tidak terpotong "Cari nama, merk, at..."), `aktif` mematikan isian. | `KolomCari` |
+| `kolom_cari_utuh.dart` | `KolomCariUtuh`: kotak 48 bersudut 10 dengan tombol bulat "Cari" 36 (area ketuk 48), petunjuk membungkus (tidak terpotong "Cari nama, merk, at..."), `aktif` mematikan isian. | `KolomCari` |
 | `bagian.dart` | `Bagian`: judul 17/24, jumlah redup, tautan teks 48 dp. | `BagianSidik` |
 | `tautan_baris.dart` | `TautanBaris`: tautan teks + panah, 48 dp. | tombol outline lebar |
 | `keadaan_teks.dart` | `KeadaanTeks` (rata kiri, tanpa ikon) + `BannerDataTerakhir`. | `KeadaanKosong`, `KeadaanGalat` |
 
-## Komponen "Bento Lab" (P2; belum dipakai layar, P3 dan P5 menggantinya per layar)
+## Komponen bersama gelombang P2 (diselaraskan ke REVISI 16 Nov: tenang, formal, ringkas)
 
-Spesifikasi: `docs/desain-ulang/KOMPONEN.md`, `UKURAN.md`, `GERAK.md`. Angka dari
+Spesifikasi lama (Bento Lab): `docs/desain-ulang/KOMPONEN.md`, `UKURAN.md`, `GERAK.md`;
+bila bertentangan, `docs/desain-ulang/REVISI-16NOV.md` dan `tokens.json` menang. Angka dari
 `UkuranKontrol`, `UkuranUbin`, `UkuranVisual`, `UkuranFokus` (`lib/core/tema/ukuran.dart`);
-warna dari `ColorScheme` dan `WarnaSidik` (ubin pastel dan tinta navy yang SAMA di
-terang dan gelap: `StatusTampil.ubin`, `ubinDari`, `diAtasUbin`). Gerak dari
+warna dari `ColorScheme` dan `WarnaSidik` (ubin ringkasan berwarna muda dan tinta navy
+yang SAMA di terang dan gelap: `StatusTampil.ubin`, `ubinDari`, `diAtasUbin`). Gerak dari
 `lib/core/motion/gerak_bento.dart` (`MasukBerurutan`, `TekanSkala`, `VisualMasuk`,
 `AngkaNaik`). Tiap komponen: tes di `test/widgets/komponen_bento_test.dart` dan
 galeri halaman `bento` di `test/dukungan/galeri_komponen.dart`.
 
 | Berkas | Komponen | Menggantikan |
 |---|---|---|
-| `tombol_bulat.dart` | `TombolBulat`: `.cari` 44 navy, `.kembali` 48 putih, `.aksi` 52 kuning/navy, `.hiasan` (tanpa ketukan, untuk di dalam ubin). Label baca wajib, area sentuh 48. | `IconButton`, ikon di app bar |
-| `saringan_pil.dart` | `SaringanPil` + `PilihanPil`: pil 44, bulatan jumlah 32 (berwarna status saat tidak terpilih), baris bergulir mendatar. | `SaringanTeks`, `ChoiceChip` |
-| `segmen_pil.dart` | `SegmenPil`: wadah 56, pil 44 bergeser 240 ms, dua sampai beberapa pilihan. Dipakai tab Sertifikat (Daftar \| Arsip). | `SegmentedButton`, `SaringanTeks` sebagai "Daftar / Arsip" |
-| `ubin_alat.dart` | `UbinAlat`: ubin 196 (Beranda 232) berwarna status: stempel, nama, merk, nomor seri, lokasi (hanya bila terisi), angka sisa hari, visual di kanan bawah. `KartuAlat` (`kartu_alat.dart`) tinggal pembungkus tipis `Alat` ke `UbinAlat` untuk daftar "Alat saya". | `BarisAlat`, kartu alat lama |
-| `ubin_ringkas.dart` | `UbinRingkas`: ubin pasangan 188, judul, kalimat, "Lihat semua". | kartu ringkasan |
-| `ubin_menu.dart` | `UbinMenu`: ubin menu 140, judul, penanda bulat 40, visual atau tumpukan avatar. | `BarisMenu` besar |
+| `tombol_bulat.dart` | `TombolBulat`: `.cari` 36 biru, `.kembali` 48 putih, `.aksi` 52 biru muda/navy, `.hiasan` (tanpa ketukan, untuk di dalam ubin). Label baca wajib, area sentuh 48. | `IconButton`, ikon di app bar |
+| `saringan_pil.dart` | `SaringanPil` + `PilihanPil`: saringan 40 bersudut 12, terpilih = biru muda + tepi biru, bulatan jumlah 24 (biru saat terpilih, warna status saat tidak), baris bergulir mendatar. | `SaringanTeks`, `ChoiceChip` |
+| `segmen_pil.dart` | `SegmenPil`: wadah 48, penanda biru muda bertepi biru 40 bergeser 240 ms, dua sampai beberapa pilihan. Dipakai tab Sertifikat (Daftar \| Arsip). | `SegmentedButton`, `SaringanTeks` sebagai "Daftar / Arsip" |
+| `ubin_alat.dart` | `UbinAlat`: kartu NETRAL 144 (Beranda 160), status hanya di lencana: lencana, nama, merk, nomor seri (IBM Plex Mono), lokasi (hanya bila terisi), angka sisa hari (mono), visual di kanan bawah. `KartuAlat` (`kartu_alat.dart`) tinggal pembungkus tipis `Alat` ke `UbinAlat` untuk daftar "Alat saya". | `BarisAlat`, kartu alat lama |
+| `ubin_ringkas.dart` | `UbinRingkas`: ubin pasangan 132 (putih atau warna muda status), judul, kalimat, "Lihat semua". | kartu ringkasan |
+| `ubin_menu.dart` | `UbinMenu`: ubin menu 124, judul, penanda bulat 40, visual atau tumpukan avatar. | `BarisMenu` besar |
 
 Pembantu internal di `dasar/` (jangan dipakai layar langsung): `cincin_fokus.dart`
 (`CincinFokus`: cincin papan ketik di LUAR isi, 3:1 di dua tema),
 `kontrol_ketuk.dart` (`KontrolKetuk`: semantik, area sentuh 48, skala tekan, fokus),
 `dasar_ubin.dart` (`DasarUbin`: kerangka ubin, visual keluar tepi dan dipotong).
-Pil dan ubin yang bisa diketuk tidak bersarang: tombol di dalam ubin adalah
+Saringan dan ubin yang bisa diketuk tidak bersarang: tombol di dalam ubin adalah
 penanda (`TombolBulat.hiasan`), bukan tombol kedua.
 
 Catatan a11y: komponen yang bisa diketuk memasang `onTap` pada `Semantics`
@@ -103,7 +104,7 @@ diaktifkan pembaca layar (`KartuSidik` lama memakai pola itu; lihat laporan PR).
 
 | Berkas | Komponen |
 |---|---|
-| `tombol_sidik.dart` | `TombolSidik` (`RagamTombol`: utama, sekunder, teks, bahaya). Satu `utama` per layar. Pil; `jumlah` = lencana bulat 40 kuning di tombol utama; skala tekan 0,97; cincin fokus papan ketik. |
+| `tombol_sidik.dart` | `TombolSidik` (`RagamTombol`: utama, sekunder, teks, bahaya). Satu `utama` per layar. Persegi bersudut 10, tinggi 48; `jumlah` = lencana bulat 28 putih bertinta biru di tombol utama; skala tekan 0,97; cincin fokus papan ketik. |
 | `kolom_cari.dart` | `KolomCari`: kolom cari dengan jeda ketik 350 ms. |
 
 ## Keadaan

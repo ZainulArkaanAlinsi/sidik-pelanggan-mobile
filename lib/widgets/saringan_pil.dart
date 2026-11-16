@@ -27,11 +27,11 @@ class PilihanPil {
   String get semantik => jumlah == null ? label : '$label, $jumlah';
 }
 
-/// Saringan pil Bento Lab (pengganti deretan `ChoiceChip`/`SaringanTeks`):
-/// pil setinggi 44 (radius 22), kata 14/700 + bulatan jumlah 32. Terpilih =
-/// navy + kata putih + bulatan kuning; tidak terpilih = putih bertepi tegas +
-/// bulatan berwarna status atau `latar`. Terpilih juga dibawa `selected` ke
-/// pembaca layar, jadi pilihan tidak hanya dibedakan warna.
+/// Saringan (pengganti deretan `ChoiceChip`/`SaringanTeks`): setinggi 40
+/// (radius 12), kata 13/500 + bulatan jumlah 24. Terpilih = biru muda + tepi
+/// biru + kata navy + bulatan biru berangka putih; tidak terpilih = putih
+/// bertepi tegas + bulatan berwarna status atau `latar`. Terpilih juga dibawa
+/// `selected` ke pembaca layar, jadi pilihan tidak hanya dibedakan warna.
 ///
 /// Baris bergulir mendatar dengan margin halamannya sendiri; pilihan terpilih
 /// digulirkan seminimal mungkin ke dalam layar. Tiap pil memakai area sentuh 48
@@ -159,12 +159,10 @@ class _Pil extends StatelessWidget {
       terpilih: terpilih,
       warna: isi,
       sudut: Bentuk.sudutKapsul,
-      sisi: terpilih && aktif
-          ? BorderSide.none
-          : BorderSide(
-              color: aktif ? s.outline : Colors.transparent,
-              width: Elevasi.garis,
-            ),
+      sisi: BorderSide(
+        color: !aktif ? Colors.transparent : (terpilih ? s.primary : s.outline),
+        width: Elevasi.garis,
+      ),
       child: AnimatedDefaultTextStyle(
         style: gaya ?? const TextStyle(),
         duration: _durasi(context),
@@ -202,10 +200,16 @@ class _Pil extends StatelessWidget {
     final s = context.skema;
     if (!aktif) {
       final redup = s.onSurface.withValues(alpha: _alfaIsiMati);
-      return (redup, s.onSurface.withValues(alpha: _alfaMati), redup,
-          s.onSurface.withValues(alpha: _alfaMati));
+      return (
+        redup,
+        s.onSurface.withValues(alpha: _alfaMati),
+        redup,
+        s.onSurface.withValues(alpha: _alfaMati),
+      );
     }
-    if (terpilih) return (s.primary, s.onPrimary, s.secondary, s.onSecondary);
+    if (terpilih) {
+      return (s.primaryContainer, s.onPrimaryContainer, s.primary, s.onPrimary);
+    }
     final (tintaBulat, isiBulat) = pilihan.nada == null
         ? (s.onSurface, s.surfaceContainer)
         : StatusTampil.ubinDari(context, pilihan.nada!);

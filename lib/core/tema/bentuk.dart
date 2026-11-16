@@ -1,64 +1,70 @@
 import 'package:flutter/widgets.dart';
 
-/// Token sudut (radius), arah "Bento Lab": ubin besar membulat, tombol pil.
-/// Nilai dari `docs/desain-ulang/tokens.json` (`sudut`) dan `DESIGN.md`.
+/// Token sudut (radius), arah tenang-formal (REVISI 16 Nov 2026): kartu 12-16,
+/// tombol dan isian 8-12, tidak ada sudut ekstrem kecuali lingkaran sungguhan
+/// (avatar, titik, lencana angka). Nilai dari `docs/desain-ulang/tokens.json`.
 ///
 /// | Token    | dp  | Pakai                                              |
 /// |----------|-----|----------------------------------------------------|
-/// | `ikon`   | 16  | ubin ikon persegi, isian                           |
-/// | `kapsul` | 22  | kapsul grafik, segmen, saringan, toast             |
-/// | `panel`  | 28  | panel putih, ubin kecil (tinggi sampai 188), dialog |
-/// | `ubin`   | 32  | ubin besar, lembar bawah (sudut atas)              |
-/// | `dock`   | 36  | dock navigasi                                      |
-/// | `pil`    | 999 | tombol, stempel, kolom cari, avatar                |
+/// | `stempel`| 6   | lencana status kecil                               |
+/// | `tombol` | 10  | tombol, kolom cari, segmen                         |
+/// | `ikon`   | 12  | ubin ikon persegi, isian                           |
+/// | `kapsul` | 12  | saringan, sel segmen, toast                        |
+/// | `panel`  | 16  | kartu, panel putih, dialog                         |
+/// | `ubin`   | 16  | ubin ringkasan, sudut atas lembar bawah            |
+/// | `penanda`| 8   | penanda pilihan di dalam segmen                    |
+/// | `pil`    | 999 | lingkaran: avatar, titik, lencana angka            |
 abstract final class Bentuk {
-  /// 16 dp: ubin ikon persegi.
-  static const double ikon = 16;
+  /// 12 dp: ubin ikon persegi, isian.
+  static const double ikon = 12;
 
-  /// 22 dp: kapsul grafik, segmen, saringan, toast.
-  static const double kapsul = 22;
+  /// 10 dp: tombol, kolom cari, segmen.
+  static const double tombol = 10;
 
-  /// 28 dp: panel putih, ubin kecil, dialog.
-  static const double panel = 28;
+  /// 12 dp: saringan, sel segmen, toast.
+  static const double kapsul = 12;
 
-  /// 32 dp: ubin besar, sudut atas lembar bawah.
-  static const double ubin = 32;
+  /// 16 dp: kartu, panel putih, dialog.
+  static const double panel = 16;
 
-  /// 36 dp: dock navigasi.
-  static const double dock = 36;
+  /// 16 dp: ubin ringkasan, sudut atas lembar bawah.
+  static const double ubin = 16;
 
-  /// Pil penuh: tombol, stempel, kolom cari, avatar, lencana angka.
+  /// 8 dp: penanda pilihan di dalam wadah segmen (sudut wadah [kapsul] 12
+  /// dikurangi padding 4, supaya konsentris).
+  static const double penanda = 8;
+
+  /// Pil penuh: HANYA untuk lingkaran sungguhan (avatar, titik, lencana angka,
+  /// tombol bulat). Tombol dan kolom cari memakai [tombol].
   static const double pil = 999;
 
-  /// 15 dp: stempel status (pil setinggi 30). Dipakai komponen `Stempel` mulai
-  /// paket komponen (P2); sampai itu `Stempel` masih memakai [kecil].
-  static const double stempel = 15;
+  /// 6 dp: lencana status kecil (tinggi 24).
+  static const double stempel = 6;
 
-  // ── Nama lama (arah "Jejak"), dipertahankan agar widget yang ada tetap
-  //    memakai token yang sama tanpa diubah. Hapus di paket bersih-bersih. ──
+  // ── Nama lama, dipertahankan agar widget yang ada tetap memakai token yang
+  //    sama tanpa diubah. Hapus di paket bersih-bersih. ──
 
-  /// 4 dp: tik, penanda kecil, tooltip, balok kerangka, dan (sementara)
-  /// stempel. TIDAK ikut berubah: Bento Lab tidak punya padanan, dan tik
-  /// jejak tidak boleh menjadi pil.
+  /// 4 dp: tik, penanda kecil, tooltip, balok kerangka.
   static const double kecil = 4;
 
-  /// Alias [ikon] (dulu 10): isian, ubin ikon, latar logo, area ketuk bilah.
+  /// Alias [ikon]: isian, ubin ikon, latar logo, area ketuk bilah.
   static const double kontrol = ikon;
 
-  /// Alias [panel] (dulu 16): panel dan banner.
+  /// Alias [panel]: panel dan banner.
   static const double kartu = panel;
 
-  /// Alias [pil] (dulu 16): tombol utama.
-  static const double utama = pil;
+  /// Alias [tombol] (dulu pil): tombol utama.
+  static const double utama = tombol;
 
-  /// Alias [panel] (dulu 20): dialog. Lembar bawah memakai [ubin].
+  /// Alias [panel]: dialog. Lembar bawah memakai [ubin].
   static const double lembar = panel;
 
   static final BorderRadius sudutIkon = BorderRadius.circular(ikon);
+  static final BorderRadius sudutTombol = BorderRadius.circular(tombol);
   static final BorderRadius sudutKapsul = BorderRadius.circular(kapsul);
   static final BorderRadius sudutPanel = BorderRadius.circular(panel);
   static final BorderRadius sudutUbin = BorderRadius.circular(ubin);
-  static final BorderRadius sudutDock = BorderRadius.circular(dock);
+  static final BorderRadius sudutPenanda = BorderRadius.circular(penanda);
   static final BorderRadius sudutStempel = BorderRadius.circular(stempel);
 
   static final BorderRadius sudutKecil = BorderRadius.circular(kecil);
