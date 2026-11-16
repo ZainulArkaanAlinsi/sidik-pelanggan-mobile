@@ -301,6 +301,9 @@ abstract final class TemaSidik {
         surfaceTintColor: Colors.transparent,
         elevation: Elevasi.lembar,
         shape: RoundedRectangleBorder(borderRadius: Bentuk.sudutPanel),
+        // Bawaan M3 = `secondary` (putih di tema terang): ikon dialog tak
+        // terlihat. Biru aksi terbaca di atas permukaan dialog di dua tema.
+        iconColor: skema.primary,
         titleTextStyle: teks.titleLarge,
         contentTextStyle: teks.bodyMedium,
       ),
