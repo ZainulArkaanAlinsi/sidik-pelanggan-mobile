@@ -452,8 +452,9 @@ void main() {
       ]);
     });
 
-    test('nada ubin sertifikat: kuning menurut desain, koral bila ada yang '
-        'gagal, TIDAK PERNAH hijau', () {
+    test('nada ubin sertifikat: netral bila tak ada pengecualian (krem = '
+        '"perlu diperiksa"), krem hanya untuk berakhir/digantikan, merah muda '
+        'bila ada yang gagal, TIDAK PERNAH hijau', () {
       Sertifikat s({String? keputusan, String status = 'berlaku'}) =>
           Sertifikat.dariJson(
             sertifikatJson(
@@ -466,9 +467,10 @@ void main() {
       NadaStatus nada(Sertifikat x) =>
           nadaUbinSertifikat(statusUbinSertifikat([x], hariIniUji));
 
-      expect(nadaUbinSertifikat(const []), NadaStatus.awas);
-      expect(nada(s()), NadaStatus.awas);
-      expect(nada(s(keputusan: 'PASS')), NadaStatus.awas);
+      expect(nadaUbinSertifikat(const []), NadaStatus.netral);
+      expect(nada(s()), NadaStatus.netral);
+      expect(nada(s(keputusan: 'PASS')), NadaStatus.netral);
+      expect(nada(s(status: 'digantikan')), NadaStatus.awas);
       expect(nada(s(keputusan: 'FAIL')), NadaStatus.gagal);
       expect(nada(s(status: 'dibatalkan')), NadaStatus.gagal);
       for (final x in [
@@ -1113,7 +1115,11 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(_latarUbin(tester, sert), _w(false).ubinAwas);
+      expect(
+        _latarUbin(tester, sert),
+        _s(false).surface,
+        reason: 'tanpa sertifikat = netral, bukan krem peringatan',
+      );
       expect(_latarUbin(tester, pak), _w(false).ubinLulus);
       // Berdampingan, tinggi sama (grid bento).
       expect(tester.getTopLeft(sert).dy, tester.getTopLeft(pak).dy);
@@ -1192,7 +1198,8 @@ void main() {
       expect(find.textContaining('toleransi'), findsNothing);
       // Tanpa keputusan: tidak ada stempel, dan ubin tidak pernah hijau.
       expect(_kataStempel(tester, sertUbin), isEmpty);
-      expect(_latarUbin(tester, sertUbin), _w(false).ubinAwas);
+      expect(_latarUbin(tester, sertUbin), _s(false).surface);
+      expect(_latarUbin(tester, sertUbin), isNot(_w(false).ubinAwas));
       expect(_latarUbin(tester, sertUbin), isNot(_w(false).ubinLulus));
     });
 
@@ -1204,7 +1211,7 @@ void main() {
           sertifikatJson(1, 'CAL/1', berlakuSampai: -5),
           'Masa berlaku berakhir',
           statusBerlaku(StatusBerlaku.berakhir).ikon,
-          _w(false).ubinAwas,
+          _s(false).surface,
         ),
         (
           sertifikatJson(
@@ -1698,7 +1705,7 @@ void main() {
         'Belum ada alat terdaftar',
       );
       expect(kosong, findsOneWidget);
-      expect(_latarUbin(tester, kosong), _w(false).ubinAwas);
+      expect(_latarUbin(tester, kosong), _s(false).surface);
       expect(
         find.text('Alat yang pernah dikalibrasi di PT Sidik muncul di sini.'),
         findsOneWidget,

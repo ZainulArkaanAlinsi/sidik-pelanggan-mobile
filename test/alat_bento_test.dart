@@ -472,11 +472,11 @@ void main() {
           UbinKosongAlat.tinggiMin,
           UkuranUbin.alatBeranda + UkuranUbin.alat,
         );
-        final (_, kuning) = StatusTampil.ubinDari(
-          tester.element(ubinKosong),
-          NadaStatus.awas,
+        // Netral: keadaan kosong bukan peringatan (krem = "perlu diperiksa").
+        expect(
+          _latarUbin(tester, ubinKosong),
+          TemaSidik.terang.colorScheme.surface,
         );
-        expect(_latarUbin(tester, ubinKosong), kuning);
         // Nol yang TERBACA (daftar kosong dari server) boleh tampil.
         expect(find.text('0 alat'), findsOneWidget);
 

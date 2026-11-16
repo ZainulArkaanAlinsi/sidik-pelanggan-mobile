@@ -120,8 +120,8 @@ class _Balok extends StatelessWidget {
   );
 }
 
-/// Ubin kosong (kuning, sudut 32, padding 22, tinggi paling sedikit 420):
-/// judul 28, satu kalimat, dan ikon besar sebagai pengganti visual alat di
+/// Ubin kosong (netral/putih, sudut 16, padding 20, tinggi paling sedikit 304):
+/// judul 24, satu kalimat, dan ikon besar sebagai pengganti visual alat di
 /// kanan bawah (visual alat belum ada; ikon hanya hiasan, tanpa semantik).
 /// Dipakai untuk "belum ada alat" dan hasil cari/saring yang kosong; pembedanya
 /// kata dan [ikon], keduanya dari pemanggil.
@@ -141,17 +141,24 @@ class UbinKosongAlat extends StatelessWidget {
   static const double tinggiMin = UkuranUbin.alatBeranda + UkuranUbin.alat;
 
   /// Ikon hiasan memudar supaya teks di atasnya tetap terbaca (kontras teks
-  /// dihitung terhadap latar kuning polos, ikon di bawah teks).
+  /// dihitung terhadap permukaan polos, ikon di bawah teks).
   static const double _alfaIkon = 0.18;
 
   @override
   Widget build(BuildContext context) {
-    final (tinta, latar) = StatusTampil.ubinDari(context, NadaStatus.awas);
+    // Netral: keadaan kosong bukan peringatan (krem = "perlu diperiksa").
+    final (tinta, latar) = StatusTampil.ubinDari(context, NadaStatus.netral);
     final t = context.teks;
     return Material(
       color: latar,
       clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: Bentuk.sudutUbin),
+      shape: RoundedRectangleBorder(
+        borderRadius: Bentuk.sudutUbin,
+        side: BorderSide(
+          color: context.skema.outlineVariant,
+          width: Elevasi.garis,
+        ),
+      ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: tinggiMin),
         child: Stack(

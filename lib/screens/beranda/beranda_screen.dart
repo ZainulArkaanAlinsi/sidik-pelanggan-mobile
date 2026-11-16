@@ -698,7 +698,7 @@ class _IsiState extends ConsumerState<_Isi> {
         return UbinRingkas(
           judul: 'Belum ada alat terdaftar',
           kalimat: 'Alat yang pernah dikalibrasi di PT Sidik muncul di sini.',
-          nada: NadaStatus.awas,
+          // Keadaan kosong bukan peringatan: netral (krem = "perlu diperiksa").
         );
       case JenisUbinAlat.alatMendesak || JenisUbinAlat.jadwalTerdekat:
         return UbinAlat(
