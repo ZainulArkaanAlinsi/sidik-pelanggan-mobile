@@ -1,10 +1,13 @@
+import 'package:flutter/material.dart' show Icons;
 import 'package:intl/intl.dart';
 
 import '../../core/api_pelanggan.dart';
+import '../../core/format.dart';
 import '../../models/data_pelanggan.dart';
 import '../../models/paket.dart';
 import '../../models/status_berlaku.dart';
 import '../../widgets/kalimat_utama.dart';
+import '../../widgets/pemetaan_status.dart';
 import '../../widgets/status_tampil.dart';
 
 /// Logika murni Beranda: apa yang masuk kalimat utama, apa yang perlu
@@ -230,3 +233,216 @@ TeksGalat teksGalatBeranda(Object galat) {
     aksi: 'Coba lagi',
   );
 }
+
+// ── Bento Lab (P5a): isi kepala, ubin alat, dan ubin pasangan ──────────────
+// Semuanya logika murni (tanpa widget) supaya tiap keputusan "apa yang boleh
+// diklaim layar" bisa diuji sendiri.
+
+/// Sapaan menurut jam di HP (hanya penyapa, bukan angka kalibrasi): pagi
+/// 04–10, siang 11–14, sore 15–17, malam 18–03.
+String sapaanWaktu(DateTime jam) {
+  final j = jam.hour;
+  if (j >= 4 && j < 11) return 'Selamat pagi';
+  if (j >= 11 && j < 15) return 'Selamat siang';
+  if (j >= 15 && j < 18) return 'Selamat sore';
+  return 'Selamat malam';
+}
+
+/// Inisial avatar: huruf pertama dari dua kata pertama nama ("Budi Anggota" ->
+/// "BA"). Nama kosong = teks kosong (layar menggambar ikon orang).
+String inisialNama(String nama) {
+  final kata = nama.trim().split(RegExp(r'\s+')).where((k) => k.isNotEmpty);
+  String awal(String k) => String.fromCharCode(k.runes.first).toUpperCase();
+  return kata.take(2).map(awal).join();
+}
+
+/// Isi ubin besar di bawah kalimat utama.
+enum JenisUbinAlat {
+  /// Akun belum punya alat: ubin kosong.
+  kosong,
+
+  /// Alat paling mendesak (lewat jadwal terlama, lalu segera terdekat).
+  alatMendesak,
+
+  /// Tidak ada yang mendesak: alat dengan jadwal terdekat.
+  jadwalTerdekat,
+
+  /// Server menjamin semua alat berlaku (`alat_berlaku` = `jumlah_alat`),
+  /// ditambah jadwal terdekat bila daftarnya terbaca.
+  semuaBerlakuTerdekat,
+
+  /// Server menjamin semua alat berlaku; daftar alat tidak terbaca.
+  semuaBerlaku,
+
+  /// Daftar alat masih dimuat: kerangka, BUKAN "tidak ada".
+  memuat,
+
+  /// Daftar alat gagal dimuat padahal hitungan server bilang ada yang
+  /// lewat/segera: catatan gagal, BUKAN "tidak ada".
+  gagal,
+
+  /// Tidak ada yang bisa diklaim dan tidak ada yang bisa ditampilkan.
+  tidakAda,
+}
+
+/// Memilih isi ubin besar. Aturan klaim:
+/// - "Semua alat berlaku" HANYA bila [semuaBerlaku] (server yang menjamin);
+///   alat yang belum pernah dikalibrasi ikut dihitung `jumlah_alat`.
+/// - Daftar yang memuat atau gagal TIDAK dibaca sebagai "tidak ada alat
+///   mendesak": [JenisUbinAlat.memuat] atau [JenisUbinAlat.gagal].
+/// - [daftar] null = belum terbaca (memuat, gagal, atau dimuat ulang).
+({JenisUbinAlat jenis, Alat? alat}) pilihUbinAlat({
+  required bool adaAlat,
+  required bool semuaBerlaku,
+  required bool menungguAlat,
+  required RingkasanJatuhTempo? daftar,
+  required bool daftarMemuat,
+}) {
+  if (!adaAlat) return (jenis: JenisUbinAlat.kosong, alat: null);
+  if (daftar != null) {
+    final mendesak = alatPerhatian(daftar).firstOrNull;
+    if (mendesak != null) {
+      return (jenis: JenisUbinAlat.alatMendesak, alat: mendesak);
+    }
+    final terdekat = daftar.urut.firstOrNull;
+    if (terdekat != null) {
+      return (
+        jenis: semuaBerlaku
+            ? JenisUbinAlat.semuaBerlakuTerdekat
+            : JenisUbinAlat.jadwalTerdekat,
+        alat: terdekat,
+      );
+    }
+    return (
+      jenis: semuaBerlaku ? JenisUbinAlat.semuaBerlaku : JenisUbinAlat.tidakAda,
+      alat: null,
+    );
+  }
+  if (daftarMemuat) return (jenis: JenisUbinAlat.memuat, alat: null);
+  if (menungguAlat) return (jenis: JenisUbinAlat.gagal, alat: null);
+  return (
+    jenis: semuaBerlaku ? JenisUbinAlat.semuaBerlaku : JenisUbinAlat.tidakAda,
+    alat: null,
+  );
+}
+
+/// "Mitutoyo CD-15CPX": merk dan model dipisah spasi; null bila keduanya kosong.
+String? merkTipeAlat(Alat a) {
+  final s = [a.merk, a.model]
+      .whereType<String>()
+      .map((x) => x.trim())
+      .where((x) => x.isNotEmpty)
+      .join(' ');
+  return s.isEmpty ? null : s;
+}
+
+/// Teks tanggal di bawah angka ubin alat. Alat yang sedang di lab menyebut
+/// tahapnya (kata dari server); selain itu "sejak 18 Agu 2026" (lewat jadwal)
+/// atau "jatuh tempo 12 Des 2026". Tanpa jadwal = null.
+String? tanggalUbinAlat(Alat a) {
+  final sd = a.sedangDikerjakan;
+  if (sd != null) return 'Di lab: ${sd.tahapLabel}';
+  final tempo = a.jatuhTempo;
+  if (tempo == null) return null;
+  final hari = a.hariKeJatuhTempo;
+  final tanggal = Format.tanggal(tempo);
+  return hari != null && hari < 0 ? 'sejak $tanggal' : 'jatuh tempo $tanggal';
+}
+
+/// Kalimat kosong ubin sertifikat dan paket.
+const String teksSertifikatKosong = 'Belum ada sertifikat yang terbit.';
+const String teksPaketKosong = 'Tidak ada paket yang sedang dikerjakan.';
+
+/// Baris teks ubin "Sertifikat terbaru": nomor dan alat sertifikat terbaru.
+/// Kosong = belum ada sertifikat yang terbaca. Pengecualian yang HARUS
+/// bersuara ada di [statusUbinSertifikat] (ikon + kata, bukan teks polos).
+List<String> barisUbinSertifikat(List<Sertifikat> terbaru) {
+  final s = terbaru.firstOrNull;
+  if (s == null) return const [];
+  return [s.nomor, if ((s.namaAlat ?? '').isNotEmpty) s.namaAlat!];
+}
+
+/// Pengecualian sertifikat terbaru, tiap satu sebagai status (ikon + kata +
+/// nada) dari `pemetaan_status.dart`: keputusan FAIL (tidak dilunakkan,
+/// REQ-SRT-04), masa berlaku berakhir, digantikan, dibatalkan. Keputusan null
+/// dan PASS tidak disebut: tanpa keputusan tidak ada klaim, apalagi hijau.
+List<StatusTampil> statusUbinSertifikat(
+  List<Sertifikat> terbaru,
+  DateTime sekarang,
+) {
+  final s = terbaru.firstOrNull;
+  if (s == null) return const [];
+  final status = StatusBerlaku.dariSertifikat(s, sekarang: sekarang);
+  return [
+    if (s.keputusan == 'FAIL') statusKeputusan('FAIL')!,
+    if (status == StatusBerlaku.berakhir ||
+        status == StatusBerlaku.digantikan ||
+        status == StatusBerlaku.dibatalkan)
+      statusBerlaku(status),
+  ];
+}
+
+/// Nada ubin sertifikat: kuning (awas) menurut desain, koral (gagal) bila ada
+/// pengecualian bernada gagal (FAIL, dibatalkan). Tidak pernah hijau: sertifikat
+/// terbaru tidak membuktikan apa pun tentang alat lain.
+NadaStatus nadaUbinSertifikat(List<StatusTampil> status) =>
+    status.any((s) => s.nada == NadaStatus.gagal)
+    ? NadaStatus.gagal
+    : NadaStatus.awas;
+
+/// Paket yang terlambat: istilah dan ikon yang sama dengan kartu paket dan
+/// detail paket.
+const StatusTampil statusLewatTarget = StatusTampil(
+  'Melewati target selesai',
+  NadaStatus.awas,
+  Icons.schedule,
+);
+
+/// Tahap paket yang berarti sudah selesai di tangan pelanggan.
+const String tahapDiserahkan = 'diserahkan';
+
+/// Paket yang masih berjalan: tanpa yang sudah diserahkan. Siap diambil tetap
+/// ikut (masih menunggu pelanggan, dan disebut tersendiri di ubin).
+List<Paket> paketBelumDiserahkan(List<Paket> semua) => [
+  for (final p in semua)
+    if (p.tahap != tahapDiserahkan) p,
+];
+
+/// Baris teks ubin "Paket dikerjakan": nomor dan tahap paket terbaru yang
+/// belum diserahkan; paket siap diambil; jumlah paket berjalan. [jumlah] =
+/// hitungan server (atau panjang daftar bila lebih besar), [siap] = paket siap
+/// diambil. [siapMungkinLebih] = daftar dipotong server dan hitungan server
+/// tidak ada: jumlahnya tidak diklaim ("Ada paket siap diambil"). Kosong =
+/// tidak ada paket berjalan. Terlambat ada di [statusUbinPaket].
+List<String> barisUbinPaket({
+  required List<Paket> berjalan,
+  required int jumlah,
+  required int siap,
+  required bool siapMungkinLebih,
+}) {
+  final pertama = paketBelumDiserahkan(berjalan).firstOrNull;
+  return [
+    if (pertama != null) ...[
+      pertama.nomor,
+      // Server lama tanpa `tahap_label`: label jatuh ke kode mentah; kode bukan kata.
+      if (pertama.tahapLabel.isNotEmpty && pertama.tahapLabel != pertama.tahap)
+        pertama.tahapLabel,
+    ],
+    if (siap > 0)
+      siapMungkinLebih ? 'Ada paket siap diambil' : '$siap paket siap diambil',
+    if (jumlah > 1 || (pertama == null && jumlah > 0)) '$jumlah paket berjalan',
+  ];
+}
+
+/// Pengecualian paket terbaru yang belum diserahkan: melewati target selesai
+/// (ikon + kata, bukan teks polos).
+List<StatusTampil> statusUbinPaket(List<Paket> berjalan) => [
+  if (paketBelumDiserahkan(berjalan).firstOrNull?.terlambat ?? false)
+    statusLewatTarget,
+];
+
+/// Nada ubin paket: hijau (lulus) menurut desain; bila ada pengecualian ubin
+/// mengikuti nadanya (terlambat = kuning): ubin yang membawa kata "Melewati
+/// target selesai" tidak boleh hijau.
+NadaStatus nadaUbinPaket(List<StatusTampil> status) =>
+    status.isEmpty ? NadaStatus.lulus : status.first.nada;
