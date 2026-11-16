@@ -58,6 +58,7 @@ Widget _app({
   Widget isi = const SizedBox.expand(),
   Widget? penutup,
   bool bahasaId = false,
+  bool papanKetik = false,
 }) => MaterialApp(
   debugShowCheckedModeBanner: false,
   // Bahasa aplikasi (id); tanpa ini tes memakai bahasa Inggris bawaan Material.
@@ -85,6 +86,7 @@ Widget _app({
       tujuan: _tujuan(lencana: lencana),
       isi: isi,
       penutup: penutup,
+      papanKetikTerbuka: papanKetik,
     ),
   ),
 );
@@ -462,6 +464,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('99+'), findsOneWidget);
 
+      // Batas: 99 tampil apa adanya, 100 menjadi "99+" (bukan 101 atau 100).
+      for (final (jumlah, teks) in [
+        (1, '1'),
+        (98, '98'),
+        (99, '99'),
+        (100, '99+'),
+        (101, '99+'),
+      ]) {
+        await tester.pumpWidget(_app(lencana: jumlah));
+        await tester.pumpAndSettle();
+        expect(
+          (tester.widget<Badge>(find.byType(Badge)).label! as Text).data,
+          teks,
+          reason: 'lencana untuk $jumlah',
+        );
+      }
+
       await tester.pumpWidget(_app(lencana: 0));
       await tester.pumpAndSettle();
       expect(find.byType(Badge), findsNothing);
@@ -569,6 +588,38 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.getRect(_bilah).height, UkuranBilah.tinggi);
     });
+  });
+
+  group('label tidak terpotong (lebar alami <= sel)', () {
+    // `softWrap: false` menjepit ukuran kotak Text ke sel, jadi pemeriksaan
+    // "label di dalam sel" tidak pernah gagal. Yang diukur di sini LEBAR ALAMI
+    // paragraf (`getMaxIntrinsicWidth`): kalau melebihi sel, kata terpotong.
+    for (final lebar in [320.0, 360.0, 392.0]) {
+      for (final skala in [1.0, 1.3, 2.0]) {
+        testWidgets('${lebar.toInt()} dp, huruf ${skala}x: lebar alami '
+            'tiap label (dalam berat terpilih) <= sel, di setiap tab aktif', (
+          tester,
+        ) async {
+          layarHp(tester, lebar: lebar, tinggi: 640);
+          for (var aktif = 0; aktif < _nama.length; aktif++) {
+            await tester.pumpWidget(_app(indeks: aktif, skala: skala));
+            await tester.pumpAndSettle();
+            final sel = _sel(tester, 0).width;
+            for (final n in _nama) {
+              final p = tester.renderObject<RenderParagraph>(_teks(n));
+              final alami = p.getMaxIntrinsicWidth(double.infinity);
+              expect(
+                alami,
+                lessThanOrEqualTo(sel),
+                reason:
+                    '$n terpotong di ${lebar}dp/${skala}x tab $aktif: '
+                    'lebar alami $alami > sel $sel',
+              );
+            }
+          }
+        });
+      }
+    }
   });
 
   group('ukuran label seragam', () {
@@ -741,6 +792,66 @@ void main() {
       final dengan = tester.getRect(find.byKey(isiKunci));
       expect(tanpa.bottom, tester.getRect(_bilah).top);
       expect(dengan.height, tanpa.height - 56);
+    });
+  });
+
+  group('papan ketik terbuka', () {
+    testWidgets('bilah DAN banner disembunyikan, isi mengisi sampai bawah; '
+        'tertutup lagi = kembali', (tester) async {
+      layarHp(tester, lebar: 360, tinggi: 800);
+      const isi = ColoredBox(key: ValueKey('isi'), color: Colors.white);
+      const banner = SizedBox(
+        key: ValueKey('banner'),
+        width: double.infinity,
+        height: 56,
+      );
+      await tester.pumpWidget(_app(isi: isi, penutup: banner, tepi: 24));
+      await tester.pumpAndSettle();
+      expect(_bilah, findsOneWidget);
+      expect(find.byKey(const ValueKey('banner')), findsOneWidget);
+      final tinggiNormal = tester
+          .getSize(find.byKey(const ValueKey('isi')))
+          .height;
+
+      await tester.pumpWidget(
+        _app(isi: isi, penutup: banner, tepi: 24, papanKetik: true),
+      );
+      await tester.pumpAndSettle();
+      expect(_bilah, findsNothing, reason: 'bilah disembunyikan');
+      expect(find.byKey(const ValueKey('banner')), findsNothing);
+      // Isi memakai ruang bilah + banner + tepi (64 + 24 + 56 = 144 dp).
+      expect(
+        tester.getSize(find.byKey(const ValueKey('isi'))).height,
+        tinggiNormal + 56 + 24 + UkuranBilah.tinggi,
+      );
+
+      await tester.pumpWidget(_app(isi: isi, penutup: banner, tepi: 24));
+      await tester.pumpAndSettle();
+      expect(_bilah, findsOneWidget);
+      expect(find.byKey(const ValueKey('banner')), findsOneWidget);
+    });
+
+    testWidgets('keadaan isi (teks yang sedang diketik) tidak hilang waktu '
+        'bilah hilang dan muncul', (tester) async {
+      layarHp(tester, lebar: 360, tinggi: 800);
+      const isi = TextField(key: ValueKey('isian'));
+      await tester.pumpWidget(_app(isi: isi));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('isian')), 'ORD/0021');
+      await tester.pumpWidget(_app(isi: isi, papanKetik: true));
+      await tester.pumpAndSettle();
+      expect(find.text('ORD/0021'), findsOneWidget);
+      await tester.pumpWidget(_app(isi: isi));
+      await tester.pumpAndSettle();
+      expect(find.text('ORD/0021'), findsOneWidget);
+      expect(_bilah, findsOneWidget);
+    });
+
+    testWidgets('rel >= 600 dp tidak terpengaruh papan ketik', (tester) async {
+      layarHp(tester, lebar: 840, tinggi: 800);
+      await tester.pumpWidget(_app(papanKetik: true));
+      await tester.pumpAndSettle();
+      expect(find.byType(NavigationRail), findsOneWidget);
     });
   });
 

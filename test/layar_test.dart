@@ -481,6 +481,38 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
+    testWidgets('papan ketik terbuka: bilah dan banner hilang (isian tidak '
+        'kehilangan ~120 dp), tertutup lagi = kembali', (tester) async {
+      layarHp(tester);
+      await tester.pumpWidget(
+        _bungkus(
+          const Rangka(),
+          _Palsu(),
+          tambahan: [
+            pembaruanAktifProvider.overrideWithValue(true),
+            klienRilisProvider.overrideWithValue(
+              _KlienRilisWajib()..wajib = false,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(bilah, findsOneWidget);
+      expect(banner, findsOneWidget);
+
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+      expect(bilah, findsNothing, reason: 'bilah disembunyikan');
+      expect(banner, findsNothing, reason: 'banner ikut disembunyikan');
+
+      tester.view.resetViewInsets();
+      await tester.pumpAndSettle();
+      expect(bilah, findsOneWidget);
+      expect(banner, findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('rilis wajib: dialog tampil di atas bilah, tidak bisa ditutup, '
         'bilah di belakangnya tidak menerima ketukan', (tester) async {
       layarHp(tester);

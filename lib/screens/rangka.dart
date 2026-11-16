@@ -119,8 +119,11 @@ class _RangkaState extends ConsumerState<Rangka> {
     });
     final aktif = ref.watch(tabProvider);
     final belum = ref.watch(jumlahBelumDibacaProvider).value ?? 0;
+    // Dibaca DI SINI (di luar Scaffold): di dalam body-nya viewInsets sudah 0.
+    final papanKetik = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
       body: NavigasiUtama(
+        papanKetikTerbuka: papanKetik,
         indeks: aktif,
         onPilih: ref.read(tabProvider.notifier).pilih,
         // Banner pembaruan di atas navigasi, bukan di atas layar: AppBar tiap

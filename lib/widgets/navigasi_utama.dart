@@ -57,6 +57,12 @@ class TujuanNavigasi {
 ///
 /// [penutup] = widget di dasar area isi (banner pembaruan); di HP ia duduk di
 /// atas bilah, bukan di bawahnya.
+///
+/// [papanKetikTerbuka] (HP saja): bilah DAN [penutup] disembunyikan supaya isian
+/// tidak kehilangan ~120 dp. Nilainya harus dibaca di LUAR `Scaffold` (di dalam
+/// body-nya `viewInsets.bottom` sudah dipotong jadi 0): `Rangka` membacanya dari
+/// `MediaQuery.viewInsetsOf`. Isi tetap di posisi pohon yang sama, jadi keadaan
+/// layar (teks yang sedang diketik, gulir) tidak hilang.
 class NavigasiUtama extends StatelessWidget {
   const NavigasiUtama({
     super.key,
@@ -65,6 +71,7 @@ class NavigasiUtama extends StatelessWidget {
     required this.tujuan,
     required this.isi,
     this.penutup,
+    this.papanKetikTerbuka = false,
   });
 
   final int indeks;
@@ -72,6 +79,7 @@ class NavigasiUtama extends StatelessWidget {
   final List<TujuanNavigasi> tujuan;
   final Widget isi;
   final Widget? penutup;
+  final bool papanKetikTerbuka;
 
   @override
   Widget build(BuildContext context) {
@@ -95,8 +103,10 @@ class NavigasiUtama extends StatelessWidget {
             child: isi,
           ),
         ),
-        ?penutup,
-        BilahNavigasi(indeks: indeks, onPilih: onPilih, tujuan: tujuan),
+        if (!papanKetikTerbuka) ...[
+          ?penutup,
+          BilahNavigasi(indeks: indeks, onPilih: onPilih, tujuan: tujuan),
+        ],
       ],
     );
   }
