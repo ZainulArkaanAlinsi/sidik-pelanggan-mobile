@@ -46,6 +46,7 @@ import 'package:sidik_pelanggan/widgets/kartu_sidik.dart';
 import 'package:sidik_pelanggan/widgets/kolom_cari_utuh.dart';
 import 'package:sidik_pelanggan/widgets/segmen_pil.dart';
 import 'package:sidik_pelanggan/widgets/stempel.dart';
+import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
 
 import 'dukungan/dukungan.dart';
 import 'dukungan/fixture_fitur.dart';
@@ -59,7 +60,7 @@ Sertifikat _s(
   String? serial = 'SN-1',
   String? keputusan = 'PASS',
   String status = 'berlaku',
-  int diterbitkan = -300,
+  int? diterbitkan = -300,
   int? berlakuSampai = 65,
 }) {
   final json = sertifikatJson(
@@ -68,7 +69,7 @@ Sertifikat _s(
     namaAlat: nama,
     keputusan: keputusan,
     status: status,
-    diterbitkan: diterbitkan,
+    diterbitkan: diterbitkan ?? -300,
     berlakuSampai: berlakuSampai,
     dibatalkanPada: status == 'dibatalkan' ? -5 : null,
     digantikanOleh: status == 'digantikan'
@@ -76,6 +77,8 @@ Sertifikat _s(
         : null,
   );
   json['alat'] = {...(json['alat']! as Map), 'serial': serial};
+  // `diterbitkan` null = server tidak mengirim tanggal terbit.
+  if (diterbitkan == null) json['diterbitkan_pada'] = null;
   return Sertifikat.dariJson(json);
 }
 
@@ -368,10 +371,13 @@ void main() {
               tester.getTopLeft(baris).dx,
           Spasi.lg,
         );
-        // Ringkas: jauh lebih pendek dari ubin lama (132) dan >= 48 dp.
+        // Ringkas dan >= 48 dp. Baris ini (PASS, tanggal terbit sebaris
+        // dengan badge, ditambah baris kecil "Jadwal kalibrasi ulang") 134 dp
+        // di lebar 390: batas lama 130 sengaja dinaikkan satu baris metadata
+        // 12 dp; satu baris lagi akan melewati 140.
         final tinggi = tester.getSize(baris).height;
         expect(tinggi, greaterThanOrEqualTo(AreaSentuh.minimum));
-        expect(tinggi, lessThan(130));
+        expect(tinggi, lessThan(140));
         // Satu tombol: satu InkWell, tanpa tombol kedua di dalamnya.
         expect(
           find.descendant(of: baris, matching: find.byType(InkWell)),
@@ -423,11 +429,25 @@ void main() {
       double ukuran(Finder f) => tester.widget<Text>(f).style!.fontSize!;
       expect(ukuran(nama), greaterThan(ukuran(nomor)));
       expect(ukuran(nama), greaterThan(ukuran(terbit)));
-      // Masa berlaku tidak ada di baris (REVISI-2 butir 5).
+      // `berlaku_sampai` tampil sebagai "Jadwal kalibrasi ulang <tanggal>"
+      // (REVISI-2 butir 5), teks tersendiri yang lebih kecil dari tanggal
+      // terbit (12-13), sesudah tanggal terbit dan sebelum badge. Kata
+      // "Berlaku sampai" tidak dipakai (tertukar dengan status dokumen).
+      expect(data.berlakuSampai, isNotNull);
+      final jadwal = teks(
+        'Jadwal kalibrasi ulang ${Format.tanggal(data.berlakuSampai)}',
+      );
+      expect(jadwal, findsOneWidget);
+      expect(ukuran(jadwal), inInclusiveRange(12, 13));
+      expect(ukuran(jadwal), lessThan(ukuran(terbit)));
       expect(
         find.descendant(of: baris, matching: find.textContaining('Berlaku')),
         findsNothing,
       );
+      // Jadwal paling akhir: di bawah tanggal terbit DAN badge (badge sebaris
+      // dengan terbit atau di bawahnya, tidak pernah menimpa jadwal).
+      expect(y(jadwal), greaterThanOrEqualTo(tester.getBottomLeft(terbit).dy));
+      expect(y(jadwal), greaterThanOrEqualTo(tester.getBottomLeft(badge).dy));
 
       // Tanpa nomor seri: barisnya tidak ada, bukan "SN null".
       final tanpa = _baris('CAL/2026/09/0003');
@@ -439,6 +459,171 @@ void main() {
         find.descendant(of: tanpa, matching: find.textContaining('Terbit')),
         findsOneWidget,
       );
+    });
+
+    testWidgets('jadwal kalibrasi ulang: hanya bila server mengirimnya; tanpa '
+        'tanggal tidak ada teks kosong dan tidak ada baris ekstra; terbit '
+        'tetap terpisah dan berlabel benar', (tester) async {
+      await _buka(
+        tester,
+        _Layanan([
+          _s(1, 'CAL/2026/09/0001', keputusan: null),
+          _s(2, 'CAL/2026/09/0002', keputusan: null, berlakuSampai: null),
+          _s(3, 'CAL/2026/09/0003', keputusan: null, diterbitkan: null),
+        ]),
+      );
+      final ada = _baris('CAL/2026/09/0001');
+      final tanpa = _baris('CAL/2026/09/0002');
+      final tanpaTerbit = _baris('CAL/2026/09/0003');
+      Finder teks(Finder b, String t) =>
+          find.descendant(of: b, matching: find.text(t));
+      Finder semuaTeks(Finder b) =>
+          find.descendant(of: b, matching: find.byType(Text));
+      BarisSertifikat data(Finder b) => tester.widget<BarisSertifikat>(b);
+
+      final terbit =
+          'Terbit ${Format.tanggal(data(ada).sertifikat.diterbitkan)}';
+      final jadwal =
+          'Jadwal kalibrasi ulang '
+          '${Format.tanggal(data(ada).sertifikat.berlakuSampai)}';
+      // Ada: dua teks TERPISAH (bukan satu kalimat), masing-masing utuh.
+      expect(teks(ada, terbit), findsOneWidget);
+      expect(teks(ada, jadwal), findsOneWidget);
+      expect(
+        find.descendant(of: ada, matching: find.textContaining('·')),
+        findsNothing,
+      );
+      expect(data(ada).kalimat, contains('$terbit. $jadwal'));
+
+      // Null: tidak ada teks "Jadwal", tidak ada teks kosong, dan tidak ada
+      // baris ekstra di bawah tanggal terbit (isi kartu berakhir di situ).
+      expect(
+        find.descendant(of: tanpa, matching: find.textContaining('Jadwal')),
+        findsNothing,
+      );
+      expect(data(tanpa).kalimat, isNot(contains('Jadwal')));
+      for (final t in tester.widgetList<Text>(semuaTeks(tanpa))) {
+        expect((t.data ?? t.textSpan?.toPlainText() ?? '').trim(), isNotEmpty);
+      }
+      double dasarKartu(Finder b) => tester
+          .getRect(find.descendant(of: b, matching: find.byType(InkWell)))
+          .bottom;
+      expect(
+        dasarKartu(tanpa) -
+            tester
+                .getRect(
+                  teks(
+                    tanpa,
+                    'Terbit ${Format.tanggal(data(tanpa).sertifikat.diterbitkan)}',
+                  ),
+                )
+                .bottom,
+        closeTo(Spasi.lg, 0.01),
+      );
+
+      // Hanya jadwal (tanggal terbit tidak dikirim): tidak ada "Terbit" dan
+      // tidak ada teks kosong sebagai gantinya.
+      expect(data(tanpaTerbit).sertifikat.diterbitkan, isNull);
+      expect(
+        find.descendant(
+          of: tanpaTerbit,
+          matching: find.textContaining('Terbit'),
+        ),
+        findsNothing,
+      );
+      expect(
+        teks(
+          tanpaTerbit,
+          'Jadwal kalibrasi ulang '
+          '${Format.tanggal(data(tanpaTerbit).sertifikat.berlakuSampai)}',
+        ),
+        findsOneWidget,
+      );
+      expect(data(tanpaTerbit).kalimat, isNot(contains('Terbit')));
+      for (final t in tester.widgetList<Text>(semuaTeks(tanpaTerbit))) {
+        expect((t.data ?? t.textSpan?.toPlainText() ?? '').trim(), isNotEmpty);
+      }
+    });
+
+    test('jadwal kalibrasi ulang hanya untuk sertifikat yang berlaku: yang '
+        'dibatalkan atau digantikan sudah usang, jadi tidak disebut', () {
+      String kalimat(String status) => BarisSertifikat(
+        sertifikat: _s(1, 'CAL/2026/09/0001', status: status),
+        onTap: () {},
+      ).kalimat;
+
+      expect(kalimat('berlaku'), contains('Jadwal kalibrasi ulang'));
+      expect(kalimat('dibatalkan'), isNot(contains('Jadwal')));
+      expect(kalimat('digantikan'), isNot(contains('Jadwal')));
+      // Statusnya sendiri tetap disebut.
+      expect(kalimat('dibatalkan'), contains('Status:'));
+      expect(kalimat('digantikan'), contains('Status:'));
+    });
+
+    testWidgets('tata letak di lebar telepon: badge sebaris dengan terbit '
+        'atau turun ke baris sendiri, jadwal selalu di bawahnya, tanpa '
+        'tumpang tindih', (tester) async {
+      final layanan = _Layanan([
+        _s(1, 'CAL/2026/09/0001'),
+        _s(2, 'CAL/2026/09/0002', keputusan: 'FAIL'),
+      ]);
+      final tinggi = <double, List<double>>{};
+      for (final lebar in [360.0, 390.0, 412.0]) {
+        await _buka(tester, layanan, lebar: lebar);
+        for (final nomor in ['CAL/2026/09/0001', 'CAL/2026/09/0002']) {
+          final b = _baris(nomor);
+          Finder di(Finder f) => find.descendant(of: b, matching: f);
+          final terbit = di(find.textContaining('Terbit'));
+          final jadwal = di(find.textContaining('Jadwal kalibrasi ulang'));
+          final badge = di(find.byType(Stempel));
+          final alasan = 'lebar $lebar $nomor';
+          final sebaris =
+              (tester.getCenter(badge).dy - tester.getCenter(terbit).dy).abs() <
+              4;
+          if (sebaris) {
+            expect(
+              tester.getTopLeft(badge).dx,
+              greaterThan(tester.getBottomRight(terbit).dx),
+              reason: alasan,
+            );
+          } else {
+            expect(
+              tester.getTopLeft(badge).dy,
+              greaterThanOrEqualTo(tester.getBottomLeft(terbit).dy),
+              reason: alasan,
+            );
+          }
+          expect(
+            tester.getTopLeft(jadwal).dy,
+            greaterThanOrEqualTo(tester.getBottomLeft(badge).dy),
+            reason: alasan,
+          );
+          expect(
+            tester.getTopLeft(jadwal).dy,
+            greaterThanOrEqualTo(tester.getBottomLeft(terbit).dy),
+            reason: alasan,
+          );
+          // Semua isi di dalam kartu.
+          final kartu = tester.getRect(di(find.byType(InkWell)));
+          for (final f in [terbit, jadwal, badge]) {
+            expect(
+              kartu.contains(tester.getRect(f).bottomRight),
+              isTrue,
+              reason: alasan,
+            );
+          }
+          tinggi.putIfAbsent(lebar, () => []).add(tester.getSize(b).height);
+        }
+        expect(tester.takeException(), isNull);
+      }
+      // Badge yang sama-sama turun = tinggi sama (360: kedua badge turun).
+      // Di 390 dan 412 "Memenuhi toleransi" (169 dp) masih muat di samping
+      // tanggal terbit sedangkan "Tidak memenuhi toleransi" (207 dp) turun:
+      // tingginya mengikuti isi, FAIL tidak pernah lebih pendek.
+      expect(tinggi[360]![0], tinggi[360]![1]);
+      for (final h in tinggi.values) {
+        expect(h[1], greaterThanOrEqualTo(h[0]));
+      }
     });
 
     testWidgets('badge: PASS hijau, FAIL koral tidak dilunakkan, null tanpa '
@@ -594,6 +779,13 @@ void main() {
         );
         expect(find.text('Hapus pencarian'), findsNothing);
         expect(find.textContaining('Kata cari'), findsNothing);
+        // "Belum ada sertifikat" bukan hasil cari: tidak ada filter yang bisa
+        // dilepas, jadi tidak ada tawaran menampilkan yang digantikan.
+        expect(
+          find.text('Sertifikat yang sudah digantikan disembunyikan'),
+          findsNothing,
+        );
+        expect(find.text('Tampilkan yang sudah digantikan'), findsNothing);
         // Nol yang TERBACA (daftar kosong dari server) boleh tampil.
         expect(_teksPil(tester), '0 sertifikat');
 
@@ -608,6 +800,12 @@ void main() {
         );
         expect(find.text('Kata cari: “zzz”'), findsOneWidget);
         expect(find.text('Termasuk yang sudah direvisi'), findsNothing);
+        // Filter bawaan (sakelar mati) ikut disebut, dengan aksi melepasnya.
+        expect(
+          find.text('Sertifikat yang sudah digantikan disembunyikan'),
+          findsOneWidget,
+        );
+        expect(find.text('Tampilkan yang sudah digantikan'), findsOneWidget);
         expect(
           find.descendant(
             of: find.byType(PanelKosongSertifikat),
@@ -624,12 +822,83 @@ void main() {
         );
         expect(find.text('Hapus pencarian'), findsOneWidget);
 
-        // Sakelar menyala ikut disebut sebagai filter.
+        // Sakelar menyala ikut disebut sebagai filter; filter bawaan dan
+        // tawarannya hilang karena sudah tidak berlaku.
         await tester.tap(_sakelar);
         await tester.pumpAndSettle();
         expect(find.text('Termasuk yang sudah direvisi'), findsOneWidget);
+        expect(
+          find.text('Sertifikat yang sudah digantikan disembunyikan'),
+          findsNothing,
+        );
+        expect(find.text('Tampilkan yang sudah digantikan'), findsNothing);
+        expect(find.text('Hapus pencarian'), findsOneWidget);
       },
     );
+
+    testWidgets('hasil cari kosong menyebut filter bawaan (yang digantikan '
+        'disembunyikan) dan menawarkan menampilkannya', (tester) async {
+      final layanan = _Layanan(_semua());
+      await _buka(tester, layanan);
+
+      // "manometer" hanya ada di sertifikat yang digantikan: tersembunyi oleh
+      // filter bawaan, jadi panel menyebut KEDUA penyebab dan aksinya.
+      await _ketik(tester, 'manometer');
+      final panel = find.byType(PanelKosongSertifikat);
+      expect(panel, findsOneWidget);
+      expect(
+        find.descendant(
+          of: panel,
+          matching: find.text('Kata cari: “manometer”'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: panel,
+          matching: find.text('Sertifikat yang sudah digantikan disembunyikan'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: panel, matching: find.text('Hapus pencarian')),
+        findsOneWidget,
+      );
+      expect(layanan.panggilan.last.digantikan, isFalse);
+
+      // Aksi menyalakan sakelar: kata cari tetap, hasilnya muncul, filter
+      // bawaan dan panel hilang.
+      await tester.tap(find.text('Tampilkan yang sudah digantikan'));
+      await tester.pumpAndSettle();
+      expect(layanan.panggilan.last.digantikan, isTrue);
+      expect(layanan.panggilan.last.cari, 'manometer');
+      expect(tester.widget<BarisSakelar>(_sakelar).nilai, isTrue);
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'manometer',
+      );
+      expect(panel, findsNothing);
+      expect(
+        find.text('Sertifikat yang sudah digantikan disembunyikan'),
+        findsNothing,
+      );
+      expect(_nomorTampil(tester), ['CAL/2026/08/0004']);
+    });
+
+    testWidgets('hasil cari kosong dengan sakelar menyala: tanpa tawaran '
+        'menampilkan yang digantikan', (tester) async {
+      await _buka(tester, _Layanan(_semua()));
+      await tester.tap(_sakelar);
+      await tester.pumpAndSettle();
+      await _ketik(tester, 'zzz');
+      expect(find.byType(PanelKosongSertifikat), findsOneWidget);
+      expect(find.text('Termasuk yang sudah direvisi'), findsOneWidget);
+      expect(find.text('Tampilkan yang sudah digantikan'), findsNothing);
+      expect(
+        find.text('Sertifikat yang sudah digantikan disembunyikan'),
+        findsNothing,
+      );
+    });
 
     testWidgets('hasil cari kosong: "Hapus pencarian" mengosongkan isian dan '
         'daftar kembali', (tester) async {
@@ -844,6 +1113,30 @@ void main() {
       expect(_semuaBaris, findsWidgets);
     });
 
+    testWidgets('penutup memakai angka yang sama dengan pil: yang sungguh '
+        'termuat, bukan total mentah server', (tester) async {
+      // Server melaporkan total 20, padahal ada 30 sertifikat (dua halaman).
+      final layanan = _Layanan([
+        for (var i = 1; i <= 30; i++)
+          _s(i, 'CAL/2026/10/${'$i'.padLeft(4, '0')}'),
+      ])..totalLapor = 20;
+      await _buka(tester, layanan, tinggi: 800);
+      final gulir = find.descendant(
+        of: find.byType(DaftarBarisSertifikat),
+        matching: find.byType(Scrollable),
+      );
+      for (var i = 0; i < 12; i++) {
+        await tester.fling(gulir, const Offset(0, -9000), 9000);
+        await tester.pumpAndSettle();
+        if (find.textContaining('sudah tampil').evaluate().isNotEmpty) break;
+      }
+      expect(layanan.halamanTerakhirDiminta, 2);
+      expect(find.text('Semua 30 sertifikat sudah tampil.'), findsOneWidget);
+      expect(find.textContaining('Semua 20'), findsNothing);
+      // Satu definisi: pil dan penutup menyebut angka yang sama.
+      expect(_teksPil(tester), '30 sertifikat');
+    });
+
     test('jumlahSertifikatTerbaca: selesai, total sah, total tak sah', () {
       final tiga = [for (var i = 1; i <= 3; i++) _s(i, 'N$i')];
       expect(
@@ -888,9 +1181,12 @@ void main() {
       expect(_teksPil(tester), '4 sertifikat');
       expect(layanan.panggilan, hasLength(1));
 
+      // Yang baru terbit ada di urutan teratas (baris lebih tinggi sejak
+      // jadwal kalibrasi ulang tampil, jadi yang di ujung bawah tak terbangun
+      // di layar 900 dp).
       layanan.isi = [
-        ...layanan.isi,
         _s(6, 'CAL/2026/11/0006', nama: 'Mikrometer'),
+        ...layanan.isi,
       ];
       Future<void> tarik() async {
         await tester.fling(
@@ -1256,6 +1552,33 @@ void main() {
       await _ketik(tester, 'zzz');
       expect(tester.takeException(), isNull);
       expect(find.text('Hapus pencarian'), findsOneWidget);
+      // Dua aksi dan filter bawaan membungkus rapi: semuanya di dalam kartu.
+      expect(find.text('Tampilkan yang sudah digantikan'), findsOneWidget);
+      expect(
+        find.text('Sertifikat yang sudah digantikan disembunyikan'),
+        findsOneWidget,
+      );
+      final panel = tester.getRect(find.byType(PanelKosongSertifikat));
+      for (final t in [
+        'Hapus pencarian',
+        'Tampilkan yang sudah digantikan',
+        'Sertifikat yang sudah digantikan disembunyikan',
+      ]) {
+        final r = tester.getRect(find.text(t));
+        expect(r.left, greaterThanOrEqualTo(panel.left), reason: t);
+        expect(r.right, lessThanOrEqualTo(panel.right), reason: t);
+      }
+      for (final t in ['Hapus pencarian', 'Tampilkan yang sudah digantikan']) {
+        final tombol = find.ancestor(
+          of: find.text(t),
+          matching: find.byType(TombolSidik),
+        );
+        expect(
+          tester.getSize(tombol).height,
+          greaterThanOrEqualTo(AreaSentuh.minimum),
+          reason: t,
+        );
+      }
 
       layarHp(tester, lebar: 320, tinggi: 1400);
       final tahan = Completer<void>();
@@ -1322,7 +1645,7 @@ void main() {
       expect(nyala(), isFalse);
 
       // Baris: SATU simpul, urutan sama dengan tampilan (alat, nomor, seri,
-      // terbit, status).
+      // terbit, status, jadwal kalibrasi ulang).
       final kalimat = tester
           .getSemantics(
             find.bySemanticsLabel(RegExp('Sertifikat CAL/2026/09/0002')),
@@ -1336,7 +1659,8 @@ void main() {
         kalimat,
         'Timbangan Analitik. Sertifikat CAL/2026/09/0002. '
         'Nomor seri TA-224. Terbit ${Format.tanggal(data.diterbitkan)}. '
-        'Status: Tidak memenuhi toleransi',
+        'Status: Tidak memenuhi toleransi. '
+        'Jadwal kalibrasi ulang ${Format.tanggal(data.berlakuSampai)}',
       );
       // Nomor serinya saja: "SN" hanya di layar.
       expect(kalimat, isNot(contains('SN')));
@@ -1403,14 +1727,17 @@ void main() {
       await _ketik(tester, 'zzz');
       await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
       await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-      expect(
-        tester
-            .getSemantics(find.text('Hapus pencarian'))
-            .getSemanticsData()
-            .flagsCollection
-            .isButton,
-        isTrue,
-      );
+      for (final t in ['Hapus pencarian', 'Tampilkan yang sudah digantikan']) {
+        expect(
+          tester
+              .getSemantics(find.text(t))
+              .getSemanticsData()
+              .flagsCollection
+              .isButton,
+          isTrue,
+          reason: t,
+        );
+      }
       semantik.dispose();
     });
   });

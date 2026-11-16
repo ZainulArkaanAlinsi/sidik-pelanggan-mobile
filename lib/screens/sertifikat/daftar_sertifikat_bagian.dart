@@ -140,11 +140,20 @@ class _Balok extends StatelessWidget {
 /// "Tidak memenuhi toleransi", TIDAK dilunakkan; keputusan null = tanpa
 /// badge, netral, tidak pernah hijau), lalu status dokumen bila bukan
 /// "berlaku" (Digantikan, Dibatalkan). Sertifikat yang dibatalkan tidak
-/// membawa hasil teknisnya. Badge sebaris dengan tanggal terbit bila muat,
-/// turun ke baris sendiri bila tidak (320 dp, huruf besar).
+/// membawa hasil teknisnya.
 ///
-/// Masa berlaku ("Berlaku s.d.") tidak ada di baris: REVISI-2 butir 5 meminta
-/// maknanya dicocokkan dengan data lebih dulu; tetap terbaca di detail.
+/// Metadata kecil terakhir: `Jadwal kalibrasi ulang <tanggal>` 12, hanya bila
+/// server mengirim `berlaku_sampai`, teks tersendiri di bawah baris tanggal
+/// terbit + badge (di lebar telepon ia tidak muat di samping tanggal terbit:
+/// 131 + 216 dp melebihi isi kartu 326 dp pada 390 dp). Maknanya, dicek di
+/// API: masa berlaku yang dipilih admin saat menyetujui (bawaan 12 bulan dari
+/// tanggal kalibrasi), yang juga jadwal pengingat. Kata "Berlaku sampai"
+/// tidak dipakai supaya tidak tertukar dengan status dokumen (REVISI-2 butir
+/// 5). Tanpa tanggalnya: tidak ada teks dan tidak ada baris kosong.
+///
+/// Badge sebaris dengan tanggal terbit bila muat, turun ke baris sendiri bila
+/// tidak (pil "Tidak memenuhi toleransi" 207 dp turun sejak 390 dp, "Memenuhi
+/// toleransi" 169 dp sejak 360 dp), jadi tinggi baris mengikuti isinya.
 ///
 /// Pembaca layar menerima satu kalimat susunan dari isi baris, dengan aksi
 /// ketuk pada simpul itu. Papan ketik: cincin fokus di luar kartu.
@@ -179,6 +188,23 @@ class BarisSertifikat extends StatelessWidget {
     ];
   }
 
+  /// `Terbit <tanggal>`, atau null bila server tidak mengirim tanggalnya.
+  String? get _teksTerbit => sertifikat.diterbitkan == null
+      ? null
+      : 'Terbit ${Format.tanggal(sertifikat.diterbitkan)}';
+
+  /// `Jadwal kalibrasi ulang <tanggal>` (dari `berlaku_sampai`), atau null
+  /// bila tidak ada. Satu sumber untuk tampilan dan kalimat pembaca layar.
+  ///
+  /// Hanya untuk sertifikat yang masih berlaku: jadwal di sertifikat yang
+  /// dibatalkan atau sudah digantikan sudah usang (pengganti membawa jadwal
+  /// yang benar) dan bisa dikira masih harus dipenuhi.
+  String? get _teksJadwal =>
+      sertifikat.berlakuSampai == null ||
+          sertifikat.status != StatusDokumen.berlaku
+      ? null
+      : 'Jadwal kalibrasi ulang ${Format.tanggal(sertifikat.berlakuSampai)}';
+
   /// Kalimat untuk pembaca layar, urutan sama dengan tampilan.
   String get kalimat {
     final sr = sertifikat;
@@ -186,8 +212,9 @@ class BarisSertifikat extends StatelessWidget {
       ?_namaAlat,
       'Sertifikat ${sr.nomor}',
       if (_serial != null) 'Nomor seri $_serial',
-      if (sr.diterbitkan != null) 'Terbit ${Format.tanggal(sr.diterbitkan)}',
+      ?_teksTerbit,
       for (final s in badge) 'Status: ${s.label}',
+      ?_teksJadwal,
     ].join('. ');
   }
 
@@ -198,7 +225,14 @@ class BarisSertifikat extends StatelessWidget {
     final sr = sertifikat;
     final bentuk = _bentukKartu(context);
     final gayaKet = t.bodySmall?.copyWith(color: s.onSurfaceVariant);
+    // Metadata kecil (12): lebih kecil dari tanggal terbit, bobot keterangan.
+    final gayaJadwal = t.labelSmall?.copyWith(
+      color: s.onSurfaceVariant,
+      fontWeight: TipografiSidik.beratKeterangan,
+    );
     final badgeAda = badge;
+    final terbit = _teksTerbit;
+    final jadwal = _teksJadwal;
 
     // Panah di baris nama (bukan kolom penuh di kanan): sisa isi memakai
     // seluruh lebar kartu, jadi tanggal terbit dan badge muat sebaris.
@@ -241,7 +275,7 @@ class BarisSertifikat extends StatelessWidget {
             if (_serial != null) Text('SN $_serial', style: gayaKet?.nomor),
           ],
         ),
-        if (sr.diterbitkan != null || badgeAda.isNotEmpty)
+        if (terbit != null || badgeAda.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: Spasi.sm),
             child: Wrap(
@@ -250,11 +284,7 @@ class BarisSertifikat extends StatelessWidget {
               spacing: Spasi.sm,
               runSpacing: Spasi.sm,
               children: [
-                if (sr.diterbitkan != null)
-                  Text(
-                    'Terbit ${Format.tanggal(sr.diterbitkan)}',
-                    style: gayaKet,
-                  ),
+                if (terbit != null) Text(terbit, style: gayaKet),
                 if (badgeAda.isNotEmpty)
                   Wrap(
                     spacing: Spasi.sm,
@@ -263,6 +293,14 @@ class BarisSertifikat extends StatelessWidget {
                   ),
               ],
             ),
+          ),
+        // Metadata kecil terakhir; tanpa tanggalnya tidak ada baris sama sekali.
+        if (jadwal != null)
+          Padding(
+            padding: EdgeInsets.only(
+              top: terbit != null || badgeAda.isNotEmpty ? Spasi.xs : Spasi.sm,
+            ),
+            child: Text(jadwal, style: gayaJadwal),
           ),
       ],
     );
@@ -297,10 +335,11 @@ class BarisSertifikat extends StatelessWidget {
 
 /// Panel kosong: kartu putih ringkas berisi ikon kecil, judul, satu kalimat,
 /// dan (hasil cari kosong) filter yang sedang aktif beserta tombol
-/// [labelReset] yang menghapusnya. Dipakai untuk "belum ada sertifikat" dan
-/// hasil cari yang kosong; pembedanya kata dan [ikon], keduanya dari
-/// pemanggil. [filter] kosong = tanpa daftar filter; [onReset] null = tanpa
-/// tombol.
+/// [labelReset] yang menghapusnya dan, bila ada filter bawaan yang ikut
+/// menyempitkan hasil, tombol [labelLonggarkan] yang melepasnya. Dipakai untuk
+/// "belum ada sertifikat" dan hasil cari yang kosong; pembedanya kata dan
+/// [ikon], keduanya dari pemanggil. [filter] kosong = tanpa daftar filter;
+/// [onReset] / [onLonggarkan] null = tanpa tombolnya.
 class PanelKosongSertifikat extends StatelessWidget {
   const PanelKosongSertifikat({
     super.key,
@@ -310,6 +349,8 @@ class PanelKosongSertifikat extends StatelessWidget {
     this.filter = const [],
     this.onReset,
     this.labelReset = 'Hapus pencarian',
+    this.onLonggarkan,
+    this.labelLonggarkan = 'Tampilkan yang sudah digantikan',
   });
 
   final IconData ikon;
@@ -318,6 +359,8 @@ class PanelKosongSertifikat extends StatelessWidget {
   final List<String> filter;
   final VoidCallback? onReset;
   final String labelReset;
+  final VoidCallback? onLonggarkan;
+  final String labelLonggarkan;
 
   @override
   Widget build(BuildContext context) {
@@ -365,13 +408,27 @@ class PanelKosongSertifikat extends StatelessWidget {
                     ),
                   ),
               ],
-              if (onReset != null) ...[
+              if (onReset != null || onLonggarkan != null) ...[
                 const SizedBox(height: Spasi.lg),
-                TombolSidik(
-                  label: labelReset,
-                  ikon: Icons.close,
-                  ragam: RagamTombol.sekunder,
-                  onPressed: onReset,
+                Wrap(
+                  spacing: Spasi.sm,
+                  runSpacing: Spasi.sm,
+                  children: [
+                    if (onReset != null)
+                      TombolSidik(
+                        label: labelReset,
+                        ikon: Icons.close,
+                        ragam: RagamTombol.sekunder,
+                        onPressed: onReset,
+                      ),
+                    if (onLonggarkan != null)
+                      TombolSidik(
+                        label: labelLonggarkan,
+                        ikon: Icons.visibility_outlined,
+                        ragam: RagamTombol.sekunder,
+                        onPressed: onLonggarkan,
+                      ),
+                  ],
                 ),
               ],
             ],
@@ -645,7 +702,10 @@ class UjungDaftarSertifikat extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(top: Spasi.lg),
         child: Text(
-          'Semua ${data.total} sertifikat sudah tampil.',
+          // Angka yang sama dengan pil di kepala layar (satu definisi): yang
+          // sungguh termuat, bukan `total` mentah dari server.
+          'Semua ${jumlahSertifikatTerbaca(data) ?? data.isi.length} '
+          'sertifikat sudah tampil.',
           textAlign: TextAlign.center,
           style: t.bodySmall,
         ),

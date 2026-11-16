@@ -32,10 +32,11 @@ enum _Tampilan {
 ///
 /// - Daftar: [KolomCariUtuh] → baris sakelar → baris sertifikat
 ///   ([BarisSertifikat]: nama alat, nomor, nomor seri, tanggal terbit, badge
-///   status) dengan cari + infinite scroll. Dibuka dari Beranda ("Lihat semua") dan tab
-///   Alat. Bawaannya cuma yang MASIH BERLAKU sebagai dokumen: yang sudah
-///   digantikan revisi disembunyikan supaya nomor lama tidak terkirim ke
-///   auditor. Satu sakelar untuk menampilkannya.
+///   status, jadwal kalibrasi ulang) dengan cari + infinite scroll. Dibuka
+///   dari Beranda ("Lihat semua") dan tab Alat. Bawaannya cuma yang MASIH
+///   BERLAKU sebagai dokumen: yang sudah digantikan revisi disembunyikan
+///   supaya nomor lama tidak terkirim ke auditor. Satu sakelar untuk
+///   menampilkannya.
 /// - Arsip: sertifikat menurut tanggal terbit ([ArsipIsi]; tampilannya
 ///   menyusul di langkah desain berikutnya).
 ///
@@ -45,9 +46,10 @@ enum _Tampilan {
 ///
 /// Empat keadaan Daftar: memuat (kerangka statis tanpa gerak), kosong (panel
 /// kosong; "belum ada sertifikat" dan hasil cari kosong berbeda kata dan ikon,
-/// dan hasil cari kosong menyebut filter aktif beserta tombol "Hapus
-/// pencarian"), galat (`KeadaanGalat` + "Coba lagi"), tanpa koneksi (catatan di
-/// atas daftar yang tersimpan).
+/// dan hasil cari kosong menyebut filter aktif, termasuk yang bawaan, beserta
+/// tombol "Hapus pencarian" dan "Tampilkan yang sudah digantikan"), galat
+/// (`KeadaanGalat` + "Coba lagi"), tanpa koneksi (catatan di atas daftar yang
+/// tersimpan).
 ///
 /// Jumlah di kepala hanya dari daftar yang sedang tampil dan sudah terbaca
 /// (provider yang SAMA dengan daftarnya, jadi tidak pernah dua angka untuk satu
@@ -209,12 +211,20 @@ class _DaftarSertifikat extends ConsumerWidget {
               ? 'Coba nomor atau nama alat yang lain.'
               : 'Sertifikat muncul di sini begitu diterbitkan dan disahkan '
                     'laboratorium.',
+          // Semua filter yang menyempitkan hasil disebut, termasuk yang bawaan
+          // (yang sudah digantikan disembunyikan), supaya nomor lama yang
+          // dicari tidak berakhir di "tidak ada yang cocok" tanpa petunjuk.
           filter: [
             if (adaKata) 'Kata cari: “${kunci.cari}”',
             if (adaKata && kunci.termasukDigantikan)
               'Termasuk yang sudah direvisi',
+            if (adaKata && !kunci.termasukDigantikan)
+              'Sertifikat yang sudah digantikan disembunyikan',
           ],
           onReset: adaKata ? onHapusPencarian : null,
+          onLonggarkan: adaKata && !kunci.termasukDigantikan
+              ? () => onSakelar(true)
+              : null,
         ),
       ],
     );
