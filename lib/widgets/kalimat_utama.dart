@@ -42,6 +42,7 @@ class KalimatUtama extends StatelessWidget {
     super.key,
     required this.dateline,
     required this.kalimat,
+    this.kalimatKeduaRedup = false,
   });
 
   /// "Semua alat Anda berlaku." dengan "berlaku" berwarna `lulus`.
@@ -58,8 +59,15 @@ class KalimatUtama extends StatelessWidget {
         ],
       );
 
-  /// Teks kecil di atas kalimat (hari dan tanggal).
+  /// Teks kecil di atas kalimat (hari dan tanggal). Kosong = tanpa dateline
+  /// dan tanpa jarak yang menyertainya (Beranda Bento Lab: sapaan di kepala
+  /// layar menggantikannya).
   final String dateline;
+
+  /// Kalimat kedua dan seterusnya memakai teks kedua (`onSurfaceVariant`);
+  /// frasa status di dalamnya tetap berwarna nadanya. Beranda Bento Lab:
+  /// "1 alat lewat jadwal." tegas, kabar lanjutannya lebih tenang.
+  final bool kalimatKeduaRedup;
 
   /// Kalimat-kalimat; tiap kalimat adalah daftar potongan.
   final List<List<PotonganKalimat>> kalimat;
@@ -87,9 +95,11 @@ class KalimatUtama extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(dateline, style: t.bodySmall),
-          const SizedBox(height: Spasi.sm),
-          for (final k in kalimat.take(maksimumKalimat))
+          if (dateline.isNotEmpty) ...[
+            Text(dateline, style: t.bodySmall),
+            const SizedBox(height: Spasi.sm),
+          ],
+          for (final (i, k) in kalimat.take(maksimumKalimat).indexed)
             Text.rich(
               TextSpan(
                 children: [
@@ -102,7 +112,11 @@ class KalimatUtama extends StatelessWidget {
                     ),
                 ],
               ),
-              style: t.displayMedium,
+              style: kalimatKeduaRedup && i > 0
+                  ? t.displayMedium?.copyWith(
+                      color: context.skema.onSurfaceVariant,
+                    )
+                  : t.displayMedium,
             ),
         ],
       ),
