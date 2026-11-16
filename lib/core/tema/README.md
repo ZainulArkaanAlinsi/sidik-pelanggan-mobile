@@ -27,7 +27,7 @@ titik awal, belum ikut ditinjau di revisi).
 | `spasi.dart` | `Spasi.xs/sm/md/lg/xl/xxl` (4/8/12/16/24/32), `Spasi.sisi` (margin halaman 16), `Spasi.antarUbin` (12), `Spasi.bagian`, `Spasi.batasKompak` (340 dp), `Spasi.daftar(context)`, batas tablet (600 dp), lebar isi (720 dp), dan `lebarLebar` (1040 dp, layar dua kolom: Beranda). |
 | `bentuk.dart` | `Bentuk.stempel/tombol/ikon/kapsul/panel/ubin/penanda/pil` (6/10/12/12/16/16/8/999). `pil` HANYA untuk lingkaran sungguhan. Nama lama dipertahankan: `kontrol` = ikon, `kartu` = panel, `utama` = tombol, `lembar` = panel; `kecil` tetap 4 (tik, tooltip). |
 | `elevasi.dart` | `Elevasi.datar/rendah/lembar/garis`. Kedalaman dari garis halus, tidak ada bayangan (bilah navigasi = garis atas 1 dp). |
-| `ukuran.dart` | `UkuranIkon`, `AreaSentuh.minimum` (48 dp), `UkuranBaris` (baris 64, tombol utama 48, kolom angka 48), `UkuranTik`, `SkalaHuruf`, `UkuranKontrol` (tombol bulat, saringan 40, segmen 48, kolom cari 48, lencana 24), `UkuranUbin` (baris menu 56, ubin alat 144/160, ubin pasangan 132, ubin menu 124, kapsul), `UkuranBilah` (bilah navigasi bawah: tinggi 64, ikon 24, indikator 56 x 32, label sampai 1,3x), `UkuranFokus` (cincin fokus papan ketik), `UkuranVisual`, `UkuranAuth` (kepala layar masuk 240). |
+| `ukuran.dart` | `UkuranIkon`, `AreaSentuh.minimum` (48 dp), `UkuranBaris` (baris 64, tombol utama 48, kolom angka 48), `UkuranTik`, `SkalaHuruf`, `UkuranKontrol` (tombol bulat, saringan 40, segmen 48, kolom cari 48, lencana 24), `UkuranUbin` (baris menu 56, kartu alat ringkas `alatRingkas` 120 [R1b; `alat` 144 dan `alatBeranda` 160 tidak dipakai lagi], ubin pasangan 132, ubin menu 124, kapsul rel 80), `UkuranBilah` (bilah navigasi bawah: tinggi 64, ikon 24, indikator 56 x 32, label sampai 1,3x), `UkuranFokus` (cincin fokus papan ketik), `UkuranVisual`, `UkuranAuth` (plat logo 48 dan 40 di kepala ringkas layar masuk; kepala biru muda 240 dihapus di R1b). |
 | `tipografi.dart` | Inter 400/500/600 untuk teks dan IBM Plex Mono untuk angka dan kode. `.tabular` untuk angka selebar tetap, `.nomor` untuk nomor (IBM Plex Mono + nol bergaris). `beratTebal` = 600. |
 | `tema_sidik.dart` | `TemaSidik.terang` / `TemaSidik.gelap`: `ThemeData` yang menema semua komponen Material. |
 
@@ -51,8 +51,8 @@ Text('12', style: TipografiSidik.angkaSorot(teks: s.onSurface));
 
 | Tingkat | Ukuran/baris | Berat | Untuk |
 |---|---|---|---|
-| angka sorot | 32/36 mono | 600 | sisa hari di kartu alat Beranda (`angkaSorot`) |
-| angka kartu | 28/32 mono | 600 | sisa hari di kartu alat dan detail alat (displayLarge) |
+| angka sorot | 32/36 mono | 600 | (tidak dipakai kartu alat sejak R1b; sisa hari ada di kata lencana) (`angkaSorot`) |
+| angka kartu | 28/32 mono | 600 | sisa hari di detail alat (displayLarge) |
 | kalimat utama | 24/30 | 600 | kalimat utama Beranda dan paket (displayMedium) |
 | judul layar | 24/30 | 600 | judul layar tab, angka KPI, sambutan (displaySmall) |
 | nama | 20/26 | 600 | nama alat/akun, nomor order (headline*) |
