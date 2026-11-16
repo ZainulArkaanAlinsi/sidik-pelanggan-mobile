@@ -11,7 +11,7 @@ ulang di sini. Lihat `lib/core/tema/README.md`.
 | `halaman_sidik.dart` | `HalamanSidik`: Scaffold + AppBar bertema + isi dipusatkan (`lebarMaks` untuk layar dua kolom). Dipakai semua layar. |
 | `konten_tengah.dart` | `KontenTengah`: isi dibatasi ±720 dp dan dipusatkan di layar lebar. |
 | `kolom_formulir.dart` | `KolomFormulir`: kolom sempit (440 dp) bergulir untuk Sambutan, Masuk, dan layar keadaan penuh. |
-| `navigasi_utama.dart` | `NavigasiUtama` + `TujuanNavigasi`: navigasi bawah di HP, rel samping di >= 600 dp (`LayoutBuilder`, tanpa paket). |
+| `navigasi_utama.dart` | `NavigasiUtama` + `TujuanNavigasi` + `DockNavigasi`: di HP dock navy melayang (KOMPONEN.md §Dock; pil kuning meluncur ke butir aktif, label hanya di butir aktif, jarak dirapatkan lalu pil berikon saja bila label tidak muat; isi berakhir di atas pita dock), rel samping di >= 600 dp (`LayoutBuilder`, tanpa paket). Dibangun di atas `KontrolKetuk`. |
 | `bagian_sidik.dart` | `BagianSidik` (judul bagian) dan `AksiBagian` ("Lihat semua"). |
 
 ## Isi

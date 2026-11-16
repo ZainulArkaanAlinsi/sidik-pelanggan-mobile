@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
 import 'package:sidik_pelanggan/core/penyimpan_perangkat.dart';
 import 'package:sidik_pelanggan/core/penyimpan_sesi.dart';
+import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/models/rilis_aplikasi.dart';
@@ -26,6 +27,7 @@ import 'package:sidik_pelanggan/services/klien_rilis.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
 import 'package:sidik_pelanggan/services/pemasang_apk.dart';
 import 'package:sidik_pelanggan/services/push_pelanggan.dart';
+import 'package:sidik_pelanggan/widgets/navigasi_utama.dart';
 import 'package:sidik_pelanggan/widgets/saringan_pil.dart';
 
 import 'dukungan/layar_uji.dart';
@@ -284,7 +286,14 @@ void main() {
     await tester.pumpWidget(_bungkus(const Rangka(), _Palsu()));
     await tester.pumpAndSettle();
 
-    final nav = find.byType(NavigationBar);
+    final nav = find.byType(DockNavigasi);
+    // Tooltip tab Notifikasi memuat jumlah belum dibaca: "Notifikasi, 2 belum
+    // dibaca"; tab lain persis labelnya.
+    Finder tooltipTab(String label) => find.byWidgetPredicate(
+      (w) =>
+          w is Tooltip &&
+          (w.message == label || w.message!.startsWith('$label, ')),
+    );
     for (final label in [
       'Beranda',
       'Alat',
@@ -293,12 +302,12 @@ void main() {
       'Akun',
     ]) {
       expect(
-        find.descendant(of: nav, matching: find.text(label)),
+        find.descendant(of: nav, matching: tooltipTab(label)),
         findsOneWidget,
       );
     }
     expect(
-      find.descendant(of: nav, matching: find.text('Permintaan')),
+      find.descendant(of: nav, matching: tooltipTab('Permintaan')),
       findsNothing,
     );
   });
@@ -361,6 +370,178 @@ void main() {
     expect(find.text('Versi 2.0.0 tersedia'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
+  });
+
+  // P4: dock melayang tidak boleh menutup atau menggeser alur pembaruan dalam
+  // aplikasi (banner di atas dock di semua tab, dialog wajib di atas segalanya).
+  group('Rangka HP: dock dan alur pembaruan', () {
+    final banner = find.byKey(const ValueKey('banner-pembaruan'));
+    final dock = find.byType(DockNavigasi);
+
+    ProviderContainer wadah(WidgetTester tester) =>
+        ProviderScope.containerOf(tester.element(find.byType(Rangka)));
+
+    testWidgets('banner tampil di atas dock di semua tab, bisa diketuk, dan '
+        'dock tidak bergeser', (tester) async {
+      layarHp(tester);
+      await tester.pumpWidget(
+        _bungkus(
+          const Rangka(),
+          _Palsu(),
+          tambahan: [
+            pembaruanAktifProvider.overrideWithValue(true),
+            klienRilisProvider.overrideWithValue(
+              _KlienRilisWajib()..wajib = false,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Versi 2.0.0 tersedia'), findsOneWidget);
+      final rectDock = tester.getRect(dock);
+
+      for (final nama in [
+        'Beranda',
+        'Alat',
+        'Sertifikat',
+        'Notifikasi',
+        'Akun',
+      ]) {
+        await tester.tap(
+          find.descendant(
+            of: dock,
+            matching: find.byWidgetPredicate(
+              (w) =>
+                  w is Tooltip &&
+                  (w.message == nama || w.message!.startsWith('$nama, ')),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(banner, findsOneWidget, reason: 'banner di tab $nama');
+        final b = tester.getRect(banner);
+        expect(b.width, 360, reason: 'banner selebar layar ($nama)');
+        expect(
+          b.bottom,
+          lessThanOrEqualTo(rectDock.top - Spasi.lg),
+          reason: 'banner di atas dock ($nama)',
+        );
+        // Lebar dock mengikuti label butir aktif; kedudukan tegak dan tengahnya tetap.
+        final d = tester.getRect(dock);
+        expect(d.top, rectDock.top, reason: 'dock bergeser tegak ($nama)');
+        expect(
+          d.bottom,
+          rectDock.bottom,
+          reason: 'dock bergeser tegak ($nama)',
+        );
+        expect(
+          d.center.dx,
+          closeTo(180, 0.01),
+          reason: 'dock di tengah ($nama)',
+        );
+        // Dock dan tombol banner sama-sama bisa dijangkau ketukan.
+        expect(find.text('Nanti').hitTestable(), findsOneWidget, reason: nama);
+        expect(dock.hitTestable(), findsOneWidget, reason: nama);
+      }
+
+      // "Nanti" tetap bekerja di samping dock; keadaan pembaruan hanya berubah
+      // di `disembunyikan`.
+      final sebelum = wadah(tester).read(pembaruanProvider);
+      expect(sebelum.tersedia, isTrue);
+      expect(sebelum.wajib, isFalse);
+      expect(sebelum.disembunyikan, isFalse);
+      await tester.tap(find.text('Nanti'));
+      await tester.pumpAndSettle();
+      expect(banner, findsNothing);
+      final sesudah = wadah(tester).read(pembaruanProvider);
+      expect(sesudah.disembunyikan, isTrue);
+      expect(sesudah.rilis!.versi, '2.0.0');
+      expect(sesudah.wajib, isFalse);
+      expect(
+        tester.getRect(dock).top,
+        rectDock.top,
+        reason: 'dock tetap di tempatnya',
+      );
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('rilis wajib: dialog tampil di atas dock, tidak bisa ditutup, '
+        'dock di belakangnya tidak menerima ketukan', (tester) async {
+      layarHp(tester);
+      await tester.pumpWidget(
+        _bungkus(
+          const Rangka(),
+          _Palsu(),
+          tambahan: [
+            pembaruanAktifProvider.overrideWithValue(true),
+            klienRilisProvider.overrideWithValue(_KlienRilisWajib()),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(dock, findsOneWidget, reason: 'dock tetap ada di bawah dialog');
+      expect(find.text('Pembaruan wajib'), findsOneWidget);
+      expect(find.text('Pembaruan wajib').hitTestable(), findsOneWidget);
+      // Rilis wajib tidak punya banner (dialognya yang bertugas).
+      expect(banner, findsNothing);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Pembaruan wajib'), findsOneWidget);
+
+      // Ketukan di butir dock jatuh ke penghalang dialog: tab tidak berpindah.
+      await tester.tap(
+        find.descendant(of: dock, matching: find.byTooltip('Alat')),
+        warnIfMissed: false,
+      );
+      await tester.pumpAndSettle();
+      expect(wadah(tester).read(tabProvider), IndeksTab.beranda);
+      expect(find.text('Pembaruan wajib'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('rilis wajib dicabut: dialog menutup sendiri, banner muncul '
+        'di atas dock', (tester) async {
+      layarHp(tester);
+      final klien = _KlienRilisWajib();
+      await tester.pumpWidget(
+        _bungkus(
+          const Rangka(),
+          _Palsu(),
+          tambahan: [
+            pembaruanAktifProvider.overrideWithValue(true),
+            klienRilisProvider.overrideWithValue(klien),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Pembaruan wajib'), findsOneWidget);
+      final rectDock = tester.getRect(dock);
+
+      klien.wajib = false;
+      var selesai = false;
+      wadah(tester)
+          .read(pembaruanProvider.notifier)
+          .periksa(paksa: true)
+          .whenComplete(() => selesai = true);
+      for (var i = 0; i < 20 && !selesai; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+      expect(selesai, isTrue);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pembaruan wajib'), findsNothing);
+      expect(banner, findsOneWidget);
+      expect(
+        tester.getRect(banner).bottom,
+        lessThanOrEqualTo(rectDock.top - Spasi.lg),
+      );
+      expect(tester.getRect(dock), rectDock);
+
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   testWidgets('penjadwal pembaruan dibuang begitu Rangka dilepas (keluar)', (
