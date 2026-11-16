@@ -1,14 +1,17 @@
-// Layar 02 "Alat saya" Bento Lab (P5b): kolom cari pil, saringan pil, ubin alat
-// berwarna status, dan empat keadaan (memuat statis, kosong, galat, tanpa
-// koneksi). Yang dijaga: susunan dari token, jumlah di layar hanya dari data
-// yang terbaca (memuat/gagal bukan "0"), pencarian/saringan/paginasi tetap
-// memakai provider dan kunci yang sama, kerangka tanpa gerak berulang,
-// "kurangi gerak", huruf 1,3x di 320 dp, Semantics, sasaran sentuh, dan baris
-// saringan yang bisa digeser dengan mouse di layar lebar.
+// Layar "Alat saya": kolom cari, saringan pil, kartu alat RINGKAS netral (R1b,
+// REVISI-2 butir 2: nama menonjol, "merk model · SN seri", lokasi, status
+// berlencana, "Lihat detail"; alat nonaktif tanpa hitung mundur), dan empat
+// keadaan (memuat statis, kosong, galat, tanpa koneksi). Yang dijaga: susunan
+// dari token, jumlah di layar hanya dari data yang terbaca (memuat/gagal bukan
+// "0"), pencarian/saringan/paginasi tetap memakai provider dan kunci yang
+// sama, kerangka tanpa gerak berulang, "kurangi gerak", huruf 1,3x di 320 dp
+// dan 2,0x, Semantics, sasaran sentuh, dan baris saringan yang bisa digeser
+// dengan mouse di layar lebar.
 //
 // Perilaku cari/saring/paginasi lama dijaga `alat_status_riwayat_test.dart`.
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -16,6 +19,7 @@ import 'package:sidik_pelanggan/core/format.dart';
 import 'package:sidik_pelanggan/core/tema/bentuk.dart';
 import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
+import 'package:sidik_pelanggan/core/tema/tipografi.dart';
 import 'package:sidik_pelanggan/core/tema/ukuran.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/providers/data_provider.dart';
@@ -32,6 +36,7 @@ import 'package:sidik_pelanggan/widgets/kolom_cari_utuh.dart';
 import 'package:sidik_pelanggan/widgets/saringan_pil.dart';
 import 'package:sidik_pelanggan/widgets/status_tampil.dart';
 import 'package:sidik_pelanggan/widgets/stempel.dart';
+import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
 import 'package:sidik_pelanggan/widgets/ubin_alat.dart';
 
 import 'dukungan/fixture_fitur.dart';
@@ -158,7 +163,7 @@ Alat _alat(Map<String, dynamic> j) => Alat.dariJson(j);
 void main() {
   setUpAll(siapkanTesFitur);
 
-  group('susunan Bento Lab', () {
+  group('susunan kartu ringkas', () {
     testWidgets(
       'kolom cari pil, saringan pil, ubin alat; tanpa komponen lama',
       (tester) async {
@@ -193,12 +198,15 @@ void main() {
           lessThan(urutan.indexOf('Termometer')),
         );
 
-        // Ubin: tinggi minimum 196 dan sudut 32 dari token.
+        // Kartu: tinggi minimum dan sudut dari token. RINGKAS: dengan semua
+        // baris terisi (merk + seri, lokasi, dua lencana, "Lihat detail") tetap
+        // di bawah 180 dp (kartu Bento dulu ~190 dp dengan angka hari besar).
         final ubin = _ubin('Oven Memmert');
         expect(
           tester.getSize(ubin).height,
-          greaterThanOrEqualTo(UkuranUbin.alat),
+          greaterThanOrEqualTo(UkuranUbin.alatRingkas),
         );
+        expect(tester.getSize(ubin).height, lessThan(180));
         final bahan = tester.widget<Material>(
           find.descendant(of: ubin, matching: find.byType(Material)).first,
         );
@@ -209,79 +217,121 @@ void main() {
       },
     );
 
-    testWidgets('isi ubin dari data: status, merk, seri, angka hari, tanggal', (
-      tester,
-    ) async {
-      await _buka(tester, _server());
+    testWidgets(
+      'isi kartu dari data: status berwaktu, merk, seri, lokasi, jadwal',
+      (tester) async {
+        await _buka(tester, _server());
 
-      final oven = tester.widget<UbinAlat>(_ubin('Oven Memmert'));
-      expect(oven.status.label, 'Lewat jadwal');
-      expect(oven.status.nada, NadaStatus.gagal);
-      expect(oven.merkTipe, 'Memmert UN55');
-      // Nomor seri apa adanya; awalan "SN" hanya tampilan.
-      expect(oven.serial, 'MM-UN55-19');
-      expect(oven.awalanSerial, 'SN');
-      expect(
-        find.descendant(
-          of: _ubin('Oven Memmert'),
-          matching: find.text('SN MM-UN55-19'),
-        ),
-        findsOneWidget,
-      );
-      expect(oven.hari, -88);
-      expect(oven.tanggal, Format.tanggal(DateTime.parse(tanggalUji(-88))));
-      // Lokasi tampil di ubin (pembeda alat sejenis); nomor identifikasi tidak.
-      expect(oven.lokasi, 'Gudang 1');
-      expect(
-        find.descendant(
-          of: _ubin('Oven Memmert'),
-          matching: find.text('Gudang 1'),
-        ),
-        findsOneWidget,
-      );
+        final oven = tester.widget<UbinAlat>(_ubin('Oven Memmert'));
+        expect(oven.status.label, 'Lewat jadwal');
+        expect(oven.status.nada, NadaStatus.gagal);
+        expect(oven.merkTipe, 'Memmert UN55');
+        // Nomor seri apa adanya; awalan "SN" hanya tampilan.
+        expect(oven.serial, 'MM-UN55-19');
+        expect(oven.awalanSerial, 'SN');
+        expect(oven.hari, -88);
+        expect(oven.tanggal, Format.tanggal(DateTime.parse(tanggalUji(-88))));
+        expect(oven.nonaktif, isFalse);
+        // Identitas satu baris: "merk model · SN seri".
+        expect(
+          find.descendant(
+            of: _ubin('Oven Memmert'),
+            matching: find.text('Memmert UN55 · SN MM-UN55-19'),
+          ),
+          findsOneWidget,
+        );
+        // Lokasi tampil di kartu (pembeda alat sejenis); nomor identifikasi tidak.
+        expect(oven.lokasi, 'Gudang 1');
+        expect(
+          find.descendant(
+            of: _ubin('Oven Memmert'),
+            matching: find.text('Gudang 1'),
+          ),
+          findsOneWidget,
+        );
 
-      // Kata + ikon status, bukan warna saja.
-      expect(
-        find.descendant(
+        // Kata + ikon status, dan waktunya ikut di kata lencana.
+        final lencana = find.descendant(
           of: _ubin('Oven Memmert'),
-          matching: find.byIcon(Icons.error_outline),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.descendant(
-          of: _ubin('Oven Memmert'),
-          matching: find.text('hari lewat'),
-        ),
-        findsOneWidget,
-      );
+          matching: find.widgetWithText(Stempel, 'Lewat jadwal 88 hari'),
+        );
+        expect(lencana, findsOneWidget);
+        expect(
+          find.descendant(
+            of: lencana,
+            matching: find.byIcon(Icons.error_outline),
+          ),
+          findsOneWidget,
+        );
+        // Tanggal jadwal di dasar kartu, dengan kata depan menurut sisa harinya.
+        expect(
+          find.descendant(
+            of: _ubin('Oven Memmert'),
+            matching: find.text(
+              'sejak ${Format.tanggal(DateTime.parse(tanggalUji(-88)))}',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: _ubin('Timbangan Analitik'),
+            matching: find.text(
+              'jatuh tempo ${Format.tanggal(DateTime.parse(tanggalUji(12)))}',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: _ubin('Timbangan Analitik'),
+            matching: find.widgetWithText(
+              Stempel,
+              'Segera jatuh tempo 12 hari lagi',
+            ),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: _ubin('Termometer'),
+            matching: find.widgetWithText(Stempel, 'Berlaku 45 hari lagi'),
+          ),
+          findsOneWidget,
+        );
 
-      // Kartu alat NETRAL (permukaan tema): status hanya di lencana.
-      final permukaan = TemaSidik.terang.colorScheme.surface;
-      expect(_latarUbin(tester, _ubin('Oven Memmert')), permukaan);
-      expect(_latarUbin(tester, _ubin('Timbangan Analitik')), permukaan);
-      expect(_latarUbin(tester, _ubin('Termometer')), permukaan);
+        // Kartu alat NETRAL (permukaan tema): status hanya di lencana.
+        final permukaan = TemaSidik.terang.colorScheme.surface;
+        expect(_latarUbin(tester, _ubin('Oven Memmert')), permukaan);
+        expect(_latarUbin(tester, _ubin('Timbangan Analitik')), permukaan);
+        expect(_latarUbin(tester, _ubin('Termometer')), permukaan);
 
-      // Tanpa jadwal: netral (putih), tanpa angka hari dan tanggal; nonaktif
-      // juga netral. Keadaan belum ada keputusan/jadwal tidak pernah hijau.
-      final tanpa = tester.widget<UbinAlat>(_ubin('Tanpa Jadwal'));
-      expect(tanpa.status.label, 'Belum pernah dikalibrasi');
-      expect(tanpa.status.nada, NadaStatus.netral);
-      expect(tanpa.hari, isNull);
-      expect(tanpa.tanggal, isNull);
-      expect(
-        _latarUbin(tester, _ubin('Tanpa Jadwal')),
-        TemaSidik.terang.colorScheme.surface,
-      );
-      expect(
-        find.descendant(of: _ubin('Tanpa Jadwal'), matching: find.text('–')),
-        findsOneWidget,
-      );
-      expect(
-        tester.widget<UbinAlat>(_ubin('Alat Nonaktif')).status.nada,
-        NadaStatus.netral,
-      );
-    });
+        // Tanpa jadwal: netral (putih), tanpa hari, tanpa tanggal, tanpa baris
+        // "jatuh tempo"/"sejak"; nonaktif juga netral. Keadaan belum ada
+        // keputusan/jadwal tidak pernah hijau.
+        final tanpa = tester.widget<UbinAlat>(_ubin('Tanpa Jadwal'));
+        expect(tanpa.status.label, 'Belum pernah dikalibrasi');
+        expect(tanpa.status.nada, NadaStatus.netral);
+        expect(tanpa.hari, isNull);
+        expect(tanpa.tanggal, isNull);
+        expect(tanpa.keteranganJadwal, isNull);
+        expect(
+          _latarUbin(tester, _ubin('Tanpa Jadwal')),
+          TemaSidik.terang.colorScheme.surface,
+        );
+        expect(
+          find.descendant(
+            of: _ubin('Tanpa Jadwal'),
+            matching: find.textContaining('jatuh tempo'),
+          ),
+          findsNothing,
+        );
+        expect(
+          tester.widget<UbinAlat>(_ubin('Alat Nonaktif')).status.nada,
+          NadaStatus.netral,
+        );
+      },
+    );
 
     testWidgets('lokasi membedakan dua alat sejenis tanpa nomor seri; tanpa '
         'lokasi tidak ada baris kosong', (tester) async {
@@ -361,7 +411,9 @@ void main() {
           find.descendant(
             of: u,
             matching: find.byWidgetPredicate(
-              (w) => w is Text && (w.data ?? '').trim().isEmpty,
+              (w) =>
+                  w is Text &&
+                  (w.data ?? w.textSpan?.toPlainText() ?? '').trim().isEmpty,
             ),
           ),
           findsNothing,
@@ -423,7 +475,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(KerangkaAlat), findsOneWidget);
-        expect(find.byType(UbinKerangkaAlat), findsNWidgets(3));
+        expect(find.byType(UbinKerangkaAlat), findsNWidgets(4));
         expect(find.byType(UbinAlat), findsNothing);
         expect(find.bySemanticsLabel('Memuat'), findsOneWidget);
         // Tidak ada animasi yang menjadwalkan frame terus-menerus (denyut lama
@@ -464,13 +516,12 @@ void main() {
         );
         expect(find.byType(UbinAlat), findsNothing);
         final ubinKosong = find.byType(UbinKosongAlat);
+        // Ringkas (R1b): dulu blok 304 dp dengan ikon raksasa.
+        expect(tester.getSize(ubinKosong).height, lessThan(260));
+        // "Belum ada alat" tanpa tindakan: tidak ada yang bisa dilonggarkan.
         expect(
-          tester.getSize(ubinKosong).height,
-          greaterThanOrEqualTo(UbinKosongAlat.tinggiMin),
-        );
-        expect(
-          UbinKosongAlat.tinggiMin,
-          UkuranUbin.alatBeranda + UkuranUbin.alat,
+          find.descendant(of: ubinKosong, matching: find.byType(TombolSidik)),
+          findsNothing,
         );
         // Netral: keadaan kosong bukan peringatan (krem = "perlu diperiksa").
         expect(
@@ -509,6 +560,42 @@ void main() {
           findsOneWidget,
         );
         expect(find.textContaining('pilih "Semua"'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'saringan yang menyempitkan: satu tombol "Tampilkan semua alat" kembali '
+      'ke Semua; dengan kata cari atau tanpa saringan tidak ada tombol',
+      (tester) async {
+        await _buka(tester, _server(), perusahaan: 5);
+        // Belum ada alat sama sekali: tidak ada yang bisa dilonggarkan.
+        expect(find.text('Tampilkan semua alat'), findsNothing);
+
+        await _ketukPil(tester, 'Dalam 30 hari');
+        expect(
+          find.text('Tidak ada alat yang jatuh tempo dalam 30 hari'),
+          findsOneWidget,
+        );
+        final tombol = find.widgetWithText(TombolSidik, 'Tampilkan semua alat');
+        expect(tombol, findsOneWidget);
+        expect(tester.getSize(tombol).height, greaterThanOrEqualTo(48));
+
+        await tester.tap(tombol);
+        await tester.pumpAndSettle();
+        expect(find.text('Belum ada alat'), findsOneWidget);
+        expect(find.text('Tampilkan semua alat'), findsNothing);
+        final semua = tester.widget<SaringanPil>(find.byType(SaringanPil));
+        expect(semua.terpilih, 0);
+
+        // Dengan kata cari: kata itu milik kolom cari, tombol tidak ditawarkan.
+        await _ketukPil(tester, 'Lewat jadwal');
+        await tester.enterText(find.byType(TextField), 'zzz');
+        await tester.pump(
+          KolomCariUtuh.jeda + const Duration(milliseconds: 50),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Tidak ada yang cocok'), findsOneWidget);
+        expect(find.text('Tampilkan semua alat'), findsNothing);
       },
     );
 
@@ -784,6 +871,341 @@ void main() {
     });
   });
 
+  group('kartu ringkas R1b: urutan, nonaktif, lencana, tindakan', () {
+    double y(WidgetTester t, Finder kartu, Finder f) =>
+        t.getTopLeft(find.descendant(of: kartu, matching: f)).dy;
+
+    testWidgets(
+      'urutan baris: nama, "merk model · SN seri", lokasi, lencana, Lihat '
+      'detail; nama paling menonjol',
+      (tester) async {
+        await _buka(tester, _server());
+        final u = _ubin('Oven Memmert');
+        final nama = y(tester, u, find.text('Oven Memmert'));
+        final identitas = y(
+          tester,
+          u,
+          find.text('Memmert UN55 · SN MM-UN55-19'),
+        );
+        final lokasi = y(tester, u, find.text('Gudang 1'));
+        final status = y(tester, u, find.byType(Stempel).first);
+        final aksi = y(tester, u, find.text('Lihat detail'));
+        expect(nama, lessThan(identitas));
+        expect(identitas, lessThan(lokasi));
+        expect(lokasi, lessThan(status));
+        expect(status, lessThan(aksi));
+
+        double ukuran(Finder f) => tester
+            .widget<Text>(find.descendant(of: u, matching: f))
+            .style!
+            .fontSize!;
+        final ukuranNama = ukuran(find.text('Oven Memmert'));
+        expect(ukuranNama, 20);
+        for (final lain in [
+          find.text('Memmert UN55 · SN MM-UN55-19'),
+          find.text('Gudang 1'),
+          find.text('Lihat detail'),
+          find.text('Lewat jadwal 88 hari'),
+        ]) {
+          expect(ukuranNama, greaterThan(ukuran(lain)));
+        }
+      },
+    );
+
+    testWidgets('nomor seri IBM Plex Mono; merk dan model tidak', (
+      tester,
+    ) async {
+      await _buka(tester, _server());
+      final teks = tester.widget<Text>(
+        find.descendant(
+          of: _ubin('Oven Memmert'),
+          matching: find.text('Memmert UN55 · SN MM-UN55-19'),
+        ),
+      );
+      final anak = (teks.textSpan! as TextSpan).children!.cast<TextSpan>();
+      final serial = anak.firstWhere((x) => x.text == 'SN MM-UN55-19');
+      expect(serial.style!.fontFamily, TipografiSidik.keluargaAngka);
+      final merk = anak.firstWhere((x) => x.text == 'Memmert UN55');
+      expect(merk.style, isNull);
+      expect(teks.style!.fontFamily, TipografiSidik.keluarga);
+    });
+
+    testWidgets(
+      'alat nonaktif: TANPA hitung mundur, konteks "Alat nonaktif" dengan '
+      'jadwal tercatat, nama diredupkan',
+      (tester) async {
+        final semantik = tester.ensureSemantics();
+        await _buka(tester, _server());
+        final u = _ubin('Alat Nonaktif');
+        final tanggal = Format.tanggal(DateTime.parse(tanggalUji(10)));
+        expect(
+          find.descendant(
+            of: u,
+            matching: find.text('Alat nonaktif, jadwal tercatat $tanggal'),
+          ),
+          findsOneWidget,
+        );
+        // Fixture: jadwal 10 hari lagi. Tidak ada hitung mundur dalam bentuk
+        // apa pun (lencana, keterangan, kata "lagi"/"lewat"/"jatuh tempo").
+        for (final kata in [
+          'hari lagi',
+          'hari lewat',
+          'jatuh tempo',
+          'sejak',
+        ]) {
+          expect(
+            find.descendant(of: u, matching: find.textContaining(kata)),
+            findsNothing,
+            reason: kata,
+          );
+        }
+        expect(find.descendant(of: u, matching: find.text('10')), findsNothing);
+        // Satu lencana, netral, katanya "Tidak aktif" (tanpa waktu).
+        expect(
+          find.descendant(of: u, matching: find.byType(Stempel)),
+          findsOneWidget,
+        );
+        final lencana = tester.widget<UbinAlat>(u);
+        expect(lencana.nonaktif, isTrue);
+        expect(lencana.labelStatus, 'Tidak aktif');
+        expect(lencana.status.nada, NadaStatus.netral);
+        // Nama diredupkan ke teks kedua; alat aktif tetap teks utama.
+        final skema = TemaSidik.terang.colorScheme;
+        Color warnaNama(String nama) => tester
+            .widget<Text>(
+              find.descendant(of: _ubin(nama), matching: find.text(nama)),
+            )
+            .style!
+            .color!;
+        expect(warnaNama('Alat Nonaktif'), skema.onSurfaceVariant);
+        expect(warnaNama('Termometer'), skema.onSurface);
+        // Pembaca layar: konteks ada, hitung mundur tidak.
+        final kalimat = tester
+            .getSemantics(find.bySemanticsLabel(RegExp(r'^Alat Nonaktif')))
+            .getSemanticsData()
+            .label;
+        expect(kalimat, contains('Status: Tidak aktif'));
+        expect(kalimat, contains('Alat nonaktif, jadwal tercatat $tanggal'));
+        expect(kalimat, isNot(contains('hari')));
+        semantik.dispose();
+      },
+    );
+
+    testWidgets('alat nonaktif tanpa jadwal: hanya "Alat nonaktif"', (
+      tester,
+    ) async {
+      layarHp(tester);
+      await tester.pumpWidget(
+        _app(
+          const Scaffold(
+            body: UbinAlat(
+              nama: 'Alat Lama',
+              status: StatusTampil(
+                'Tidak aktif',
+                NadaStatus.netral,
+                Icons.pause_circle_outline,
+              ),
+              nonaktif: true,
+            ),
+          ),
+          _server(),
+        ),
+      );
+      expect(find.text('Alat nonaktif'), findsOneWidget);
+      expect(find.textContaining('jadwal tercatat'), findsNothing);
+      // Kartu statis (tanpa ketukan): tanpa "Lihat detail".
+      expect(find.text('Lihat detail'), findsNothing);
+    });
+
+    testWidgets(
+      'status BUKAN hanya warna: tiap lencana ikon + kata, ikon berbeda per '
+      'status, dan hitungan hari ikut di kata',
+      (tester) async {
+        await _buka(tester, _server());
+        final ikon = <IconData>{};
+        for (final nama in [
+          'Oven Memmert',
+          'Timbangan Analitik',
+          'Termometer',
+          'Alat Nonaktif',
+          'Tanpa Jadwal',
+        ]) {
+          final lencana = find.descendant(
+            of: _ubin(nama),
+            matching: find.byType(Stempel),
+          );
+          expect(lencana, findsOneWidget, reason: nama);
+          final ikonDi = find.descendant(
+            of: lencana,
+            matching: find.byType(Icon),
+          );
+          expect(ikonDi, findsOneWidget, reason: nama);
+          ikon.add(tester.widget<Icon>(ikonDi).icon!);
+          final kata = tester.widget<Stempel>(lencana).status.label;
+          expect(kata.trim(), isNotEmpty, reason: nama);
+          expect(
+            find.descendant(of: lencana, matching: find.text(kata)),
+            findsOneWidget,
+            reason: '$nama: kata status tampil di lencana',
+          );
+          // Tiga status jadwal membawa waktunya di kata itu.
+          expect(
+            kata.contains('hari'),
+            ['Oven Memmert', 'Timbangan Analitik', 'Termometer'].contains(nama),
+            reason: nama,
+          );
+        }
+        expect(ikon.length, 5, reason: 'lima status, lima ikon berbeda');
+      },
+    );
+
+    testWidgets(
+      'alat di lab: tahap jadi lencana kedua; tanpa itu satu lencana',
+      (tester) async {
+        final semantik = tester.ensureSemantics();
+        final server = ServerFitur({
+          3: DataPerusahaan(
+            nama: 'PT Alfa',
+            alat: [
+              alatJson(
+                1,
+                'Alat Di Lab',
+                hari: -4,
+                status: 'lewat_jadwal',
+                sedangDikerjakan: sedangDikerjakanJson(),
+              ),
+              alatJson(
+                2,
+                'Alat Siap',
+                hari: 30,
+                status: 'mendekati_jadwal',
+                sedangDikerjakan: sedangDikerjakanJson(
+                  tahap: 'siap_diambil',
+                  label: 'Siap diambil',
+                ),
+              ),
+              alatJson(3, 'Alat Rumah', hari: 100),
+            ],
+          ),
+        });
+        await _buka(tester, server);
+        final dilab = find.descendant(
+          of: _ubin('Alat Di Lab'),
+          matching: find.byType(Stempel),
+        );
+        expect(dilab, findsNWidgets(2));
+        expect(
+          find.descendant(
+            of: _ubin('Alat Di Lab'),
+            matching: find.widgetWithText(Stempel, 'Lewat jadwal 4 hari'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: _ubin('Alat Di Lab'),
+            matching: find.widgetWithText(Stempel, 'Sedang dikalibrasi'),
+          ),
+          findsOneWidget,
+        );
+        // Tahap memakai pemetaan paket: siap diambil = ikon kotak, kata server.
+        expect(
+          find.descendant(
+            of: _ubin('Alat Siap'),
+            matching: find.byIcon(Icons.inventory_2_outlined),
+          ),
+          findsOneWidget,
+        );
+        // Pembaca layar mendengar tahapnya, dan hari 30 = "Segera jatuh tempo
+        // 30 hari lagi".
+        final kalimat = tester
+            .getSemantics(find.bySemanticsLabel(RegExp(r'^Alat Siap')))
+            .getSemanticsData()
+            .label;
+        expect(kalimat, contains('Status: Segera jatuh tempo 30 hari lagi'));
+        expect(kalimat, contains('Di lab: Siap diambil'));
+        // Alat yang tidak di lab: satu lencana saja.
+        expect(
+          find.descendant(
+            of: _ubin('Alat Rumah'),
+            matching: find.byType(Stempel),
+          ),
+          findsOneWidget,
+        );
+        semantik.dispose();
+      },
+    );
+
+    testWidgets('"Lihat detail" hanya bila kartu bisa diketuk; hiasan bagi '
+        'pembaca layar (kartunya yang tombol)', (tester) async {
+      final semantik = tester.ensureSemantics();
+      await _buka(tester, _server());
+      expect(find.text('Lihat detail'), findsNWidgets(7));
+      expect(find.bySemanticsLabel('Lihat detail'), findsNothing);
+      // Warna aksi (primer), bukan warna status.
+      final aksi = tester.widget<Text>(
+        find.descendant(
+          of: _ubin('Oven Memmert'),
+          matching: find.text('Lihat detail'),
+        ),
+      );
+      expect(aksi.style!.color, TemaSidik.terang.colorScheme.primary);
+      semantik.dispose();
+    });
+
+    testWidgets(
+      '320 dp x huruf 2,0: nama panjang tidak dipotong, lencana dan identitas '
+      'utuh di dalam kartu, tanpa luapan',
+      (tester) async {
+        const nama =
+            'Digital Pressure Calibrator Multifungsi Presisi Tinggi 2271A';
+        final server = ServerFitur({
+          3: DataPerusahaan(
+            nama: 'PT Panjang',
+            alat: [
+              alatJson(
+                1,
+                nama,
+                hari: -365,
+                status: 'lewat_jadwal',
+                merk: 'Fluke Calibration International',
+                model: 'Series 2271A',
+                serial: 'FLK-2271A-0000000001',
+                sedangDikerjakan: sedangDikerjakanJson(),
+              ),
+            ],
+          ),
+        });
+        await _buka(tester, server, skala: 2.0, lebar: 320, tinggi: 3000);
+        expect(tester.takeException(), isNull);
+        final kartu = tester.getRect(find.byType(UbinAlat));
+        final paragraf = tester.renderObject<RenderParagraph>(
+          find
+              .descendant(
+                of: find.descendant(
+                  of: find.byType(UbinAlat),
+                  matching: find.text(nama),
+                ),
+                matching: find.byType(RichText),
+              )
+              .first,
+        );
+        expect(paragraf.didExceedMaxLines, isFalse);
+        for (final f in [
+          find.byType(Stempel).first,
+          find.byType(Stempel).last,
+          find.text('Lihat detail'),
+          find.textContaining('FLK-2271A-0000000001', findRichText: true),
+        ]) {
+          final r = tester.getRect(f);
+          expect(r.left, greaterThanOrEqualTo(kartu.left));
+          expect(r.right, lessThanOrEqualTo(kartu.right + 0.5));
+          expect(r.bottom, lessThanOrEqualTo(kartu.bottom));
+        }
+      },
+    );
+  });
+
   group('gerak, huruf besar, tema gelap', () {
     testWidgets(
       'ubin masuk berurutan: yang ke-4 belum penuh di frame pertama',
@@ -874,7 +1296,7 @@ void main() {
       expect(stempel.top, greaterThanOrEqualTo(ubin.top));
       expect(stempel.left, greaterThanOrEqualTo(ubin.left));
       expect(stempel.right, lessThanOrEqualTo(ubin.right));
-      expect(ubin.height, greaterThanOrEqualTo(UkuranUbin.alat));
+      expect(ubin.height, greaterThanOrEqualTo(UkuranUbin.alatRingkas));
 
       // Pil saringan terakhir bisa dijangkau dan sasaran sentuhnya >= 48.
       await tester.ensureVisible(_pil('Dalam 61–90 hari'));
@@ -927,7 +1349,7 @@ void main() {
       tester.semantics.tap(find.semantics.byLabel('Semua'));
       await tester.pumpAndSettle();
 
-      // Ubin: SATU simpul berisi nama, status, seri, sisa hari, tanggal.
+      // Kartu: SATU simpul berisi nama, status berwaktu, seri, lokasi, tanggal.
       final kalimat = tester
           .getSemantics(find.bySemanticsLabel(RegExp(r'^Oven Memmert')))
           .getSemanticsData()
@@ -939,7 +1361,8 @@ void main() {
       expect(kalimat, contains('Nomor seri MM-UN55-19'));
       expect(kalimat, isNot(contains('SN')));
       expect(kalimat, contains('Lokasi Gudang 1'));
-      expect(kalimat, contains('Lewat 88 hari'));
+      expect(kalimat, contains('Status: Lewat jadwal 88 hari'));
+      expect(kalimat, contains('sejak '));
       tester.semantics.tap(find.semantics.byLabel(RegExp(r'^Oven Memmert')));
       await tester.pumpAndSettle();
       expect(find.byType(AlatDetailScreen), findsOneWidget);

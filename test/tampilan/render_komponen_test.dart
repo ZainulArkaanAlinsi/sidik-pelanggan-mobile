@@ -138,8 +138,11 @@ void main() {
                   'istilah terlarang (K3): pakai "Lewat jadwal" dan '
                   '"Masa berlaku berakhir"',
             );
+            // Satu pengecualian sadar: baris identitas kartu alat "merk model ·
+            // SN seri" (REVISI-2 butir 2, `UbinAlat`). Pemisah lain tetap
+            // terlarang.
             expect(
-              semua,
+              semua.replaceAll(' · SN ', ' SN '),
               isNot(contains(' · ')),
               reason: 'rangkaian A · B · C',
             );

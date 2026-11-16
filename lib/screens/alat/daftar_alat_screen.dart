@@ -66,16 +66,19 @@ enum FilterAlat {
   };
 }
 
-/// Semua alat perusahaan, satu layar (Bento Lab, "02 Alat saya"), dengan status
-/// masa berlakunya (Berlaku, Segera jatuh tempo, Lewat jadwal, …). Yang paling
+/// Semua alat perusahaan, satu layar ("Alat saya"), dengan status masa
+/// berlakunya (Berlaku, Segera jatuh tempo, Lewat jadwal, …). Yang paling
 /// mendesak di atas (urutan dari server). Cari nama, merk, atau nomor seri;
 /// saring menurut kelompok jatuh tempo; tarik layar untuk memuat ulang.
 ///
-/// Susunan: kepala (judul + pil "N alat") → [KolomCariUtuh] → [SaringanPil] →
-/// daftar [KartuAlat] (ubin alat). Empat keadaan: memuat (kerangka statis),
-/// kosong (ubin kosong; "belum ada alat" dan hasil cari kosong berbeda kata dan
-/// ikon), galat (`KeadaanGalat` + "Coba lagi"), tanpa koneksi (catatan di atas
-/// daftar yang tersimpan).
+/// Susunan: kepala (judul + lencana "N alat") → [KolomCariUtuh] →
+/// [SaringanPil] (tetap di atas daftar) → daftar [KartuAlat] (kartu ringkas:
+/// nama, merk dan seri, lokasi, status, "Lihat detail"; alat nonaktif tanpa
+/// hitung mundur). Empat keadaan: memuat (kerangka statis), kosong (kartu
+/// kosong; "belum ada alat" dan hasil cari kosong berbeda kata dan ikon; satu
+/// tombol "Tampilkan semua alat" bila saringan yang menyempitkan), galat
+/// (`KeadaanGalat` + "Coba lagi"), tanpa koneksi (catatan di atas daftar yang
+/// tersimpan).
 ///
 /// Jumlah di layar hanya dari data yang terbaca: pil kepala dari daftar yang
 /// sedang tampil, bulatan saringan dari ringkasan Beranda (`berandaProvider`)
@@ -260,6 +263,14 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
         ikon: _ikonKosong,
         judul: _judulKosong,
         keterangan: keterangan ?? _keteranganKosong,
+        // Saringan yang menyempitkan daftar (tanpa kata cari): satu ketukan
+        // kembali ke "Semua". Dengan kata cari, kata itu milik kolom cari.
+        aksi: _kata.isEmpty && _filter != FilterAlat.semua
+            ? 'Tampilkan semua alat'
+            : null,
+        onAksi: _kata.isEmpty && _filter != FilterAlat.semua
+            ? () => setState(() => _filter = FilterAlat.semua)
+            : null,
       ),
     ],
   );
@@ -344,7 +355,7 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
   }
 }
 
-/// Judul kepala: "Alat saya" 28/34, satu baris, dijepit pada huruf besar
+/// Judul kepala: "Alat saya" 24/30, satu baris, dijepit pada huruf besar
 /// ([SkalaHuruf.batasBesar]); pembaca layar menerimanya sebagai judul.
 class _JudulLayar extends StatelessWidget {
   const _JudulLayar();

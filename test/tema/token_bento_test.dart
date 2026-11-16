@@ -172,6 +172,7 @@ void main() {
           UkuranBilah.indikatorLebar,
           UkuranBilah.indikatorTinggi,
         ],
+        'ubinAlatRingkas': UkuranUbin.alatRingkas,
         'ubinAlat': UkuranUbin.alat,
         'ubinAlatBeranda': UkuranUbin.alatBeranda,
         'ubinPasangan': UkuranUbin.pasangan,

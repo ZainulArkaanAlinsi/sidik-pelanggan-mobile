@@ -4,6 +4,7 @@ import '../../core/tema/bentuk.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/ukuran.dart';
 import '../../core/tema/warna_sidik.dart';
+import '../alat/daftar_alat_bagian.dart' show UbinKerangkaAlat;
 
 /// Lebar area isi mulai mana Beranda dua kolom (lebar area isi, bukan layar:
 /// di tablet 840 dp rel navigasi memakan sekitar 80 dp). Dipakai layar dan
@@ -14,8 +15,8 @@ const double batasDuaKolomBeranda = 680;
 const double jarakKalimatBeranda = Spasi.lg + Spasi.xs;
 
 /// Kerangka Beranda saat memuat: bentuknya meniru isi yang akan datang
-/// (kepala, kalimat dua baris, ubin alat 160, tombol, panel kapsul, dua ubin
-/// pasangan, baris bantuan), bukan kartu kosong.
+/// (kepala, judul, kalimat dua baris, kartu alat ringkas, tombol, panel kapsul,
+/// dua ubin pasangan, baris bantuan), bukan kartu kosong.
 ///
 /// STATIS: tanpa denyut dan tanpa animasi apa pun (GERAK.md: kerangka tetap,
 /// "kurangi gerak" tidak perlu menanganinya). Tetap bisa ditarik
@@ -33,7 +34,7 @@ class KerangkaBeranda extends StatelessWidget {
         final duaKolom = batas.maxWidth >= batasDuaKolomBeranda;
         const kepala = _KepalaKerangka();
         const kalimat = _KalimatKerangka();
-        const ubinAlat = _UbinKerangka(tinggi: UkuranUbin.alatBeranda);
+        const ubinAlat = UbinKerangkaAlat();
         const tombol = _Balok(
           tinggi: UkuranBaris.tombolUtama,
           sudut: Bentuk.tombol,
@@ -42,8 +43,8 @@ class KerangkaBeranda extends StatelessWidget {
         const panel = _PanelKerangka();
         const pasangan = _PasanganKerangka();
         const bantuan = _Balok(
-          tinggi: UkuranKontrol.tombolBulatBesar + 2 * Spasi.md,
-          sudut: Bentuk.tombol,
+          tinggi: UkuranUbin.ubinIkon + 2 * Spasi.lg,
+          sudut: Bentuk.panel,
           tinggiPenuh: true,
         );
         const jarak = SizedBox(height: Spasi.antarUbin);
@@ -65,6 +66,8 @@ class KerangkaBeranda extends StatelessWidget {
                 children: [
                   kepala,
                   const SizedBox(height: jarakKalimatBeranda),
+                  const _Balok(tinggi: Spasi.xl, lebar: 160),
+                  const SizedBox(height: Spasi.sm),
                   kalimat,
                   const SizedBox(height: jarakKalimatBeranda),
                   if (duaKolom)
@@ -107,9 +110,10 @@ class KerangkaBeranda extends StatelessWidget {
   );
 }
 
-/// Ubin alat Beranda yang daftar alatnya MASIH dimuat (hitungan server sudah
-/// ada, alat yang mendesak belum): bentuknya ubin 160, STATIS, dengan satu
-/// kabar "Memuat daftar alat" untuk pembaca layar. Bukan "tidak ada alat".
+/// Kartu alat Beranda yang daftar alatnya MASIH dimuat (hitungan server sudah
+/// ada, alat yang mendesak belum): bentuknya kartu alat ringkas, STATIS,
+/// dengan satu kabar "Memuat daftar alat" untuk pembaca layar. Bukan "tidak
+/// ada alat".
 class UbinAlatMemuat extends StatelessWidget {
   const UbinAlatMemuat({super.key});
 
@@ -118,7 +122,7 @@ class UbinAlatMemuat extends StatelessWidget {
     label: 'Memuat daftar alat',
     liveRegion: true,
     excludeSemantics: true,
-    child: const _UbinKerangka(tinggi: UkuranUbin.alatBeranda),
+    child: const UbinKerangkaAlat(),
   );
 }
 
@@ -191,21 +195,19 @@ class _KalimatKerangka extends StatelessWidget {
   Widget build(BuildContext context) => const Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      _Balok(tinggi: Spasi.xl + Spasi.sm, lebar: 280),
+      _Balok(tinggi: Spasi.xl, lebar: 280),
       SizedBox(height: Spasi.sm),
-      _Balok(tinggi: Spasi.xl + Spasi.sm, lebar: 220),
+      _Balok(tinggi: Spasi.xl, lebar: 220),
     ],
   );
 }
 
-/// Ubin putih setinggi [tinggi] berisi garis-garis isinya: ubin alat (stempel,
-/// nama, merk, angka) atau, bila [ringkas], ubin pasangan (judul, kalimat,
-/// tautan).
+/// Ubin pasangan putih setinggi [tinggi] berisi garis-garis isinya (judul,
+/// kalimat, tautan).
 class _UbinKerangka extends StatelessWidget {
-  const _UbinKerangka({required this.tinggi, this.ringkas = false});
+  const _UbinKerangka({required this.tinggi});
 
   final double tinggi;
-  final bool ringkas;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -215,32 +217,17 @@ class _UbinKerangka extends StatelessWidget {
         color: context.skema.surface,
         borderRadius: Bentuk.sudutUbin,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(UkuranUbin.paddingAlat),
+      child: const Padding(
+        padding: EdgeInsets.all(UkuranUbin.paddingAlat),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: ringkas
-              ? const [
-                  _Balok(tinggi: Spasi.lg, lebar: 112, diAtasPutih: true),
-                  SizedBox(height: Spasi.sm),
-                  _Balok(tinggi: Spasi.md, lebar: 88, diAtasPutih: true),
-                  Spacer(),
-                  _Balok(tinggi: Spasi.md, lebar: 72, diAtasPutih: true),
-                ]
-              : const [
-                  _Balok(
-                    tinggi: UkuranKontrol.stempel,
-                    lebar: 96,
-                    sudut: Bentuk.stempel,
-                    diAtasPutih: true,
-                  ),
-                  SizedBox(height: Spasi.md),
-                  _Balok(tinggi: Spasi.lg, lebar: 200, diAtasPutih: true),
-                  SizedBox(height: Spasi.xs),
-                  _Balok(tinggi: Spasi.md, lebar: 140, diAtasPutih: true),
-                  Spacer(),
-                  _Balok(tinggi: Spasi.xl, lebar: 96, diAtasPutih: true),
-                ],
+          children: [
+            _Balok(tinggi: Spasi.lg, lebar: 112, diAtasPutih: true),
+            SizedBox(height: Spasi.sm),
+            _Balok(tinggi: Spasi.md, lebar: 88, diAtasPutih: true),
+            Spacer(),
+            _Balok(tinggi: Spasi.md, lebar: 72, diAtasPutih: true),
+          ],
         ),
       ),
     ),
@@ -291,15 +278,13 @@ class _PasanganKerangka extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const satu = Expanded(
-      child: _UbinKerangka(tinggi: UkuranUbin.pasangan, ringkas: true),
-    );
+    const satu = Expanded(child: _UbinKerangka(tinggi: UkuranUbin.pasangan));
     if (MediaQuery.sizeOf(context).width < Spasi.batasKompak) {
       return const Column(
         children: [
-          _UbinKerangka(tinggi: UkuranUbin.pasangan, ringkas: true),
+          _UbinKerangka(tinggi: UkuranUbin.pasangan),
           SizedBox(height: Spasi.antarUbin),
-          _UbinKerangka(tinggi: UkuranUbin.pasangan, ringkas: true),
+          _UbinKerangka(tinggi: UkuranUbin.pasangan),
         ],
       );
     }

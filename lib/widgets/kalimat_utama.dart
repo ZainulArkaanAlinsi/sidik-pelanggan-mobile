@@ -29,14 +29,15 @@ class PotonganKalimat {
 }
 
 /// Kalimat utama Beranda: dateline kecil lalu jawaban "apa yang perlu saya
-/// perhatikan" sebagai satu sampai [maksimumKalimat] kalimat besar (32 sp), dengan
-/// frasa status berwarna ("1 alat **lewat jadwal**. 1 paket **siap diambil**.").
-/// Pengganti sapaan + nama PT + empat ubin KPI.
+/// perhatikan" sebagai satu sampai [maksimumKalimat] kalimat ringkasan (18 sp
+/// semibold; R1b: dari 24 supaya judul halaman "Kalibrasi Anda" yang
+/// terbesar), dengan frasa status berwarna ("1 alat **lewat jadwal**. 1 paket
+/// **siap diambil**."). Pengganti sapaan + nama PT + empat ubin KPI.
 ///
 /// Arti tidak bergantung pada warna: frasa berwarna adalah kata statusnya
 /// sendiri (kontras 5,2:1 sampai 7,8:1 terhadap latar). Seluruh teks dijepit
-/// [SkalaHuruf.batasBesar] terhadap skala huruf sistem; 32 sp x 1,3 memakan
-/// empat baris di 320 dp. Keadaan tenang: [KalimatUtama.tenang].
+/// [SkalaHuruf.batasBesar] terhadap skala huruf sistem. Keadaan tenang:
+/// [KalimatUtama.tenang].
 class KalimatUtama extends StatelessWidget {
   const KalimatUtama({
     super.key,
@@ -116,10 +117,10 @@ class KalimatUtama extends StatelessWidget {
                 ],
               ),
               style: kalimatKeduaRedup && i > 0
-                  ? t.displayMedium?.copyWith(
+                  ? t.titleLarge?.copyWith(
                       color: context.skema.onSurfaceVariant,
                     )
-                  : t.displayMedium,
+                  : t.titleLarge,
             ),
         ],
       ),

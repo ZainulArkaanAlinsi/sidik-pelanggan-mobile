@@ -30,12 +30,12 @@ class ZonaKapsul {
   final String? semantik;
 }
 
-/// Isi paling tinggi bila hanya SATU kolom bernilai (88, bukan setinggi rel:
-/// angka tetap di dalam kapsul): dua kali isi paling pendek.
+/// Isi paling tinggi bila hanya SATU kolom bernilai (80, setinggi rel):
+/// dua kali isi paling pendek.
 const double isiSatuKolomKapsul = UkuranUbin.kapsulMin * 2;
 
-/// Tinggi isi satu kolom (KOMPONEN.md §Grafik): 44 + 80 x (jumlah / terbesar);
-/// jumlah 0 = 44; bila hanya satu kolom bernilai > 0 isinya 88. [terbesar]
+/// Tinggi isi satu kolom: 40 + 40 x (jumlah / terbesar) (rel 80, isi paling
+/// pendek 40); jumlah 0 = 40; bila hanya satu kolom bernilai > 0 isinya 80. [terbesar]
 /// adalah jumlah paling besar di antara semua kolom.
 double tinggiIsiKapsul({
   required int jumlah,

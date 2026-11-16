@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/app.dart';
+import 'package:sidik_pelanggan/core/format.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/models/status_berlaku.dart';
@@ -189,15 +190,23 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Alat saya'), findsOneWidget);
+      // Kartu ringkas (R1b): tiga status jadwal membawa waktunya di kata
+      // lencana ("Lewat jadwal 5 hari"); status lain katanya saja.
       expect(
-        _teksDi(_kartuAlat('Jangka Sorong'), 'Lewat jadwal'),
+        _teksDi(_kartuAlat('Jangka Sorong'), 'Lewat jadwal 5 hari'),
         findsOneWidget,
       );
       expect(
-        _teksDi(_kartuAlat('Timbangan Analitik'), 'Segera jatuh tempo'),
+        _teksDi(
+          _kartuAlat('Timbangan Analitik'),
+          'Segera jatuh tempo 12 hari lagi',
+        ),
         findsOneWidget,
       );
-      expect(_teksDi(_kartuAlat('Termometer'), 'Berlaku'), findsOneWidget);
+      expect(
+        _teksDi(_kartuAlat('Termometer'), 'Berlaku 45 hari lagi'),
+        findsOneWidget,
+      );
       expect(
         _teksDi(_kartuAlat('Alat Nonaktif'), 'Tidak aktif'),
         findsOneWidget,
@@ -206,14 +215,21 @@ void main() {
         _teksDi(_kartuAlat('Tanpa Jadwal'), 'Belum pernah dikalibrasi'),
         findsOneWidget,
       );
-      // Sisa hari tetap ada: ubin alat menyebutnya sebagai angka besar + kata
-      // ("5" + "hari lewat"), bukan kalimat "Lewat 5 hari" (desain Bento Lab).
-      final jangka = _kartuAlat('Jangka Sorong');
-      expect(_teksDi(jangka, '5'), findsOneWidget);
-      expect(_teksDi(jangka, 'hari lewat'), findsOneWidget);
-      final timbangan = _kartuAlat('Timbangan Analitik');
-      expect(_teksDi(timbangan, '12'), findsOneWidget);
-      expect(_teksDi(timbangan, 'hari lagi'), findsOneWidget);
+      // Tanggal jadwal di dasar kartu, dengan kata depan menurut sisa harinya.
+      expect(
+        _teksDi(
+          _kartuAlat('Jangka Sorong'),
+          'sejak ${Format.tanggal(DateTime.parse(tanggalUji(-5)))}',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        _teksDi(
+          _kartuAlat('Timbangan Analitik'),
+          'jatuh tempo ${Format.tanggal(DateTime.parse(tanggalUji(12)))}',
+        ),
+        findsOneWidget,
+      );
       // Urutan server: paling mendesak di atas.
       final urutan = [
         for (final k in tester.widgetList<KartuAlat>(find.byType(KartuAlat)))

@@ -170,7 +170,12 @@ abstract final class UkuranUbin {
   /// Baris daftar: sama dengan [UkuranBaris.minimum] (64).
   static const double barisDaftar = 64;
 
-  /// Ubin alat: 144 (Beranda 160). Minimum; tumbuh bersama isi dan huruf.
+  /// Kartu alat RINGKAS (R1b): 120, minimum; tumbuh bersama isi dan huruf.
+  /// Dipakai `UbinAlat` (Alat saya dan Beranda) dan kerangka memuatnya.
+  static const double alatRingkas = 120;
+
+  /// Ubin alat Bento: 144 (Beranda 160). Tidak dipakai kartu alat lagi sejak
+  /// R1b (kartu ringkas); dibiarkan sampai paket bersih-bersih token.
   static const double alat = 144;
   static const double alatBeranda = 160;
 
@@ -178,8 +183,8 @@ abstract final class UkuranUbin {
   static const double pasangan = 132;
   static const double menu = 124;
 
-  /// Kapsul jatuh tempo: rel 100, isi paling pendek 40.
-  static const double kapsulRel = 100;
+  /// Kapsul jatuh tempo: rel 80 (R1b: dari 100), isi paling pendek 40.
+  static const double kapsulRel = 80;
   static const double kapsulMin = 40;
 
   /// Avatar inisial: 48 (daftar) dan 88 (profil).

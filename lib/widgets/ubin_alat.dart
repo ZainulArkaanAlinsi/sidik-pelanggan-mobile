@@ -1,37 +1,40 @@
 import 'package:flutter/material.dart';
 
-import '../core/format.dart';
 import '../core/tema/bentuk.dart';
 import '../core/tema/spasi.dart';
 import '../core/tema/tipografi.dart';
 import '../core/tema/ukuran.dart';
 import '../core/tema/warna_sidik.dart';
-import 'angka_hari.dart';
 import 'dasar/dasar_ubin.dart';
 import 'status_tampil.dart';
 import 'stempel.dart';
 
-/// Ubin alat: satu alat, satu kartu NETRAL (permukaan putih, garis halus;
-/// REVISI-2 butir 2: warna hanya pada status dan tindakan). Pengganti
-/// `BarisAlat`/`KartuAlat` di Beranda dan daftar alat.
+/// Kartu alat ringkas (REVISI-2 butir 2, R1b): satu alat, satu kartu NETRAL
+/// (permukaan putih, garis halus; warna hanya pada lencana status). Dipakai
+/// daftar "Alat saya" dan Beranda (alat paling mendesak): satu bentuk di dua
+/// tempat.
 ///
-/// Isi dari atas: [Stempel] status (SELALU tampil; istilah dari
-/// `pemetaan_status.dart`; satu-satunya warna di kartu) → [nama] 20/26 (paling
-/// banyak dua baris) → [merkTipe] 13 → [serial] 13 `.nomor` (IBM Plex Mono) di
-/// baris sendiri → [lokasi] 13 (paling banyak dua baris; pembeda dua alat
-/// sejenis tanpa nomor seri, hanya bila terisi) → (didorong ke bawah) angka sisa
-/// hari 28 mono (Beranda: 32) + kata "hari lewat" / "hari lagi" 12 + [tanggal]
-/// 12. Kata dan angka dari `AngkaHari` (satu sumber istilah dengan seluruh
-/// app).
+/// Isi dari atas, lima baris:
+/// 1. [nama] 20/26 semibold, paling menonjol (paling banyak [maksBarisNama]);
+/// 2. [merkTipe] lalu `SN` + [serial] dalam IBM Plex Mono, satu baris
+///    ("Mitutoyo CD-15CPX · SN 2201-0457"; membungkus bila sempit);
+/// 3. [lokasi] (hanya bila terisi; pembeda dua alat sejenis tanpa nomor seri);
+/// 4. baris status: [Stempel] status, ditambah [tahap] (alat sedang di lab)
+///    bila ada. Waktunya ikut di kata lencana untuk tiga status jadwal:
+///    "Lewat jadwal 4 hari", "Segera jatuh tempo 12 hari lagi", "Berlaku 120
+///    hari lagi" (lihat [labelStatus]);
+/// 5. "Lihat detail →" dan, di kanan, tanggal jadwalnya ("sejak 8 Nov 2026" /
+///    "jatuh tempo 12 Mar 2027"). Hanya bila [onTap] ada.
 ///
-/// Tinggi 144 (Beranda 160) adalah MINIMUM: kartu tumbuh bersama huruf. Nama
-/// dan angka `onSurface` (navy); keterangan `onSurfaceVariant` (6:1 di atas
-/// putih). [visual] (gambar alat; belum dipakai layar mana pun) duduk di kanan
-/// bawah, dipotong sudut kartu, di BAWAH teks; teks diberi ruang agar tidak
-/// bertumpuk dengannya. Tanpa [visual] kartu polos.
+/// ALAT NONAKTIF ([nonaktif]): tanpa hitung mundur sama sekali. Lencana tetap
+/// "Tidak aktif" (netral), namanya diredupkan ke teks kedua, dan tanggal
+/// jadwal, bila ada, tampil sebagai konteks "Alat nonaktif, jadwal tercatat 22
+/// Nov 2026" supaya tidak dibaca sebagai tindakan yang harus segera dilakukan.
 ///
-/// Seluruh ubin satu tombol bila [onTap] ada. Pembaca layar menerima [semantik]
-/// atau, bila kosong, kalimat susunan dari isi ubin.
+/// Tinggi [UkuranUbin.alatRingkas] adalah MINIMUM: kartu tumbuh bersama isi dan
+/// huruf. Status tidak hanya warna: lencana selalu ikon + kata. Seluruh kartu
+/// satu tombol bila [onTap] ada; pembaca layar menerima [semantik] atau, bila
+/// kosong, [kalimat] yang disusun dari isi kartu.
 class UbinAlat extends StatelessWidget {
   const UbinAlat({
     super.key,
@@ -43,12 +46,12 @@ class UbinAlat extends StatelessWidget {
     this.lokasi,
     this.hari,
     this.tanggal,
-    this.visual,
-    this.beranda = false,
+    this.tahap,
+    this.nonaktif = false,
     this.onTap,
     this.semantik,
     this.urutan,
-    this.maksBarisNama = 2,
+    this.maksBarisNama,
   });
 
   final String nama;
@@ -62,27 +65,36 @@ class UbinAlat extends StatelessWidget {
   /// menerima nomornya saja, supaya tidak terbaca "S N" dua kali.
   final String? awalanSerial;
 
-  /// Lokasi alat. Dua alat sejenis tanpa nomor seri dan berjadwal sama hanya
-  /// terbedakan oleh baris ini; kosong atau spasi saja = tidak ada baris.
+  /// Lokasi alat; kosong atau spasi saja = tidak ada baris.
   final String? lokasi;
 
-  /// Sisa hari menuju jadwal; negatif = lewat; null = belum ada jadwal.
+  /// Sisa hari menuju jadwal; negatif = lewat; null = belum ada jadwal. Tidak
+  /// dipakai bila [nonaktif].
   final int? hari;
 
-  /// Tanggal jadwal yang sudah diformat pemanggil (mis. `Format.tanggal`).
+  /// Tanggal jadwal yang sudah diformat pemanggil (mis. `Format.tanggal`),
+  /// TANPA kata depan: kata depannya ("sejak", "jatuh tempo") dari [hari].
   final String? tanggal;
 
-  /// Gambar alat; digambar persegi sebesar ukuran visual ubin ini.
-  final Widget? visual;
+  /// Tahap alat yang sedang di lab (mis. "Sedang dikalibrasi"), satu lencana
+  /// sendiri di samping status. Null = alat tidak sedang di lab.
+  final StatusTampil? tahap;
 
-  /// Varian Beranda: tinggi 232, angka 64, visual 176.
-  final bool beranda;
+  /// Alat dinonaktifkan: tanpa hitung mundur, dengan konteks "Alat nonaktif".
+  final bool nonaktif;
+
   final VoidCallback? onTap;
   final String? semantik;
 
   /// Urutan masuk layar (35 ms per indeks); null = tanpa animasi masuk.
   final int? urutan;
-  final int maksBarisNama;
+
+  /// Batas baris nama; null (bawaan) = nama utuh, membungkus sebanyak perlu
+  /// (nama alat tidak boleh terpotong, juga pada huruf besar).
+  final int? maksBarisNama;
+
+  /// Teks aksi di dasar kartu.
+  static const String teksAksi = 'Lihat detail';
 
   /// [lokasi] tanpa spasi pinggir; null bila kosong, jadi tidak ada baris dan
   /// tidak ada kata "Lokasi" di kalimat pembaca layar.
@@ -91,121 +103,175 @@ class UbinAlat extends StatelessWidget {
     return l == null || l.isEmpty ? null : l;
   }
 
-  /// Kalimat bawaan untuk pembaca layar, dari isi ubin.
+  /// Kata lencana status. Tiga status jadwal (lewat jadwal, segera jatuh tempo,
+  /// berlaku) membawa waktunya: "Lewat jadwal 4 hari", "Segera jatuh tempo 12
+  /// hari lagi", "Segera jatuh tempo hari ini", "Berlaku 120 hari lagi". Status
+  /// lain (tidak aktif, belum pernah, sedang diproses) memakai katanya saja,
+  /// juga bila [nonaktif]: alat nonaktif tidak punya hitung mundur.
+  String get labelStatus {
+    final h = hari;
+    if (nonaktif || h == null) return status.label;
+    final nada = status.nada;
+    if (nada == NadaStatus.gagal && h < 0) return '${status.label} ${-h} hari';
+    if ((nada == NadaStatus.awas || nada == NadaStatus.lulus) && h >= 0) {
+      return h == 0
+          ? '${status.label} hari ini'
+          : '${status.label} $h hari lagi';
+    }
+    return status.label;
+  }
+
+  /// Konteks alat nonaktif (menggantikan hitung mundur); null bila aktif.
+  String? get konteksNonaktif {
+    if (!nonaktif) return null;
+    final t = tanggal;
+    return t == null || t.isEmpty
+        ? 'Alat nonaktif'
+        : 'Alat nonaktif, jadwal tercatat $t';
+  }
+
+  /// Tanggal jadwal di dasar kartu: "sejak ..." bila sudah lewat, "jatuh tempo
+  /// ..." bila belum; null untuk alat nonaktif (konteksnya di atas) dan tanpa
+  /// jadwal.
+  String? get keteranganJadwal {
+    final h = hari;
+    final t = tanggal;
+    if (nonaktif || h == null || t == null || t.isEmpty) return null;
+    return h < 0 ? 'sejak $t' : 'jatuh tempo $t';
+  }
+
+  /// Kalimat bawaan untuk pembaca layar, dari isi kartu.
   String get kalimat => [
     nama,
-    'Status: ${status.label}',
+    'Status: $labelStatus',
+    if (tahap != null) 'Di lab: ${tahap!.label}',
     if (merkTipe != null && merkTipe!.isNotEmpty) merkTipe!,
     if (serial != null && serial!.isNotEmpty) 'Nomor seri $serial',
     if (_lokasiTampil != null) 'Lokasi $_lokasiTampil',
-    Format.sisaHari(hari),
-    if (tanggal != null && tanggal!.isNotEmpty) tanggal!,
+    ?(konteksNonaktif ?? keteranganJadwal),
   ].join('. ');
 
   @override
   Widget build(BuildContext context) {
     final s = context.skema;
-    final tinta = s.onSurface;
-    final latar = s.surface;
     final t = context.teks;
-    final kompak = MediaQuery.sizeOf(context).width < Spasi.batasKompak;
-    final ukuranVisual = kompak
-        ? UkuranVisual.alatKompak
-        : (beranda ? UkuranVisual.alatBeranda : UkuranVisual.alat);
-    // Teks di bawah stempel mundur dari tepi kanan sebesar bagian visual yang
-    // ada di dalam ubin, ditambah satu jarak.
-    final ruangVisual = visual == null
-        ? 0.0
-        : ukuranVisual - UkuranVisual.keluarSamping + Spasi.sm;
-
-    final gayaAngka = beranda
-        ? TipografiSidik.angkaSorot(teks: tinta)
-        : t.displayLarge!.copyWith(color: tinta);
-    final gayaKata = t.labelMedium?.copyWith(color: tinta);
-    final gayaTanggal = gayaKata?.copyWith(
-      fontWeight: TipografiSidik.beratKeterangan,
-    );
     final gayaKet = t.bodySmall?.copyWith(color: s.onSurfaceVariant);
-
-    final atas = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Stempel(status),
-        const SizedBox(height: Spasi.md),
-        Padding(
-          padding: EdgeInsets.only(right: ruangVisual),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                nama,
-                maxLines: maksBarisNama,
-                overflow: TextOverflow.ellipsis,
-                style: t.headlineMedium?.copyWith(color: tinta),
-              ),
-              if (merkTipe != null && merkTipe!.isNotEmpty)
-                Text(merkTipe!, style: gayaKet),
-              if (serial != null && serial!.isNotEmpty)
-                Text(
-                  awalanSerial == null || awalanSerial!.isEmpty
-                      ? serial!
-                      : '$awalanSerial $serial',
-                  style: gayaKet?.nomor,
-                ),
-              if (_lokasiTampil != null)
-                Text(
-                  _lokasiTampil!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: gayaKet,
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    final bawah = Padding(
-      padding: EdgeInsets.only(right: ruangVisual),
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.end,
-        spacing: Spasi.sm,
-        children: [
-          MediaQuery.withClampedTextScaling(
-            maxScaleFactor: SkalaHuruf.batasBesar,
-            child: Text(AngkaHari.angkaDari(hari), style: gayaAngka),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(AngkaHari.kataDari(hari), style: gayaKata),
-              if (tanggal != null && tanggal!.isNotEmpty)
-                Text(tanggal!, style: gayaTanggal),
-            ],
-          ),
-        ],
-      ),
-    );
+    final adaMerk = (merkTipe ?? '').isNotEmpty;
+    final adaSerial = (serial ?? '').isNotEmpty;
+    final awalan = (awalanSerial ?? '').isEmpty ? '' : '$awalanSerial ';
 
     return DasarUbin(
-      latar: latar,
+      latar: s.surface,
       sudut: Bentuk.sudutUbin,
-      tinggiMin: beranda ? UkuranUbin.alatBeranda : UkuranUbin.alat,
+      tinggiMin: UkuranUbin.alatRingkas,
       padding: const EdgeInsets.all(UkuranUbin.paddingAlat),
-      visual: visual,
-      ukuranVisual: ukuranVisual,
-      keluarSamping: UkuranVisual.keluarSamping,
-      keluarBawah: UkuranVisual.keluarBawah,
       onTap: onTap,
       semantik: semantik ?? (onTap == null ? null : kalimat),
       urutan: urutan,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [atas, bawah],
+        children: [
+          Text(
+            nama,
+            maxLines: maksBarisNama,
+            // Ellipsis tanpa batas baris memaksa SATU baris (nama terpotong
+            // dengan "..." di huruf besar): tanpa batas, tanpa ellipsis.
+            overflow: maksBarisNama == null
+                ? TextOverflow.clip
+                : TextOverflow.ellipsis,
+            style: t.headlineMedium?.copyWith(
+              color: nonaktif ? s.onSurfaceVariant : s.onSurface,
+            ),
+          ),
+          if (adaMerk || adaSerial)
+            Padding(
+              padding: const EdgeInsets.only(top: Spasi.xs),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    if (adaMerk) TextSpan(text: merkTipe),
+                    if (adaMerk && adaSerial) const TextSpan(text: ' · '),
+                    if (adaSerial)
+                      TextSpan(text: '$awalan$serial', style: gayaKet?.nomor),
+                  ],
+                ),
+                style: gayaKet,
+              ),
+            ),
+          if (_lokasiTampil != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Spasi.xs),
+              child: Text(
+                _lokasiTampil!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: gayaKet,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.only(top: Spasi.sm),
+            child: Wrap(
+              spacing: Spasi.sm,
+              runSpacing: Spasi.xs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Stempel(StatusTampil(labelStatus, status.nada, status.ikon)),
+                if (tahap != null) Stempel(tahap!),
+              ],
+            ),
+          ),
+          if (konteksNonaktif != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Spasi.sm),
+              child: Text(konteksNonaktif!, style: gayaKet),
+            ),
+          if (onTap != null)
+            Padding(
+              padding: const EdgeInsets.only(top: Spasi.sm),
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: Spasi.md,
+                runSpacing: Spasi.xs,
+                children: [
+                  _Aksi(warna: s.primary, gaya: t.labelLarge),
+                  if (keteranganJadwal != null)
+                    Text(keteranganJadwal!, style: gayaKet),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
+}
+
+/// "Lihat detail →": hiasan penunjuk bahwa kartu bisa diketuk (kartunya yang
+/// tombol, jadi tanpa semantik sendiri). Warna aksi, bukan status.
+class _Aksi extends StatelessWidget {
+  const _Aksi({required this.warna, required this.gaya});
+
+  final Color warna;
+  final TextStyle? gaya;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            UbinAlat.teksAksi,
+            style: gaya?.copyWith(
+              color: warna,
+              fontWeight: TipografiSidik.beratTebal,
+            ),
+          ),
+        ),
+        const SizedBox(width: Spasi.xs),
+        Icon(Icons.arrow_forward, size: UkuranIkon.kecil, color: warna),
+      ],
+    ),
+  );
 }

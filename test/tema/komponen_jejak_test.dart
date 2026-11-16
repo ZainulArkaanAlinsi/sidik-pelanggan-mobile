@@ -144,7 +144,14 @@ void main() {
         expect(RegExp(r'\bColors\.(?!transparent)\w+').hasMatch(c), isFalse);
         expect(RegExp(r'\bColor\(').hasMatch(c), isFalse);
         expect(RegExp(r'#[0-9A-Fa-f]{6}').hasMatch(c), isFalse);
-        expect(c.contains(' · '), isFalse, reason: 'rangkaian A · B · C');
+        // Satu pengecualian sadar: REVISI-2 butir 2 menetapkan baris "merk
+        // model · SN seri" pada kartu alat (`UbinAlat`), nomor serinya mono.
+        // Berkas lain tetap tanpa pemisah ' · '.
+        expect(
+          ' · '.allMatches(c).length,
+          const {'ubin_alat': 1}[berkas] ?? 0,
+          reason: 'rangkaian A · B · C',
+        );
         expect(
           c.toLowerCase(),
           isNot(anyOf(contains('daluwarsa'), contains('adaluarsa'))),

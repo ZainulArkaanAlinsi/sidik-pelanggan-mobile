@@ -233,12 +233,12 @@ void main() {
     expect(find.text('2 alat segera jatuh tempo.'), findsOneWidget);
     // Kapsul jatuh tempo: label tampil singkat, dibaca "Dalam 30 hari".
     expect(find.text('≤ 30 hari'), findsOneWidget);
-    // Satu ubin untuk alat paling mendesak, dengan hitung mundur sebagai
-    // angka; alat kedua tidak lagi punya baris sendiri (jadi tanpa "hari
-    // lagi"; hitungannya ada di kapsul).
+    // Satu kartu untuk alat paling mendesak, dengan waktunya di kata lencana
+    // ("Lewat jadwal 3 hari"); alat kedua tidak lagi punya baris sendiri (jadi
+    // tanpa "hari lagi"; hitungannya ada di kapsul).
     expect(find.text('Jangka Sorong'), findsOneWidget);
-    expect(find.text('hari lewat'), findsOneWidget);
-    expect(find.text('hari lagi'), findsNothing);
+    expect(find.text('Lewat jadwal 3 hari'), findsOneWidget);
+    expect(find.textContaining('hari lagi'), findsNothing);
     // Fitur yang dibuang tidak ada lagi di layar.
     expect(find.textContaining('Ajukan'), findsNothing);
     expect(find.textContaining('Permintaan'), findsNothing);
