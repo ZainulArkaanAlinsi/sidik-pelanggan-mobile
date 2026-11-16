@@ -242,22 +242,17 @@ abstract final class UkuranVisual {
   static const double keluarKecil = 10;
 }
 
-/// Layar auth (Sambutan, Masuk, Lupa sandi, Terima undangan): susunan E0 Masuk.
-/// Kepala biru muda di atas, plat logo putih di dalamnya, kartu putih yang
-/// menumpang ke tepi bawah kepala. Diperkecil oleh REVISI 16 Nov ("kurangi
-/// bidang berwarna dan logo besar"); penyusunan ulang layarnya di PR berikut.
+/// Layar auth (Sambutan, Masuk, Lupa sandi, Terima undangan), arah tenang-formal
+/// (R1b): kepala ringkas berisi plat logo kecil dan nama aplikasi di atas latar
+/// halaman, lalu satu kartu putih. Tidak ada lagi kepala berwarna setinggi 240
+/// dp dan plat logo 80 (REVISI-2 butir 1: kurangi bidang berwarna dan logo
+/// besar).
 abstract final class UkuranAuth {
-  /// Tinggi kepala paling kecil di layar akar (Sambutan, Masuk), diukur dari
-  /// tepi atas layar sampai tepi bawah warna kepala (kartu ikut menumpang
-  /// di dalamnya). Tumbuh bila isi (huruf besar, status bar) lebih tinggi.
-  static const double hero = 240;
+  /// Plat logo putih di kepala layar akar (Sambutan, Masuk); logo di dalamnya =
+  /// plat - 2 x `Spasi.sm`.
+  static const double platLogo = 48;
 
-  /// Kartu menumpang ke dalam kepala sedalam ini.
-  static const double kartuTumpang = 24;
-
-  /// Plat logo putih di layar akar; logo di dalamnya = plat - 2 x `Spasi.lg`.
-  static const double platLogo = 80;
-
-  /// Plat logo di layar anak (Lupa sandi, Terima undangan): kepala pendek.
-  static const double platLogoAnak = 64;
+  /// Plat logo di layar anak (Lupa sandi, Terima undangan): sebelah tombol
+  /// kembali, lebih kecil.
+  static const double platLogoAnak = 40;
 }

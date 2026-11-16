@@ -1,10 +1,13 @@
-// Layar auth Bento Lab (P3a): Sambutan, Masuk, Lupa sandi, Terima undangan
-// memakai susunan E0 Masuk (hero kuning, plat logo putih, kartu putih sudut 32
-// yang menumpang). Yang diuji: tata letak dari token (dua tema, HP dan tablet),
-// tiap keadaan layar (awal, sibuk, galat, kosong, ada/tidak ada kontak), bahwa
+// Layar auth (R1b): Sambutan, Masuk, Lupa sandi, Terima undangan, arah
+// tenang-formal (REVISI-2 butir 1): kepala ringkas (logo kecil + nama aplikasi)
+// di atas latar halaman, SATU kartu putih bergaris halus, isian berlabel
+// PERMANEN di atas kolom (`KolomIsian`), pesan galat dekat isian, satu tombol
+// utama. Yang diuji: tata letak dari token (dua tema, HP dan tablet), tiap
+// keadaan layar (awal, sibuk, galat, kosong, ada/tidak ada kontak), bahwa
 // logika lama TIDAK berubah (siapa memanggil apa, tombol mati/hidup), Semantics
-// (judul, galat diumumkan, tombol kembali), sasaran sentuh >= 48 dp, kontras,
-// "kurangi gerak", dan 320 dp x huruf 1,3 tanpa luapan.
+// (judul, label isian, galat diumumkan, tombol kembali), sasaran sentuh >= 48
+// dp, kontras, "kurangi gerak", huruf 1,3x dan 2,0x tanpa luapan, dan papan
+// ketik yang tidak menutupi tombol utama.
 //
 // Alur menyeluruh layar-layar ini sudah dijaga `alur_dasar_test.dart`,
 // `sambutan_test.dart`, `perbaikan_p1_test.dart`, dan harness
@@ -18,7 +21,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sidik_pelanggan/core/api_pelanggan.dart';
 import 'package:sidik_pelanggan/core/penyimpan_perangkat.dart';
 import 'package:sidik_pelanggan/core/tema/bentuk.dart';
-import 'package:sidik_pelanggan/core/tema/palet_sidik.dart';
 import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/core/tema/ukuran.dart';
@@ -32,6 +34,7 @@ import 'package:sidik_pelanggan/screens/auth/masuk_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/sambutan_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/terima_undangan_screen.dart';
 import 'package:sidik_pelanggan/widgets/kolom_formulir.dart';
+import 'package:sidik_pelanggan/widgets/kolom_isian.dart';
 import 'package:sidik_pelanggan/widgets/lencana_kan.dart';
 import 'package:sidik_pelanggan/widgets/panel_pemberitahuan.dart';
 import 'package:sidik_pelanggan/widgets/tombol_bulat.dart';
@@ -175,8 +178,15 @@ Future<void> _pasang(
   }
 }
 
+/// Kolom (TextField) milik [KolomIsian] berlabel [label].
+Finder _kolom(String label) => find.descendant(
+  of: find.widgetWithText(KolomIsian, label, skipOffstage: false),
+  matching: find.byType(TextField),
+  skipOffstage: false,
+);
+
 Future<void> _isi(WidgetTester tester, String label, String nilai) async {
-  final kolom = find.widgetWithText(TextField, label, skipOffstage: false);
+  final kolom = _kolom(label);
   await tester.ensureVisible(kolom);
   await tester.enterText(kolom, nilai);
   await tester.pump();
@@ -206,7 +216,7 @@ ThemeData _tema(bool gelap) => gelap ? TemaSidik.gelap : TemaSidik.terang;
 void main() {
   setUpAll(siapkanTesFitur);
 
-  group('susunan E0: hero kuning, plat putih, kartu putih menumpang', () {
+  group('susunan tenang: kepala ringkas, kartu putih, tanpa bidang berwarna', () {
     for (final gelap in [false, true]) {
       final nama = gelap ? 'gelap' : 'terang';
       for (final (judul, layar) in <(String, Widget)>[
@@ -218,77 +228,84 @@ void main() {
         ) async {
           layarHp(tester, lebar: 392, tinggi: 852);
           await _pasang(tester, layar, gelap: gelap);
+          final skema = _tema(gelap).colorScheme;
           final w = _tema(gelap).extension<WarnaSidik>()!;
 
-          // Kepala biru muda tetap terang di tema gelap: warna yang SAMA.
-          final hero = tester.widget<ColoredBox>(
-            find.byKey(KerangkaAuth.kunciHero),
+          // Tanpa bidang berwarna: latar layar = latar halaman tema, tidak ada
+          // kepala biru muda (dulu 240 dp) di belakang logo.
+          final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+          expect(
+            scaffold.backgroundColor ?? _tema(gelap).scaffoldBackgroundColor,
+            _tema(gelap).scaffoldBackgroundColor,
           );
-          expect(hero.color, w.ubinBiru);
-          expect(hero.color, PaletSidik.biruMuda);
+          expect(
+            find.byWidgetPredicate(
+              (x) => x is ColoredBox && x.color == w.ubinBiru,
+            ),
+            findsNothing,
+            reason: 'tidak ada blok biru muda lagi',
+          );
 
+          // Logo kecil di plat putih bergaris halus: 48 dp (dulu 80).
           final plat = tester.widget<DecoratedBox>(
             find.byKey(KerangkaAuth.kunciPlat),
           );
-          expect((plat.decoration as BoxDecoration).color, w.kertasUbin);
+          final dekor = plat.decoration as BoxDecoration;
+          expect(dekor.color, w.kertasUbin);
+          expect(dekor.borderRadius, Bentuk.sudutIkon);
           expect(
             tester.getSize(find.byKey(KerangkaAuth.kunciPlat)),
             const Size.square(UkuranAuth.platLogo),
           );
+          expect(UkuranAuth.platLogo, 48);
+          expect(find.text('SIDIK Pelanggan'), findsOneWidget);
 
+          // Kartu putih: permukaan tema, garis halus, sudut 16 (bukan ekstrem).
           final kartu = tester.widget<Material>(
             find.byKey(KerangkaAuth.kunciKartu),
           );
-          expect(kartu.color, _tema(gelap).colorScheme.surface);
-          expect(
-            (kartu.shape! as RoundedRectangleBorder).borderRadius,
-            Bentuk.sudutUbin,
-          );
+          expect(kartu.color, skema.surface);
+          final bentuk = kartu.shape! as RoundedRectangleBorder;
+          expect(bentuk.borderRadius, Bentuk.sudutPanel);
+          expect(bentuk.side.color, skema.outlineVariant);
 
-          final h = tester.getRect(find.byKey(KerangkaAuth.kunciHero));
+          // Kepala ringkas di atas kartu; kartu selebar kolom dengan margin 16.
+          final kepala = tester.getRect(find.byKey(KerangkaAuth.kunciKepala));
           final k = tester.getRect(find.byKey(KerangkaAuth.kunciKartu));
-          final t = tester.getRect(find.byKey(KerangkaAuth.kunciTumpang));
-          expect(h.left, 0);
-          expect(h.width, 392, reason: 'hero penuh lebar layar');
-          expect(h.top, 0, reason: 'hero dari tepi atas layar');
-          expect(h.height, UkuranAuth.hero - UkuranAuth.kartuTumpang);
-          expect(k.top, h.bottom, reason: 'kartu mulai di tepi hero');
-          expect(t.top, k.top);
-          expect(t.height, UkuranAuth.kartuTumpang);
           expect(
-            t.bottom,
-            UkuranAuth.hero,
-            reason: 'biru muda berakhir 240 dp dari atas; kartu menumpang 24',
+            kepala.height,
+            lessThanOrEqualTo(AreaSentuh.minimum + Spasi.sm),
+          );
+          expect(kepala.bottom, lessThan(k.top));
+          expect(
+            k.top,
+            lessThan(UkuranUbin.alatRingkas + Spasi.xl),
+            reason: 'kartu langsung di bawah kepala, bukan di bawah 240 dp',
           );
           expect(k.left, Spasi.sisi);
           expect(k.right, 392 - Spasi.sisi);
 
           expect(
-            pelanggaranKontrasTeks(tester, find.byKey(KerangkaAuth.kunciHero)),
+            pelanggaranKontrasTeks(tester, find.byType(Scaffold)),
             isEmpty,
-          );
-          expect(
-            pelanggaranKontrasTeks(tester, find.byKey(KerangkaAuth.kunciKartu)),
-            isEmpty,
+            reason: '$judul $nama',
           );
         });
       }
     }
 
-    testWidgets('tablet 840: kartu 440 di tengah, hero tetap penuh lebar', (
+    testWidgets('tablet 840: kartu 440 di tengah, latar tetap polos', (
       tester,
     ) async {
       layarTablet(tester);
       await _pasang(tester, const MasukScreen());
-      final h = tester.getRect(find.byKey(KerangkaAuth.kunciHero));
       final k = tester.getRect(find.byKey(KerangkaAuth.kunciKartu));
-      expect(h.width, 840);
       expect(k.width, KolomFormulir.lebarMaks);
       expect(k.center.dx, 420);
     });
 
-    testWidgets('layar anak: hero pendek, plat 80, tombol kembali bila bisa '
-        'ditutup', (tester) async {
+    testWidgets('layar anak: plat 40 sebelah tombol kembali (hanya bila bisa '
+        'ditutup)', (tester) async {
       _layarTinggi(tester);
       final semantik = tester.ensureSemantics();
       await _pasang(tester, const LupaSandiScreen(), dorong: true);
@@ -297,13 +314,13 @@ void main() {
         tester.getSize(find.byKey(KerangkaAuth.kunciPlat)),
         const Size.square(UkuranAuth.platLogoAnak),
       );
-      expect(
-        tester.getRect(find.byKey(KerangkaAuth.kunciHero)).height,
-        lessThan(UkuranAuth.hero - UkuranAuth.kartuTumpang),
-        reason: 'formulir panjang tidak dikubur hero setinggi 330',
-      );
       final kembali = find.byType(TombolBulat);
       expect(kembali, findsOneWidget);
+      expect(
+        tester.getRect(kembali).right,
+        lessThan(tester.getRect(find.byKey(KerangkaAuth.kunciPlat)).left),
+        reason: 'tombol kembali di kiri plat logo',
+      );
       expect(
         tester.getSemantics(find.bySemanticsLabel('Kembali')),
         matchesSemantics(
@@ -343,7 +360,7 @@ void main() {
       final judul = tester
           .getSemantics(find.byType(JudulAuth))
           .getSemanticsData();
-      expect(judul.label, 'Masuk');
+      expect(judul.label, 'Masuk ke SIDIK');
       expect(judul.flagsCollection.isHeader, isTrue);
       final utama = find.byType(FilledButton);
       expect(utama, findsOneWidget, reason: 'satu tombol utama per layar');
@@ -510,7 +527,7 @@ void main() {
       bool tersembunyi() => tester
           .widget<EditableText>(
             find.descendant(
-              of: find.widgetWithText(TextField, 'Sandi'),
+              of: _kolom('Sandi'),
               matching: find.byType(EditableText),
             ),
           )
@@ -652,6 +669,29 @@ void main() {
       expect(find.text('Kode salah atau kedaluwarsa.'), findsOneWidget);
       expect(find.byType(PesanGalatAuth), findsNothing);
       expect(find.text('Minta kode baru ke PT Sidik'), findsNothing);
+      // Galat DEKAT isian: di dalam kolom "Kode undangan" (tepat di bawahnya),
+      // bukan di kolom lain dan bukan di dasar kartu.
+      final kode = find.widgetWithText(KolomIsian, 'Kode undangan');
+      final galat = find.descendant(
+        of: kode,
+        matching: find.text('Kode salah atau kedaluwarsa.'),
+      );
+      expect(galat, findsOneWidget);
+      expect(
+        tester.getTopLeft(galat).dy -
+            tester.getRect(_kolom('Kode undangan')).bottom,
+        lessThan(Spasi.lg),
+      );
+      for (final lain in ['Email', 'Nama lengkap', 'Nomor HP', 'Buat sandi']) {
+        expect(
+          find.descendant(
+            of: find.widgetWithText(KolomIsian, lain),
+            matching: find.text('Kode salah atau kedaluwarsa.'),
+          ),
+          findsNothing,
+          reason: lain,
+        );
+      }
     });
 
     testWidgets('dengan kontak lab: galat kode menawarkan Minta kode baru', (
@@ -697,57 +737,213 @@ void main() {
     });
   });
 
-  group('320 dp x huruf 1,3: tanpa luapan, sentuh >= 48 dp, kontras', () {
-    final kasus = <(String, Widget Function(), bool, InfoAplikasi)>[
-      ('Sambutan', () => const SambutanScreen(), false, _kontak),
-      ('Masuk', () => const MasukScreen(), false, InfoAplikasi.kosong),
-      ('Lupa sandi', () => const LupaSandiScreen(), true, InfoAplikasi.kosong),
-      ('Terima undangan', () => const TerimaUndanganScreen(), true, _dokumen),
-    ];
-    for (final gelap in [false, true]) {
-      for (final (nama, bangun, dorong, info) in kasus) {
-        testWidgets('$nama, ${gelap ? 'gelap' : 'terang'}', (tester) async {
-          _layarTinggi(tester, lebar: 320);
-          final semantik = tester.ensureSemantics();
-          await _pasang(
-            tester,
-            bangun(),
-            gelap: gelap,
-            skala: 1.3,
-            dorong: dorong,
-            info: info,
-            sesi: _Sesi(galat: GalatApi.jaringan()),
-          );
-          // Keadaan galat ikut: pesan umum tampil di layar yang punya tombol
-          // kirim.
-          if (nama == 'Masuk') {
-            await tester.tap(find.byType(FilledButton));
-            await tester.pumpAndSettle();
-            ProviderScope.containerOf(
-              tester.element(find.byType(MasukScreen)),
-            ).read(sesiBerakhirProvider.notifier).atur(true);
-            await tester.pump();
-            expect(find.byType(PesanGalatAuth), findsOneWidget);
-            expect(find.byType(PanelPemberitahuan), findsOneWidget);
+  group(
+    '320 dp x huruf 1,3 dan 2,0: tanpa luapan, sentuh >= 48 dp, kontras',
+    () {
+      final kasus = <(String, Widget Function(), bool, InfoAplikasi)>[
+        ('Sambutan', () => const SambutanScreen(), false, _kontak),
+        ('Masuk', () => const MasukScreen(), false, InfoAplikasi.kosong),
+        (
+          'Lupa sandi',
+          () => const LupaSandiScreen(),
+          true,
+          InfoAplikasi.kosong,
+        ),
+        ('Terima undangan', () => const TerimaUndanganScreen(), true, _dokumen),
+      ];
+      for (final skala in [1.3, 2.0]) {
+        for (final gelap in [false, true]) {
+          for (final (nama, bangun, dorong, info) in kasus) {
+            testWidgets('$nama, ${gelap ? 'gelap' : 'terang'}, huruf $skala', (
+              tester,
+            ) async {
+              _layarTinggi(tester, lebar: 320);
+              final semantik = tester.ensureSemantics();
+              await _pasang(
+                tester,
+                bangun(),
+                gelap: gelap,
+                skala: skala,
+                dorong: dorong,
+                info: info,
+                sesi: _Sesi(galat: GalatApi.jaringan()),
+              );
+              // Keadaan galat ikut: pesan umum tampil di layar yang punya tombol
+              // kirim.
+              if (nama == 'Masuk') {
+                await tester.tap(find.byType(FilledButton));
+                await tester.pumpAndSettle();
+                ProviderScope.containerOf(
+                  tester.element(find.byType(MasukScreen)),
+                ).read(sesiBerakhirProvider.notifier).atur(true);
+                await tester.pump();
+                expect(find.byType(PesanGalatAuth), findsOneWidget);
+                expect(find.byType(PanelPemberitahuan), findsOneWidget);
+              }
+              if (nama == 'Terima undangan') {
+                await tester.tap(find.byType(CheckboxListTile));
+                await tester.pump();
+                await tester.tap(find.byType(FilledButton));
+                await tester.pumpAndSettle();
+                expect(find.byType(PesanGalatAuth), findsOneWidget);
+                expect(
+                  find.text('Minta kode baru ke PT Sidik'),
+                  findsOneWidget,
+                );
+              }
+              expect(tester.takeException(), isNull);
+              await periksaPedomanSentuh(tester);
+              expect(
+                pelanggaranKontrasTeks(
+                  tester,
+                  find.byKey(KerangkaAuth.kunciKartu),
+                ),
+                isEmpty,
+              );
+              semantik.dispose();
+            });
           }
-          if (nama == 'Terima undangan') {
-            await tester.tap(find.byType(CheckboxListTile));
-            await tester.pump();
-            await tester.tap(find.byType(FilledButton));
-            await tester.pumpAndSettle();
-            expect(find.byType(PesanGalatAuth), findsOneWidget);
-            expect(find.text('Minta kode baru ke PT Sidik'), findsOneWidget);
-          }
-          expect(tester.takeException(), isNull);
-          await periksaPedomanSentuh(tester);
-          expect(
-            pelanggaranKontrasTeks(tester, find.byKey(KerangkaAuth.kunciKartu)),
-            isEmpty,
-          );
-          semantik.dispose();
-        });
+        }
+      }
+    },
+  );
+
+  group('label isian permanen di atas kolom (keempat layar)', () {
+    Future<void> periksa(WidgetTester tester, List<String> label) async {
+      // Tidak ada TextField berlabel mengambang di layar auth.
+      for (final f in tester.widgetList<TextField>(find.byType(TextField))) {
+        expect(f.decoration!.labelText, isNull);
+        expect(f.decoration!.label, isNull);
+      }
+      for (final l in label) {
+        final kolom = _kolom(l);
+        expect(kolom, findsOneWidget, reason: l);
+        final teks = find.descendant(
+          of: find.widgetWithText(KolomIsian, l, skipOffstage: false),
+          matching: find.text(l, skipOffstage: false),
+          skipOffstage: false,
+        );
+        expect(teks, findsOneWidget, reason: '$l: label tampil');
+        expect(
+          tester.getRect(teks).bottom,
+          lessThanOrEqualTo(tester.getRect(kolom).top),
+          reason: '$l: label di atas kolom',
+        );
+        expect(
+          tester.getSize(kolom).height,
+          greaterThanOrEqualTo(UkuranKontrol.kolomCari),
+          reason: '$l: kolom >= 48',
+        );
       }
     }
+
+    testWidgets('Masuk: Email dan Sandi', (tester) async {
+      _layarTinggi(tester);
+      await _pasang(tester, const MasukScreen());
+      await periksa(tester, ['Email', 'Sandi']);
+      // Terisi: label tetap tampil (bukan petunjuk yang menguap).
+      await _isi(tester, 'Email', 'budi@contoh.test');
+      await _isi(tester, 'Sandi', 'rahasia');
+      await periksa(tester, ['Email', 'Sandi']);
+    });
+
+    testWidgets('Lupa sandi: Email; sesudah kode terkirim tiga isian', (
+      tester,
+    ) async {
+      _layarTinggi(tester);
+      await _pasang(tester, const LupaSandiScreen(), dorong: true);
+      await periksa(tester, ['Email']);
+      await _isi(tester, 'Email', 'budi@contoh.test');
+      await tester.tap(find.widgetWithText(TombolSidik, 'Kirim kode'));
+      await tester.pumpAndSettle();
+      await periksa(tester, ['Email', 'Kode dari email', 'Sandi baru']);
+      // Email dikunci sesudah kode terkirim: tetap berlabel, tidak bisa diubah.
+      expect(tester.widget<TextField>(_kolom('Email')).enabled, isFalse);
+    });
+
+    testWidgets('Terima undangan: enam isian', (tester) async {
+      _layarTinggi(tester);
+      await _pasang(tester, const TerimaUndanganScreen());
+      await periksa(tester, [
+        'Email',
+        'Kode undangan',
+        'Nama lengkap',
+        'Nomor HP',
+        'Jabatan (opsional)',
+        'Buat sandi',
+      ]);
+      // Bantuan di bawah kolomnya, tetap terbaca selagi terisi.
+      for (final bantuan in [
+        'Ada di email undangan',
+        'Contoh: 0812 3456 7890',
+        'Minimal 10 karakter',
+      ]) {
+        expect(find.text(bantuan), findsOneWidget, reason: bantuan);
+      }
+    });
+
+    testWidgets('logika tidak berubah: isian lewat label yang sama sampai ke '
+        'sesi (Masuk)', (tester) async {
+      _layarTinggi(tester);
+      final sesi = _Sesi();
+      await _pasang(tester, const MasukScreen(), sesi: sesi);
+      await _isi(tester, 'Email', ' budi@contoh.test ');
+      await _isi(tester, 'Sandi', 'Kalibrasi#2026');
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+      expect(sesi.masukDipanggil, [' budi@contoh.test |Kalibrasi#2026']);
+    });
+  });
+
+  group('papan ketik tidak menutupi tombol utama', () {
+    testWidgets('Masuk: kolom Sandi fokus, tombol Masuk tetap terlihat di atas '
+        'papan ketik 300 dp (HP 360 x 640)', (tester) async {
+      layarHp(tester, lebar: 360, tinggi: 640);
+      addTearDown(tester.view.resetViewInsets);
+      await _pasang(tester, const MasukScreen());
+      // Kolom Sandi terlihat sebelum papan ketik; tombol di bawahnya belum
+      // tertutup. Ketuk kolom, lalu papan ketik muncul.
+      await tester.tap(_kolom('Sandi'));
+      await tester.pump();
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      await tester.pumpAndSettle();
+      final tombol = tester.getRect(find.byType(FilledButton));
+      expect(
+        tombol.bottom,
+        lessThanOrEqualTo(640 - 300),
+        reason: 'tombol utama di atas papan ketik',
+      );
+      expect(tombol.top, greaterThan(0));
+      expect(tester.getRect(_kolom('Sandi')).bottom, lessThan(tombol.top));
+      // Isian pertama juga terjangkau dengan menggulir.
+      await tester.ensureVisible(_kolom('Email'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(_kolom('Email')).top, greaterThanOrEqualTo(0));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'Terima undangan: kolom terakhir fokus, tombol utama terjangkau '
+      'di atas papan ketik (HP 360 x 640, huruf 1,3)',
+      (tester) async {
+        layarHp(tester, lebar: 360, tinggi: 640);
+        addTearDown(tester.view.resetViewInsets);
+        await _pasang(tester, const TerimaUndanganScreen(), skala: 1.3);
+        await tester.ensureVisible(_kolom('Buat sandi'));
+        await tester.pumpAndSettle();
+        await tester.tap(_kolom('Buat sandi'));
+        await tester.pump();
+        tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+        await tester.pumpAndSettle();
+        // Sesudah kolom terakhir: persetujuan, lalu tombol; gulirkan ke tombol:
+        // ia bisa dibawa ke atas papan ketik (tidak terkubur).
+        final tombol = find.widgetWithText(TombolSidik, 'Buat akun & masuk');
+        await tester.ensureVisible(tombol);
+        await tester.pumpAndSettle();
+        expect(tester.getRect(tombol).bottom, lessThanOrEqualTo(640 - 300));
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('kurangi gerak dan tanpa animasi berulang', () {

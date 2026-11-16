@@ -19,6 +19,7 @@ import 'package:sidik_pelanggan/screens/gerbang.dart';
 import 'package:sidik_pelanggan/screens/rangka.dart';
 import 'package:sidik_pelanggan/services/klien_rilis.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
+import 'package:sidik_pelanggan/widgets/kolom_isian.dart';
 
 import 'dukungan/dukungan.dart';
 
@@ -89,7 +90,11 @@ class _KlienWajib extends KlienRilisMati {
 
 Future<void> _isiFormulir(WidgetTester tester, {required String nama}) async {
   Future<void> isi(String label, String nilai) => tester.enterText(
-    find.widgetWithText(TextField, label, skipOffstage: false),
+    find.descendant(
+      of: find.widgetWithText(KolomIsian, label, skipOffstage: false),
+      matching: find.byType(TextField),
+      skipOffstage: false,
+    ),
     nilai,
   );
   await isi('Email', 'budi@contoh.test');

@@ -27,6 +27,7 @@ import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
 import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
+import 'package:sidik_pelanggan/widgets/kolom_isian.dart';
 import 'package:sidik_pelanggan/widgets/navigasi_utama.dart';
 import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
 
@@ -243,8 +244,15 @@ Future<void> _gulirKe(WidgetTester tester, Finder sasaran) async {
   await tester.pumpAndSettle();
 }
 
+/// Kolom (TextField) milik `KolomIsian` berlabel [label]: label permanen di
+/// atas kolom, bukan `labelText` di dalamnya.
+Finder _kolomBerlabel(String label) => find.descendant(
+  of: find.widgetWithText(KolomIsian, label),
+  matching: find.byType(TextField),
+);
+
 Future<void> _isi(WidgetTester tester, String label, String nilai) async {
-  final kolom = find.widgetWithText(TextField, label);
+  final kolom = _kolomBerlabel(label);
   await _gulirKe(tester, kolom);
   await tester.enterText(kolom, nilai);
   await tester.pump();

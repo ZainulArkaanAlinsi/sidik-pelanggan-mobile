@@ -19,6 +19,7 @@ import 'package:sidik_pelanggan/widgets/jejak_tahap.dart';
 import 'package:sidik_pelanggan/widgets/kalimat_utama.dart';
 import 'package:sidik_pelanggan/widgets/keadaan_teks.dart';
 import 'package:sidik_pelanggan/widgets/kolom_cari_utuh.dart';
+import 'package:sidik_pelanggan/widgets/kolom_isian.dart';
 import 'package:sidik_pelanggan/widgets/nomor_sidik.dart';
 import 'package:sidik_pelanggan/widgets/panel_sidik.dart';
 import 'package:sidik_pelanggan/widgets/pemetaan_status.dart';
@@ -399,6 +400,38 @@ Widget galeriTeks() => Column(
       child: KolomCariUtuh(
         petunjuk: 'Cari nama, merk, atau nomor seri',
         onCari: (_) {},
+      ),
+    ),
+    const _Catatan('KolomIsian: label permanen, bantuan, galat, mati'),
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spasi.sisi),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KolomIsian(
+            label: 'Email',
+            pengendali: TextEditingController(text: 'budi@contoh.test'),
+          ),
+          const SizedBox(height: Spasi.lg),
+          KolomIsian(
+            label: 'Buat sandi',
+            pengendali: TextEditingController(),
+            rahasia: true,
+            bantuan: 'Minimal 10 karakter',
+          ),
+          const SizedBox(height: Spasi.lg),
+          KolomIsian(
+            label: 'Kode undangan',
+            pengendali: TextEditingController(text: 'K7M2'),
+            galat: 'Kode salah atau sudah tidak berlaku.',
+          ),
+          const SizedBox(height: Spasi.lg),
+          KolomIsian(
+            label: 'Email',
+            pengendali: TextEditingController(text: 'budi@contoh.test'),
+            aktif: false,
+          ),
+        ],
       ),
     ),
     const _Catatan('Bagian dan TautanBaris'),
