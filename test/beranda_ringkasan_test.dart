@@ -22,7 +22,9 @@ import 'package:sidik_pelanggan/screens/alat/daftar_alat_screen.dart';
 import 'package:sidik_pelanggan/screens/beranda/beranda_screen.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
 import 'package:sidik_pelanggan/widgets/status_tampil.dart';
-import 'package:sidik_pelanggan/widgets/baris_alat.dart';
+import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
+import 'package:sidik_pelanggan/widgets/ubin_alat.dart';
+import 'package:sidik_pelanggan/widgets/ubin_ringkas.dart';
 import 'package:sidik_pelanggan/widgets/tautan_baris.dart';
 import 'package:sidik_pelanggan/widgets/pemetaan_status.dart';
 import 'package:sidik_pelanggan/widgets/kartu_alat.dart';
@@ -106,6 +108,25 @@ void _layar(WidgetTester t, {double lebar = 800, double tinggi = 3000}) {
 
 ProviderContainer _kontainer(WidgetTester t) =>
     ProviderScope.containerOf(t.element(find.byType(BerandaScreen)));
+
+/// Kerangka memuat STATIS (tanpa animasi berulang), jadi `pumpAndSettle` tidak
+/// lagi menunggu percobaan ulang bawaan Riverpod (±38 detik) sebelum galat
+/// tampil: waktu dimajukan secara eksplisit.
+/// Memberi waktu pada permintaan yang masih terbang (jeda server) sampai
+/// selesai: kerangka statis tidak menjaga frame berjalan untuk `pumpAndSettle`.
+Future<void> _selesaikan(WidgetTester t) async {
+  for (var i = 0; i < 4; i++) {
+    await t.pump(const Duration(seconds: 3));
+  }
+  await t.pumpAndSettle();
+}
+
+Future<void> _sampaiGalat(WidgetTester t) async {
+  await t.pump();
+  await t.pump(const Duration(seconds: 60));
+  await t.pump(const Duration(seconds: 60));
+  await t.pumpAndSettle();
+}
 
 void main() {
   setUpAll(siapkanTesFitur);
@@ -331,23 +352,32 @@ void main() {
         expect(find.bySemanticsLabel('31–60 hari: 1 alat'), findsOneWidget);
         expect(find.bySemanticsLabel('61–90 hari: 1 alat'), findsOneWidget);
 
-        // "Perlu perhatian": lewat jadwal lebih dulu, lalu segera; alat 31 hari
-        // ke atas dan yang nonaktif tidak ikut.
-        final baris = find.byType(BarisAlat);
-        expect(baris, findsNWidgets(2));
+        // Satu ubin untuk alat paling mendesak (lewat jadwal lebih dulu); alat
+        // 31 hari ke atas dan yang nonaktif tidak ikut. Daftar "Perlu
+        // perhatian" diganti ubin + kapsul (LAYAR.md 01).
+        expect(find.byType(UbinAlat), findsOneWidget);
         expect(
-          [for (final w in tester.widgetList<BarisAlat>(baris)) w.nama],
-          ['Jangka Sorong', 'Timbangan Analitik'],
+          tester.widget<UbinAlat>(find.byType(UbinAlat)).nama,
+          'Jangka Sorong',
         );
         expect(find.text('Manometer'), findsNothing);
         expect(find.text('Alat Nonaktif'), findsNothing);
         expect(find.textContaining('valid_until'), findsNothing);
 
-        expect(find.text('CAL/ALFA/0002'), findsOneWidget);
-        expect(find.text('CAL/ALFA/0001'), findsOneWidget);
-        expect(find.text('Sedang dikerjakan di lab'), findsOneWidget);
-        expect(find.text('ORD/ALFA/0001'), findsOneWidget);
-        expect(find.text('Lihat semua alat (7)'), findsOneWidget);
+        // Ubin pasangan: sertifikat dan paket TERBARU di baris pertama.
+        UbinRingkas ubin(String judul) =>
+            tester.widget<UbinRingkas>(find.widgetWithText(UbinRingkas, judul));
+        expect(
+          ubin('Sertifikat terbaru').kalimat,
+          'CAL/ALFA/0002\nTimbangan Analitik',
+        );
+        expect(
+          ubin('Paket dikerjakan').kalimat,
+          'ORD/ALFA/0001\nSedang dikalibrasi',
+        );
+        // Tombol utama berlencana jumlah alat (bukan tautan "(7)").
+        final tombol = tester.widget<TombolSidik>(find.byType(TombolSidik));
+        expect((tombol.label, tombol.jumlah), ('Lihat semua alat', 7));
         semantik.dispose();
       },
     );
@@ -412,7 +442,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Belum ada sertifikat yang terbit.'), findsOneWidget);
-      expect(find.byType(BarisAlat), findsNothing);
+      expect(find.byType(UbinAlat), findsNothing);
       expect(find.text('Sedang dikerjakan di lab'), findsNothing);
     });
 
@@ -422,7 +452,7 @@ void main() {
       _layar(tester);
       final server = _server()..gagal.add('/beranda');
       await tester.pumpWidget(_app(const BerandaScreen(), server));
-      await tester.pumpAndSettle();
+      await _sampaiGalat(tester);
 
       expect(find.text('Beranda belum bisa dimuat'), findsOneWidget);
       expect(find.textContaining('Terjadi kendala di server'), findsOneWidget);
@@ -432,7 +462,7 @@ void main() {
       await tester.tap(find.text('Coba lagi'));
       await tester.pumpAndSettle();
       expect(find.text('PT Alfa'), findsOneWidget);
-      expect(find.byType(BarisAlat), findsNWidgets(2));
+      expect(find.byType(UbinAlat), findsOneWidget);
     });
 
     testWidgets(
@@ -442,7 +472,7 @@ void main() {
         _layar(tester);
         final server = _server()..gagal.add('/alat');
         await tester.pumpWidget(_app(const BerandaScreen(), server));
-        await tester.pumpAndSettle();
+        await _sampaiGalat(tester);
 
         expect(find.text('1 alat lewat jadwal.'), findsOneWidget);
         expect(find.bySemanticsLabel('Lewat jadwal: 1 alat'), findsOneWidget);
@@ -450,7 +480,7 @@ void main() {
         // Dua zona terakhir tidak digambar: tidak ada angka karangan.
         expect(find.textContaining('31–60'), findsNothing);
         expect(find.textContaining('belum bisa dimuat'), findsOneWidget);
-        expect(find.byType(BarisAlat), findsNothing);
+        expect(find.byType(UbinAlat), findsNothing);
         semantik.dispose();
       },
     );
@@ -488,8 +518,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('PT Alfa'), findsOneWidget);
       // Nama alat juga muncul di baris sertifikat: cari barisnya.
-      expect(find.widgetWithText(BarisAlat, 'Jangka Sorong'), findsOneWidget);
-      expect(find.text('CAL/ALFA/0001'), findsOneWidget);
+      expect(find.widgetWithText(UbinAlat, 'Jangka Sorong'), findsOneWidget);
+      expect(find.textContaining('CAL/ALFA/0002'), findsOneWidget);
 
       // Data perusahaan baru datang lambat: selama menunggu, TIDAK BOLEH ada
       // data perusahaan lama di layar (bukan hanya sesudah yang baru tiba).
@@ -497,15 +527,19 @@ void main() {
       (_kontainer(tester).read(sesiProvider.notifier) as SesiBisaGanti)
           .pilihPerusahaan(4);
       await tester.pump(const Duration(milliseconds: 500));
-      for (final sisa in ['PT Alfa', 'Jangka Sorong', 'CAL/ALFA/0001']) {
-        expect(find.text(sisa), findsNothing, reason: 'saat memuat: $sisa');
+      for (final sisa in ['PT Alfa', 'Jangka Sorong', 'CAL/ALFA/0002']) {
+        expect(
+          find.textContaining(sisa),
+          findsNothing,
+          reason: 'saat memuat: $sisa',
+        );
       }
-      await tester.pumpAndSettle();
+      await _selesaikan(tester);
 
       expect(find.text('PT Beta'), findsOneWidget);
-      expect(find.widgetWithText(BarisAlat, 'Barometer Beta'), findsOneWidget);
-      expect(find.text('CAL/BETA/0001'), findsOneWidget);
-      expect(find.text('ORD/BETA/0001'), findsOneWidget);
+      expect(find.widgetWithText(UbinAlat, 'Barometer Beta'), findsOneWidget);
+      expect(find.textContaining('CAL/BETA/0001'), findsOneWidget);
+      expect(find.textContaining('ORD/BETA/0001'), findsOneWidget);
       // Tidak satu pun milik perusahaan sebelumnya tertinggal di layar.
       for (final sisa in [
         'PT Alfa',
@@ -515,7 +549,7 @@ void main() {
         'CAL/ALFA/0002',
         'ORD/ALFA/0001',
       ]) {
-        expect(find.text(sisa), findsNothing, reason: sisa);
+        expect(find.textContaining(sisa), findsNothing, reason: sisa);
       }
       // Permintaan terakhir memang membawa perusahaan baru.
       expect(server.permintaan.last.headers['X-Perusahaan-Id'], '4');
@@ -557,7 +591,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.text('Jangka Sorong'), findsNothing, reason: 'saat memuat');
       expect(find.text('PT Alfa'), findsNothing, reason: 'saat memuat');
-      await tester.pumpAndSettle();
+      await _selesaikan(tester);
 
       // Akun baru anggota SATU perusahaan: nama PT tidak tampil di Beranda.
       expect(find.text('PT Kosong'), findsNothing);

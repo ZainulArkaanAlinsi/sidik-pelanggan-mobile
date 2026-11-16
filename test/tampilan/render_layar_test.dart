@@ -887,6 +887,14 @@ void main() {
                   tester.element(find.byType(MaterialApp)),
                 ),
               );
+              // Galat: provider data mencoba ulang (±38 dtk) dan kerangka memuat
+              // Beranda STATIS tidak menjaga frame berjalan, jadi waktu
+              // dimajukan sendiri sampai teks galatnya tampil.
+              if (l.galat) {
+                await tester.pump();
+                await tester.pump(const Duration(seconds: 60));
+                await tester.pump(const Duration(seconds: 60));
+              }
               await tester.pumpAndSettle();
               if (l.tab != null) {
                 ProviderScope.containerOf(

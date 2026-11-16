@@ -35,8 +35,9 @@ enum RagamTombol {
 ///
 /// [jumlah] (hanya [RagamTombol.utama]): lencana bulat 40 kuning di ujung
 /// kanan, mis. "Periksa alat" dengan 2 alat menunggu; padding 22 kiri dan 8
-/// kanan. Pembaca layar menerima "label, jumlah". Angka SELALU ditemani label,
-/// jadi tombolnya tetap bermakna tanpa warna.
+/// kanan. Pembaca layar menerima "label, jumlah" (atau "label, jumlah satuan"
+/// bila [satuanJumlah] ada, mis. "Lihat semua alat, 7 alat"). Angka SELALU
+/// ditemani label, jadi tombolnya tetap bermakna tanpa warna.
 class TombolSidik extends StatelessWidget {
   const TombolSidik({
     super.key,
@@ -47,6 +48,7 @@ class TombolSidik extends StatelessWidget {
     this.sibuk = false,
     this.penuh = false,
     this.jumlah,
+    this.satuanJumlah,
   });
 
   final String label;
@@ -57,6 +59,10 @@ class TombolSidik extends StatelessWidget {
   final bool penuh;
   final int? jumlah;
 
+  /// Satuan yang disebut pembaca layar sesudah [jumlah] ("alat"); tidak
+  /// tampil di lencana.
+  final String? satuanJumlah;
+
   @override
   Widget build(BuildContext context) {
     final aksi = sibuk ? null : onPressed;
@@ -65,6 +71,7 @@ class TombolSidik extends StatelessWidget {
         ? _IsiDenganJumlah(
             label: label,
             jumlah: jumlah!,
+            satuan: satuanJumlah,
             aktif: aksi != null,
             penuh: penuh,
           )
@@ -158,12 +165,14 @@ class _IsiDenganJumlah extends StatelessWidget {
   const _IsiDenganJumlah({
     required this.label,
     required this.jumlah,
+    required this.satuan,
     required this.aktif,
     required this.penuh,
   });
 
   final String label;
   final int jumlah;
+  final String? satuan;
   final bool aktif;
   final bool penuh;
 
@@ -176,7 +185,7 @@ class _IsiDenganJumlah extends StatelessWidget {
         ? s.onSecondary
         : s.onSurface.withValues(alpha: _alfaTinta);
     return Semantics(
-      label: '$label, $jumlah',
+      label: satuan == null ? '$label, $jumlah' : '$label, $jumlah $satuan',
       excludeSemantics: true,
       child: Row(
         mainAxisSize: penuh ? MainAxisSize.max : MainAxisSize.min,
