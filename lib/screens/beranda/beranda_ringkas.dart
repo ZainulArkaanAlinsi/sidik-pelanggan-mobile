@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Icons;
 import 'package:intl/intl.dart';
 
 import '../../core/api_pelanggan.dart';
@@ -352,48 +353,96 @@ String? tanggalUbinAlat(Alat a) {
 const String teksSertifikatKosong = 'Belum ada sertifikat yang terbit.';
 const String teksPaketKosong = 'Tidak ada paket yang sedang dikerjakan.';
 
-/// Baris ubin "Sertifikat terbaru": nomor dan alat sertifikat terbaru, lalu
-/// pengecualian yang HARUS bersuara (keputusan FAIL tidak dilunakkan; masa
-/// berlaku berakhir, digantikan, dibatalkan). Keputusan null dan PASS tidak
-/// disebut. Kosong = belum ada sertifikat yang terbaca.
-List<String> barisUbinSertifikat(List<Sertifikat> terbaru, DateTime sekarang) {
+/// Baris teks ubin "Sertifikat terbaru": nomor dan alat sertifikat terbaru.
+/// Kosong = belum ada sertifikat yang terbaca. Pengecualian yang HARUS
+/// bersuara ada di [statusUbinSertifikat] (ikon + kata, bukan teks polos).
+List<String> barisUbinSertifikat(List<Sertifikat> terbaru) {
+  final s = terbaru.firstOrNull;
+  if (s == null) return const [];
+  return [s.nomor, if ((s.namaAlat ?? '').isNotEmpty) s.namaAlat!];
+}
+
+/// Pengecualian sertifikat terbaru, tiap satu sebagai status (ikon + kata +
+/// nada) dari `pemetaan_status.dart`: keputusan FAIL (tidak dilunakkan,
+/// REQ-SRT-04), masa berlaku berakhir, digantikan, dibatalkan. Keputusan null
+/// dan PASS tidak disebut: tanpa keputusan tidak ada klaim, apalagi hijau.
+List<StatusTampil> statusUbinSertifikat(
+  List<Sertifikat> terbaru,
+  DateTime sekarang,
+) {
   final s = terbaru.firstOrNull;
   if (s == null) return const [];
   final status = StatusBerlaku.dariSertifikat(s, sekarang: sekarang);
   return [
-    s.nomor,
-    if ((s.namaAlat ?? '').isNotEmpty) s.namaAlat!,
-    if (s.keputusan == 'FAIL') statusKeputusan('FAIL')!.label,
+    if (s.keputusan == 'FAIL') statusKeputusan('FAIL')!,
     if (status == StatusBerlaku.berakhir ||
         status == StatusBerlaku.digantikan ||
         status == StatusBerlaku.dibatalkan)
-      statusBerlaku(status).label,
+      statusBerlaku(status),
   ];
 }
 
-/// Baris ubin "Paket dikerjakan": nomor, tahap, dan target paket terbaru;
-/// paket siap diambil; jumlah paket berjalan. [jumlah] = hitungan server
-/// (atau panjang daftar bila lebih besar), [siap] = paket siap diambil.
-/// [siapMungkinLebih] = daftar dipotong server dan hitungan server tidak ada:
-/// jumlahnya tidak diklaim ("Ada paket siap diambil"). Kosong = tidak ada
-/// paket berjalan.
+/// Nada ubin sertifikat: kuning (awas) menurut desain, koral (gagal) bila ada
+/// pengecualian bernada gagal (FAIL, dibatalkan). Tidak pernah hijau: sertifikat
+/// terbaru tidak membuktikan apa pun tentang alat lain.
+NadaStatus nadaUbinSertifikat(List<StatusTampil> status) =>
+    status.any((s) => s.nada == NadaStatus.gagal)
+    ? NadaStatus.gagal
+    : NadaStatus.awas;
+
+/// Paket yang terlambat: istilah dan ikon yang sama dengan kartu paket dan
+/// detail paket.
+const StatusTampil statusLewatTarget = StatusTampil(
+  'Melewati target selesai',
+  NadaStatus.awas,
+  Icons.schedule,
+);
+
+/// Tahap paket yang berarti sudah selesai di tangan pelanggan.
+const String tahapDiserahkan = 'diserahkan';
+
+/// Paket yang masih berjalan: tanpa yang sudah diserahkan. Siap diambil tetap
+/// ikut (masih menunggu pelanggan, dan disebut tersendiri di ubin).
+List<Paket> paketBelumDiserahkan(List<Paket> semua) => [
+  for (final p in semua)
+    if (p.tahap != tahapDiserahkan) p,
+];
+
+/// Baris teks ubin "Paket dikerjakan": nomor dan tahap paket terbaru yang
+/// belum diserahkan; paket siap diambil; jumlah paket berjalan. [jumlah] =
+/// hitungan server (atau panjang daftar bila lebih besar), [siap] = paket siap
+/// diambil. [siapMungkinLebih] = daftar dipotong server dan hitungan server
+/// tidak ada: jumlahnya tidak diklaim ("Ada paket siap diambil"). Kosong =
+/// tidak ada paket berjalan. Terlambat ada di [statusUbinPaket].
 List<String> barisUbinPaket({
   required List<Paket> berjalan,
   required int jumlah,
   required int siap,
   required bool siapMungkinLebih,
 }) {
-  final pertama = berjalan.firstOrNull;
+  final pertama = paketBelumDiserahkan(berjalan).firstOrNull;
   return [
     if (pertama != null) ...[
       pertama.nomor,
       // Server lama tanpa `tahap_label`: label jatuh ke kode mentah; kode bukan kata.
       if (pertama.tahapLabel.isNotEmpty && pertama.tahapLabel != pertama.tahap)
         pertama.tahapLabel,
-      if (pertama.terlambat) 'Melewati target selesai',
     ],
     if (siap > 0)
       siapMungkinLebih ? 'Ada paket siap diambil' : '$siap paket siap diambil',
     if (jumlah > 1 || (pertama == null && jumlah > 0)) '$jumlah paket berjalan',
   ];
 }
+
+/// Pengecualian paket terbaru yang belum diserahkan: melewati target selesai
+/// (ikon + kata, bukan teks polos).
+List<StatusTampil> statusUbinPaket(List<Paket> berjalan) => [
+  if (paketBelumDiserahkan(berjalan).firstOrNull?.terlambat ?? false)
+    statusLewatTarget,
+];
+
+/// Nada ubin paket: hijau (lulus) menurut desain; bila ada pengecualian ubin
+/// mengikuti nadanya (terlambat = kuning): ubin yang membawa kata "Melewati
+/// target selesai" tidak boleh hijau.
+NadaStatus nadaUbinPaket(List<StatusTampil> status) =>
+    status.isEmpty ? NadaStatus.lulus : status.first.nada;

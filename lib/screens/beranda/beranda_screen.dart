@@ -472,7 +472,11 @@ class _IsiState extends ConsumerState<_Isi> {
     // Server membatasi `paket_berjalan` (tiga terbaru) dan `sertifikat_terbaru`
     // (lima). Hitungan dari server (`ringkasan.*`, bila ada) menang dan pasti;
     // tanpa itu angka dari daftar hanya batas bawah dan tidak diklaim lebih.
-    final jumlahPaket = math.max(b.jumlahPaketBerjalan, b.paketBerjalan.length);
+    // Paket yang sudah diserahkan tidak "berjalan": tidak ikut hitungan daftar.
+    final jumlahPaket = math.max(
+      b.jumlahPaketBerjalan,
+      paketBelumDiserahkan(b.paketBerjalan).length,
+    );
     final paketTerpotong = jumlahPaket > b.paketBerjalan.length;
     final siapJumlah = b.paketSiapDiambil ?? paketSiap.length;
     final siapMungkinLebih = b.paketSiapDiambil == null && paketTerpotong;
@@ -540,6 +544,7 @@ class _IsiState extends ConsumerState<_Isi> {
               ragam: RagamTombol.utama,
               penuh: true,
               jumlah: b.jumlahAlat,
+              satuanJumlah: 'alat',
               onPressed: keTabAlat,
             ),
           )
@@ -549,25 +554,32 @@ class _IsiState extends ConsumerState<_Isi> {
         ? _masuk(2, _panelJatuhTempo(b, r, buka))
         : null;
 
-    final barisSertifikat = barisUbinSertifikat(b.sertifikatTerbaru, sekarang);
+    final barisSertifikat = barisUbinSertifikat(b.sertifikatTerbaru);
+    final stempelSertifikat = statusUbinSertifikat(
+      b.sertifikatTerbaru,
+      sekarang,
+    );
     final barisPaket = barisUbinPaket(
       berjalan: b.paketBerjalan,
       jumlah: jumlahPaket,
       siap: siapJumlah,
       siapMungkinLebih: siapMungkinLebih,
     );
+    final stempelPaket = statusUbinPaket(b.paketBerjalan);
     final pasangan = _pasangan(
       sertifikat: _masuk(
         3,
         UbinRingkas(
           judul: 'Sertifikat terbaru',
           kalimat: _kalimatUbin(barisSertifikat, teksSertifikatKosong),
+          stempel: stempelSertifikat,
           aksi: 'Lihat semua',
-          nada: NadaStatus.awas,
+          nada: nadaUbinSertifikat(stempelSertifikat),
           onTap: keTabSertifikat,
           semantik: _semantikUbin(
             'Sertifikat terbaru',
             barisSertifikat,
+            stempelSertifikat,
             teksSertifikatKosong,
             'Lihat semua sertifikat',
           ),
@@ -578,12 +590,14 @@ class _IsiState extends ConsumerState<_Isi> {
         UbinRingkas(
           judul: 'Paket dikerjakan',
           kalimat: _kalimatUbin(barisPaket, teksPaketKosong),
+          stempel: stempelPaket,
           aksi: 'Lihat semua',
-          nada: NadaStatus.lulus,
+          nada: nadaUbinPaket(stempelPaket),
           onTap: () => buka(const PaketScreen()),
           semantik: _semantikUbin(
             'Paket dikerjakan',
             barisPaket,
+            stempelPaket,
             teksPaketKosong,
             'Lihat semua paket',
           ),
@@ -825,11 +839,13 @@ class _IsiState extends ConsumerState<_Isi> {
   String _semantikUbin(
     String judul,
     List<String> baris,
+    List<StatusTampil> status,
     String kosong,
     String aksi,
   ) => [
     judul,
     ...(baris.isEmpty ? [kosong] : baris),
+    for (final s in status) 'Status: ${s.label}',
     aksi,
   ].join('. ');
 }

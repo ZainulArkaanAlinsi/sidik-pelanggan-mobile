@@ -524,8 +524,12 @@ void main() {
       // Tanggal tidak lagi di atas kalimat (sapaan di kepala menggantikannya).
       expect(find.text('Kamis, 12 November 2026'), findsNothing);
       expect(find.text('1 alat lewat jadwal.'), findsOneWidget);
-      // Satu ubin untuk alat paling mendesak; jejak tahap (tik) pindah ke
-      // detail alat, ubin tidak punya slot untuknya.
+      // Satu ubin untuk alat paling mendesak; ubin tidak punya slot untuk jejak
+      // tahap (tik). Tahap alat di lab kini hanya terlihat sebagai kata "Di lab:
+      // <tahap>" pada ubin itu, dan per alat di detail paket. Detail alat
+      // (`AlatDetailScreen`) tidak menampilkan tahap: isinya identitas, status dan
+      // jadwal, serta riwayat sertifikat. `JejakTahap` dan `TikPaket` kini tidak
+      // dipakai layar Beranda.
       expect(find.byType(UbinAlat), findsOneWidget);
       expect(find.byType(JejakTahap), findsNothing);
       expect(find.text('Di lab: Sedang dikalibrasi'), findsOneWidget);
@@ -979,7 +983,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      // Kata-kata ada di baris ubin "Sertifikat terbaru" (satu Text berbaris).
+      // Kata-kata ada sebagai stempel (ikon + kata) di ubin "Sertifikat terbaru".
       expect(find.textContaining('Masa berlaku berakhir'), findsOneWidget);
       expect(find.textContaining('Tidak memenuhi toleransi'), findsOneWidget);
     });
@@ -1241,8 +1245,9 @@ void main() {
       );
       await tester.pumpWidget(_app(_server(alat: [alat]), sesi: _sesiSatu()));
       await tester.pumpAndSettle();
-      // Jumlah tik mengikuti server diuji di detail alat; ubin Beranda tidak
-      // menggambar jejak, hanya kata tahapnya.
+      // Jumlah tik mengikuti `garis_waktu` server diuji pada widgetnya
+      // (`test/widgets/jejak_test.dart`); ubin Beranda tidak menggambar jejak,
+      // hanya kata tahapnya.
       expect(tester.takeException(), isNull);
       expect(find.byType(JejakTahap), findsNothing);
       expect(find.text('Di lab: Sedang dikalibrasi'), findsOneWidget);

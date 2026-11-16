@@ -38,7 +38,9 @@ import 'package:sidik_pelanggan/widgets/dasar/kontrol_ketuk.dart';
 import 'package:sidik_pelanggan/widgets/kalimat_utama.dart';
 import 'package:sidik_pelanggan/widgets/keadaan_teks.dart';
 import 'package:sidik_pelanggan/widgets/kerangka.dart';
+import 'package:sidik_pelanggan/widgets/pemetaan_status.dart';
 import 'package:sidik_pelanggan/widgets/status_tampil.dart';
+import 'package:sidik_pelanggan/widgets/stempel.dart';
 import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
 import 'package:sidik_pelanggan/widgets/ubin_alat.dart';
 import 'package:sidik_pelanggan/widgets/ubin_ringkas.dart';
@@ -91,6 +93,23 @@ class _ServerAlatTertahan extends ServerFitur {
   Future<http.Response> tangani(http.Request r) async {
     final jalur = r.url.path.replaceFirst(Konfigurasi.prefix, '');
     if (jalur == '/alat') await lepas.future;
+    return super.tangani(r);
+  }
+}
+
+/// Server yang menunda HANYA `GET /alat` sebesar [jedaAlat] (null = tanpa
+/// jeda). `ServerFitur.jeda` menunda semua rute sekaligus, jadi tidak bisa
+/// membuat keadaan "`GET /beranda` baru sudah tiba, `GET /alat` baru belum".
+class _ServerAlatLambat extends ServerFitur {
+  _ServerAlatLambat(super.data);
+
+  Duration? jedaAlat;
+
+  @override
+  Future<http.Response> tangani(http.Request r) async {
+    if (jedaAlat != null && r.url.path.endsWith('/alat')) {
+      await Future<void>.delayed(jedaAlat!);
+    }
     return super.tangani(r);
   }
 }
@@ -171,6 +190,26 @@ Color _latarUbin(WidgetTester tester, Finder ubin) => tester
 
 Alat _a(int id, int? hari, {String status = 'terkalibrasi'}) =>
     Alat.dariJson(alatJson(id, 'Alat $id', hari: hari, status: status));
+
+/// Kata pada [Stempel] di dalam [ubin], berurutan.
+List<String> _kataStempel(WidgetTester t, Finder ubin) => [
+  for (final w in t.widgetList<Stempel>(
+    find.descendant(of: ubin, matching: find.byType(Stempel)),
+  ))
+    w.status.label,
+];
+
+/// Ikon yang digambar [Stempel] pertama di dalam [ubin].
+IconData? _ikonStempel(WidgetTester t, Finder ubin) => t
+    .widget<Icon>(
+      find
+          .descendant(
+            of: find.descendant(of: ubin, matching: find.byType(Stempel)),
+            matching: find.byType(Icon),
+          )
+          .first,
+    )
+    .icon;
 
 ProviderContainer _kontainer(WidgetTester t) =>
     ProviderScope.containerOf(t.element(find.byType(BerandaScreen)));
@@ -347,7 +386,8 @@ void main() {
       expect(merkTipeAlat(dengan(null, null)), isNull);
     });
 
-    test('baris sertifikat: pengecualian bersuara, PASS dan null diam', () {
+    test('sertifikat: teks hanya nomor dan alat; pengecualian = status (ikon '
+        '+ kata) dari pemetaan, PASS dan null diam', () {
       Sertifikat s({
         String? keputusan,
         int? berlakuSampai = 65,
@@ -363,30 +403,81 @@ void main() {
           digantikanOleh: digantikanOleh,
         ),
       );
-      List<String> baris(Sertifikat x) => barisUbinSertifikat([x], hariIniUji);
+      List<String> baris(Sertifikat x) => barisUbinSertifikat([x]);
+      List<StatusTampil> status(Sertifikat x) =>
+          statusUbinSertifikat([x], hariIniUji);
+      List<String> kata(Sertifikat x) => [for (final t in status(x)) t.label];
 
-      expect(barisUbinSertifikat(const [], hariIniUji), isEmpty);
-      expect(baris(s(keputusan: 'PASS')), ['CAL/ALFA/0001', 'Jangka Sorong']);
-      // Keputusan null: netral, tidak disebut sama sekali.
-      expect(baris(s()), ['CAL/ALFA/0001', 'Jangka Sorong']);
-      expect(baris(s(keputusan: 'FAIL')), [
-        'CAL/ALFA/0001',
-        'Jangka Sorong',
-        'Tidak memenuhi toleransi',
-      ]);
-      expect(baris(s(berlakuSampai: -5)).last, 'Masa berlaku berakhir');
-      expect(baris(s(status: 'dibatalkan')).last, 'Dibatalkan');
-      expect(
-        baris(
-          s(status: 'digantikan', digantikanOleh: {'id': 2, 'nomor': 'X'}),
-        ).last,
-        'Digantikan',
-      );
+      expect(barisUbinSertifikat(const []), isEmpty);
+      expect(statusUbinSertifikat(const [], hariIniUji), isEmpty);
+      // Kata keputusan dan masa berlaku BUKAN lagi baris teks polos.
+      for (final x in [
+        s(keputusan: 'PASS'),
+        s(),
+        s(keputusan: 'FAIL', berlakuSampai: -5),
+      ]) {
+        expect(baris(x), ['CAL/ALFA/0001', 'Jangka Sorong']);
+      }
+      // Keputusan null dan PASS: netral, tidak disebut sama sekali.
+      expect(status(s(keputusan: 'PASS')), isEmpty);
+      expect(status(s()), isEmpty);
+
+      final gagal = status(s(keputusan: 'FAIL')).single;
+      expect(gagal.label, 'Tidak memenuhi toleransi');
+      expect(gagal.nada, NadaStatus.gagal);
+      expect(gagal.ikon, statusKeputusan('FAIL')!.ikon);
+
+      final berakhir = status(s(berlakuSampai: -5)).single;
+      expect(berakhir.label, 'Masa berlaku berakhir');
+      expect(berakhir.nada, NadaStatus.netral);
+      expect(berakhir.ikon, statusBerlaku(StatusBerlaku.berakhir).ikon);
+
+      final batal = status(s(status: 'dibatalkan')).single;
+      expect(batal.label, 'Dibatalkan');
+      expect(batal.nada, NadaStatus.gagal);
+      expect(batal.ikon, statusBerlaku(StatusBerlaku.dibatalkan).ikon);
+
+      final ganti = status(
+        s(status: 'digantikan', digantikanOleh: {'id': 2, 'nomor': 'X'}),
+      ).single;
+      expect(ganti.label, 'Digantikan');
+      expect(ganti.nada, NadaStatus.awas);
+      expect(ganti.ikon, statusBerlaku(StatusBerlaku.digantikan).ikon);
+
       // FAIL dan masa berlaku berakhir bersama: dua kata, tidak saling menimpa.
-      expect(baris(s(keputusan: 'FAIL', berlakuSampai: -5)).skip(2), [
+      expect(kata(s(keputusan: 'FAIL', berlakuSampai: -5)), [
         'Tidak memenuhi toleransi',
         'Masa berlaku berakhir',
       ]);
+    });
+
+    test('nada ubin sertifikat: kuning menurut desain, koral bila ada yang '
+        'gagal, TIDAK PERNAH hijau', () {
+      Sertifikat s({String? keputusan, String status = 'berlaku'}) =>
+          Sertifikat.dariJson(
+            sertifikatJson(
+              1,
+              'CAL/ALFA/0001',
+              keputusan: keputusan,
+              status: status,
+            ),
+          );
+      NadaStatus nada(Sertifikat x) =>
+          nadaUbinSertifikat(statusUbinSertifikat([x], hariIniUji));
+
+      expect(nadaUbinSertifikat(const []), NadaStatus.awas);
+      expect(nada(s()), NadaStatus.awas);
+      expect(nada(s(keputusan: 'PASS')), NadaStatus.awas);
+      expect(nada(s(keputusan: 'FAIL')), NadaStatus.gagal);
+      expect(nada(s(status: 'dibatalkan')), NadaStatus.gagal);
+      for (final x in [
+        s(),
+        s(keputusan: 'PASS'),
+        s(keputusan: 'FAIL'),
+        s(status: 'dibatalkan'),
+      ]) {
+        expect(nada(x), isNot(NadaStatus.lulus));
+      }
     });
 
     test('baris paket: nomor, tahap, terlambat, siap diambil, jumlah', () {
@@ -408,11 +499,14 @@ void main() {
 
       expect(baris(const []), isEmpty);
       expect(baris([p(1)]), ['ORD/1', 'Diterima']);
-      expect(baris([p(1, terlambat: true)]), [
-        'ORD/1',
-        'Diterima',
-        'Melewati target selesai',
-      ]);
+      // Terlambat BUKAN baris teks polos: status (ikon + kata + nada).
+      expect(baris([p(1, terlambat: true)]), ['ORD/1', 'Diterima']);
+      expect(statusUbinPaket(const []), isEmpty);
+      expect(statusUbinPaket([p(1)]), isEmpty);
+      final lambat = statusUbinPaket([p(1, terlambat: true)]).single;
+      expect(lambat.label, 'Melewati target selesai');
+      expect(lambat.nada, NadaStatus.awas);
+      expect(lambat.ikon, Icons.schedule);
       expect(baris([p(1), p(2)], siap: 1), [
         'ORD/1',
         'Diterima',
@@ -428,6 +522,59 @@ void main() {
       ]);
       // Hanya hitungan server (tanpa daftar): jumlah tetap disebut.
       expect(baris(const [], jumlah: 3), ['3 paket berjalan']);
+    });
+
+    test('paket diserahkan disaring seperti layar lama: tidak jadi paket '
+        'pertama dan terlambatnya tidak dipakai; siap diambil tetap', () {
+      Paket p(
+        int id, {
+        bool terlambat = false,
+        String tahap = 'diterima',
+        String label = 'Diterima',
+      }) => Paket.dariJson(
+        paketJson(
+          id,
+          'ORD/$id',
+          tahap: tahap,
+          label: label,
+          terlambat: terlambat,
+        ),
+      );
+      final serah = p(
+        9,
+        tahap: 'diserahkan',
+        label: 'Sudah diserahkan',
+        terlambat: true,
+      );
+      List<String> baris(List<Paket> berjalan, {int jumlah = 1}) =>
+          barisUbinPaket(
+            berjalan: berjalan,
+            jumlah: jumlah,
+            siap: 0,
+            siapMungkinLebih: false,
+          );
+
+      expect(baris([serah, p(1)]), ['ORD/1', 'Diterima']);
+      expect(statusUbinPaket([serah, p(1)]), isEmpty);
+      // Hanya paket diserahkan di daftar: tidak ada paket pertama dan tidak
+      // ada status terlambat; hitungan server tetap yang bicara.
+      expect(baris([serah], jumlah: 0), isEmpty);
+      expect(statusUbinPaket([serah]), isEmpty);
+      // Siap diambil bukan diserahkan: tetap paket pertama.
+      final siap = p(2, tahap: 'siap_diambil', label: 'Siap diambil');
+      expect(baris([siap]), ['ORD/2', 'Siap diambil']);
+    });
+
+    test('nada ubin paket: hijau bila tenang, mengikuti status terlambat '
+        '(kuning), tidak hijau bila terlambat', () {
+      Paket p({bool terlambat = false}) =>
+          Paket.dariJson(paketJson(1, 'ORD/1', terlambat: terlambat));
+      expect(nadaUbinPaket(statusUbinPaket(const [])), NadaStatus.lulus);
+      expect(nadaUbinPaket(statusUbinPaket([p()])), NadaStatus.lulus);
+      expect(
+        nadaUbinPaket(statusUbinPaket([p(terlambat: true)])),
+        NadaStatus.awas,
+      );
     });
   });
 
@@ -988,23 +1135,28 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final sert = tester.widget<UbinRingkas>(
-        find.widgetWithText(UbinRingkas, 'Sertifikat terbaru'),
-      );
+      final sertUbin = find.widgetWithText(UbinRingkas, 'Sertifikat terbaru');
+      final sert = tester.widget<UbinRingkas>(sertUbin);
       expect(sert.kalimat!.split('\n'), [
         'CAL/ALFA/0002',
         'Timbangan Analitik',
-        'Tidak memenuhi toleransi',
       ]);
-      final pak = tester.widget<UbinRingkas>(
-        find.widgetWithText(UbinRingkas, 'Paket dikerjakan'),
-      );
+      // FAIL = stempel (ikon + kata) dan ubin koral, bukan baris teks polos.
+      expect(_kataStempel(tester, sertUbin), ['Tidak memenuhi toleransi']);
+      expect(_ikonStempel(tester, sertUbin), Icons.cancel_outlined);
+      expect(_latarUbin(tester, sertUbin), _w(false).ubinGagal);
+      final pakUbin = find.widgetWithText(UbinRingkas, 'Paket dikerjakan');
+      final pak = tester.widget<UbinRingkas>(pakUbin);
       expect(pak.kalimat!.split('\n'), [
         'ORD/ALFA/2026/0021',
         'Alat diterima lab',
-        'Melewati target selesai',
         '4 paket berjalan',
       ]);
+      // Terlambat = stempel kuning, ubin TIDAK hijau.
+      expect(_kataStempel(tester, pakUbin), ['Melewati target selesai']);
+      expect(_ikonStempel(tester, pakUbin), Icons.schedule);
+      expect(_latarUbin(tester, pakUbin), _w(false).ubinAwas);
+      expect(_latarUbin(tester, pakUbin), isNot(_w(false).ubinLulus));
     });
 
     testWidgets('keputusan null: netral, tidak ada kata keputusan', (
@@ -1021,11 +1173,139 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      final sert = tester.widget<UbinRingkas>(
-        find.widgetWithText(UbinRingkas, 'Sertifikat terbaru'),
-      );
+      final sertUbin = find.widgetWithText(UbinRingkas, 'Sertifikat terbaru');
+      final sert = tester.widget<UbinRingkas>(sertUbin);
       expect(sert.kalimat, 'CAL/ALFA/0005\nJangka Sorong');
       expect(find.textContaining('toleransi'), findsNothing);
+      // Tanpa keputusan: tidak ada stempel, dan ubin tidak pernah hijau.
+      expect(_kataStempel(tester, sertUbin), isEmpty);
+      expect(_latarUbin(tester, sertUbin), _w(false).ubinAwas);
+      expect(_latarUbin(tester, sertUbin), isNot(_w(false).ubinLulus));
+    });
+
+    testWidgets('masa berlaku berakhir, digantikan, dibatalkan: stempel ikon + '
+        'kata dari pemetaan status, bukan teks polos', (tester) async {
+      layarHp(tester, lebar: 392, tinggi: 2400);
+      final kasus = <(Map<String, dynamic>, String, IconData, Color)>[
+        (
+          sertifikatJson(1, 'CAL/1', berlakuSampai: -5),
+          'Masa berlaku berakhir',
+          statusBerlaku(StatusBerlaku.berakhir).ikon,
+          _w(false).ubinAwas,
+        ),
+        (
+          sertifikatJson(
+            2,
+            'CAL/2',
+            status: 'digantikan',
+            digantikanOleh: {'id': 9, 'nomor': 'CAL/9'},
+          ),
+          'Digantikan',
+          statusBerlaku(StatusBerlaku.digantikan).ikon,
+          _w(false).ubinAwas,
+        ),
+        (
+          sertifikatJson(3, 'CAL/3', status: 'dibatalkan'),
+          'Dibatalkan',
+          statusBerlaku(StatusBerlaku.dibatalkan).ikon,
+          _w(false).ubinGagal,
+        ),
+      ];
+      for (final (json, kata, ikon, latar) in kasus) {
+        await _pasang(
+          tester,
+          _app(
+            _server(alat: [alatJson(1, 'A', hari: 100)], sertifikat: [json]),
+            sesi: _sesiSatu(),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final ubin = find.widgetWithText(UbinRingkas, 'Sertifikat terbaru');
+        expect(_kataStempel(tester, ubin), [kata], reason: kata);
+        expect(_ikonStempel(tester, ubin), ikon, reason: kata);
+        expect(_latarUbin(tester, ubin), latar, reason: kata);
+        expect(
+          tester.widget<UbinRingkas>(ubin).kalimat,
+          isNot(contains(kata)),
+          reason: 'kata hanya di stempel, tidak ganda di baris teks',
+        );
+      }
+    });
+
+    testWidgets('paket diserahkan di daftar tidak jadi paket pertama dan '
+        'tidak membuat ubin terlambat', (tester) async {
+      layarHp(tester, lebar: 392, tinggi: 2400);
+      await tester.pumpWidget(
+        _app(
+          _server(
+            alat: [alatJson(1, 'A', hari: 100)],
+            paket: [
+              paketJson(
+                30,
+                'ORD/ALFA/2026/0030',
+                tahap: 'diserahkan',
+                label: 'Sudah diserahkan',
+                terlambat: true,
+              ),
+              paketJson(
+                21,
+                'ORD/ALFA/2026/0021',
+                tahap: 'diterima',
+                label: 'Alat diterima lab',
+              ),
+            ],
+            jumlahPaket: 1,
+          ),
+          sesi: _sesiSatu(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final ubin = find.widgetWithText(UbinRingkas, 'Paket dikerjakan');
+      expect(
+        tester.widget<UbinRingkas>(ubin).kalimat,
+        'ORD/ALFA/2026/0021\n'
+        'Alat diterima lab',
+      );
+      expect(find.textContaining('ORD/ALFA/2026/0030'), findsNothing);
+      expect(find.textContaining('Sudah diserahkan'), findsNothing);
+      expect(_kataStempel(tester, ubin), isEmpty);
+      expect(_latarUbin(tester, ubin), _w(false).ubinLulus);
+    });
+
+    testWidgets('semantik ubin menyebut status stempel; ubin tetap satu '
+        'tombol berlabel', (tester) async {
+      final semantik = tester.ensureSemantics();
+      layarHp(tester, lebar: 392, tinggi: 2400);
+      await tester.pumpWidget(
+        _app(
+          _server(
+            alat: [alatJson(1, 'A', hari: 100)],
+            sertifikat: [
+              sertifikatJson(
+                12,
+                'CAL/ALFA/0002',
+                namaAlat: 'Timbangan Analitik',
+                keputusan: 'FAIL',
+              ),
+            ],
+            paket: [paketLab],
+          ),
+          sesi: _sesiSatu(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      for (final (awal, status) in [
+        ('Sertifikat terbaru', 'Status: Tidak memenuhi toleransi'),
+        ('Paket dikerjakan', 'Status: Melewati target selesai'),
+      ]) {
+        final d = tester
+            .getSemantics(find.bySemanticsLabel(RegExp('^$awal')))
+            .getSemanticsData();
+        expect(d.flagsCollection.isButton, isTrue, reason: awal);
+        expect(d.hasAction(SemanticsAction.tap), isTrue, reason: awal);
+        expect(d.label, contains(status), reason: awal);
+      }
+      semantik.dispose();
     });
 
     testWidgets('paket siap diambil: hitungan server menang; daftar dipotong '
@@ -1104,6 +1384,7 @@ void main() {
     testWidgets('tombol utama "Lihat semua alat" berlencana jumlah server', (
       tester,
     ) async {
+      final semantik = tester.ensureSemantics();
       layarHp(tester, lebar: 392, tinggi: 2400);
       await tester.pumpWidget(
         _app(
@@ -1121,14 +1402,23 @@ void main() {
       expect(tombol.label, 'Lihat semua alat');
       expect(tombol.ragam, RagamTombol.utama);
       expect(tombol.jumlah, 7);
+      expect(tombol.satuanJumlah, 'alat');
       expect(tombol.penuh, isTrue);
       expect(
         tester.getSize(find.byType(TombolSidik)).height,
         greaterThanOrEqualTo(56),
       );
+      // Pembaca layar mendengar angka BESERTA satuannya: "7 alat", bukan "7".
+      final label = find.bySemanticsLabel('Lihat semua alat, 7 alat');
+      expect(label, findsOneWidget);
+      expect(find.bySemanticsLabel('Lihat semua alat, 7'), findsNothing);
+      final d = tester.getSemantics(label).getSemanticsData();
+      expect(d.flagsCollection.isButton, isTrue);
+      expect(d.hasAction(SemanticsAction.tap), isTrue);
       await tester.tap(find.byType(TombolSidik));
       await tester.pump();
       expect(_kontainer(tester).read(tabProvider), IndeksTab.alat);
+      semantik.dispose();
     });
 
     testWidgets(
@@ -1274,6 +1564,61 @@ void main() {
         findsNWidgets(2),
       );
       expect(find.text('31–60 hari'), findsNothing);
+    });
+  });
+
+  // ── Ganti perusahaan: daftar alat lama tidak boleh bocor ─────────────────
+  group('ganti perusahaan: hitungan daftar alat PT lama', () {
+    testWidgets('/beranda PT baru sudah tiba, /alat PT baru belum: alat PT '
+        'lama TIDAK tampil di ubin atau kapsul', (tester) async {
+      layarHp(tester, lebar: 392, tinggi: 2400);
+      final server = _ServerAlatLambat({
+        3: DataPerusahaan(nama: 'PT Alfa', alat: _alatMendesak()),
+        4: DataPerusahaan(
+          nama: 'PT Beta',
+          alat: [
+            alatJson(31, 'Barometer Beta', hari: -2, status: 'lewat_jadwal'),
+          ],
+        ),
+      });
+      await tester.pumpWidget(_app(server));
+      await tester.pumpAndSettle();
+      // Keadaan awal: ubin alat dan kolom 31-90 hari milik PT Alfa.
+      expect(
+        find.widgetWithText(UbinAlat, 'Jangka Sorong Digital'),
+        findsOneWidget,
+      );
+      expect(find.text('31–60 hari'), findsOneWidget);
+
+      // Ganti perusahaan; hanya `GET /alat` yang lambat. `jatuhTempoProvider`
+      // dimuat ulang (`isReloading`) dan masih memegang nilai PT Alfa.
+      server.jedaAlat = const Duration(seconds: 5);
+      (_kontainer(tester).read(sesiProvider.notifier) as SesiBisaGanti)
+          .pilihPerusahaan(4);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.text('PT Beta'), findsOneWidget, reason: 'beranda PT Beta');
+      expect(
+        find.textContaining('Jangka Sorong'),
+        findsNothing,
+        reason: 'alat PT Alfa bocor selagi /alat PT Beta dimuat',
+      );
+      expect(find.byType(UbinAlat), findsNothing);
+      expect(
+        find.byType(UbinAlatMemuat),
+        findsOneWidget,
+        reason: 'daftar yang dimuat ulang = kerangka, bukan alat lama',
+      );
+      expect(
+        find.text('31–60 hari'),
+        findsNothing,
+        reason: 'kolom 31-90 hari dari daftar PT Alfa tidak boleh digambar',
+      );
+
+      await _selesaikan(tester);
+      expect(find.widgetWithText(UbinAlat, 'Barometer Beta'), findsOneWidget);
+      expect(find.byType(UbinAlatMemuat), findsNothing);
     });
   });
 

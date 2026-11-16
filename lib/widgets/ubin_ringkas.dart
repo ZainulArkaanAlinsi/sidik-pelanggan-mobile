@@ -7,6 +7,7 @@ import '../core/tema/ukuran.dart';
 import '../core/tema/warna_sidik.dart';
 import 'dasar/dasar_ubin.dart';
 import 'status_tampil.dart';
+import 'stempel.dart';
 
 /// Ubin pasangan Bento Lab (dua kolom, jarak [Spasi.antarUbin]): judul 17/24
 /// (paling banyak dua baris) → [kalimat] pendek 14 → (didorong ke bawah)
@@ -27,6 +28,7 @@ class UbinRingkas extends StatelessWidget {
     super.key,
     required this.judul,
     this.kalimat,
+    this.stempel = const [],
     this.aksi,
     this.nada = NadaStatus.netral,
     this.visual,
@@ -37,6 +39,12 @@ class UbinRingkas extends StatelessWidget {
 
   final String judul;
   final String? kalimat;
+
+  /// Pengecualian yang harus bersuara (mis. "Tidak memenuhi toleransi"): satu
+  /// [Stempel] (ikon + kata, istilah dari `pemetaan_status.dart`) per status,
+  /// di bawah [kalimat]. Kosong = tanpa stempel. Status tidak pernah hanya
+  /// warna ubin: katanya selalu ikut tertulis.
+  final List<StatusTampil> stempel;
 
   /// Teks tautan di bawah, mis. "Lihat semua". Null = tanpa tautan.
   final String? aksi;
@@ -51,6 +59,7 @@ class UbinRingkas extends StatelessWidget {
   String get _kalimat => [
     judul,
     if (kalimat != null && kalimat!.isNotEmpty) kalimat!,
+    for (final s in stempel) 'Status: ${s.label}',
     if (aksi != null && aksi!.isNotEmpty) aksi!,
   ].join('. ');
 
@@ -90,6 +99,17 @@ class UbinRingkas extends StatelessWidget {
                   child: Text(
                     kalimat!,
                     style: t.bodySmall?.copyWith(color: tinta),
+                  ),
+                ),
+              if (stempel.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: Spasi.sm),
+                  child: Wrap(
+                    spacing: Spasi.sm,
+                    runSpacing: Spasi.xs,
+                    children: [
+                      for (final s in stempel) Stempel(s, diAtasUbin: true),
+                    ],
                   ),
                 ),
             ],

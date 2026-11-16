@@ -72,8 +72,11 @@ class KalimatUtama extends StatelessWidget {
   /// Kalimat-kalimat; tiap kalimat adalah daftar potongan.
   final List<List<PotonganKalimat>> kalimat;
 
-  /// Lebih dari dua kalimat tidak lagi terbaca sebagai jawaban; sisanya hanya
-  /// di daftar "Perlu perhatian".
+  /// Lebih dari dua kalimat tidak lagi terbaca sebagai jawaban; yang terpotong
+  /// tetap terbaca di bagian lain Beranda: alat lewat jadwal dan segera jatuh
+  /// tempo di kapsul "Jatuh tempo kalibrasi" (ketuk kolomnya membuka daftar alat
+  /// berfilter), paket siap diambil di ubin "Paket dikerjakan", sertifikat baru
+  /// di ubin "Sertifikat terbaru".
   static const int maksimumKalimat = 2;
 
   @override
