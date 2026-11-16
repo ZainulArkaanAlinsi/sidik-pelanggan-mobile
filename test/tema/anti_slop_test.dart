@@ -47,7 +47,6 @@ void main() {
         'lib/screens/sertifikat/sertifikat_detail_screen.dart': 1,
         'lib/widgets/baris_menu.dart': 1,
         'lib/widgets/garis_waktu_sertifikat.dart': 1,
-        'lib/widgets/kartu_alat.dart': 1,
         'lib/widgets/kartu_kelompok_arsip.dart': 1,
         'lib/widgets/kartu_paket.dart': 1,
         'lib/widgets/kartu_sertifikat.dart': 1,
@@ -65,7 +64,6 @@ void main() {
         'lib/screens/paket/paket_detail_screen.dart': 3,
         'lib/screens/sertifikat/sertifikat_detail_screen.dart': 2,
         'lib/widgets/garis_waktu_sertifikat.dart': 2,
-        'lib/widgets/kartu_alat.dart': 1,
         'lib/widgets/kartu_paket.dart': 2,
         'lib/widgets/kartu_sertifikat.dart': 2,
       },
@@ -83,7 +81,6 @@ void main() {
         'lib/screens/sertifikat/sertifikat_detail_screen.dart': 1,
         // `Alat.merkModel`: "merk · model" dibentuk di model, bukan di layar.
         'lib/models/data_pelanggan.dart': 1,
-        'lib/widgets/kartu_alat.dart': 2,
         'lib/widgets/kartu_paket.dart': 1,
         'lib/widgets/kartu_sertifikat.dart': 2,
       },
