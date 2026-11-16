@@ -4,12 +4,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:sidik_pelanggan/core/tema/bentuk.dart';
+import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
+import 'package:sidik_pelanggan/core/tema/ukuran.dart';
 import 'package:sidik_pelanggan/widgets/bagian_sidik.dart';
 import 'package:sidik_pelanggan/widgets/chip_status.dart';
 import 'package:sidik_pelanggan/widgets/konten_tengah.dart';
 import 'package:sidik_pelanggan/widgets/lencana_kan.dart';
 import 'package:sidik_pelanggan/widgets/status_tampil.dart';
+import 'package:sidik_pelanggan/widgets/stempel.dart';
 import 'package:sidik_pelanggan/widgets/tombol_sidik.dart';
 
 import '../dukungan/fixture_fitur.dart';
@@ -48,6 +52,91 @@ void main() {
       expect(find.bySemanticsLabel('Status: Lewat jadwal'), findsOneWidget);
       semantik.dispose();
     });
+
+    testWidgets(
+      'chip = lencana bersama (Stempel): sama bentuk, ukuran, dan warna; bukan '
+      'pil 999',
+      (tester) async {
+        const status = StatusTampil(
+          'Lewat jadwal',
+          NadaStatus.gagal,
+          Icons.error_outline,
+        );
+        await tester.pumpWidget(
+          _app(
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ChipStatus(status, key: ValueKey('chip')),
+                Stempel(status, key: ValueKey('stempel')),
+              ],
+            ),
+          ),
+        );
+        // Didelegasikan: satu Stempel di dalam ChipStatus.
+        expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('chip')),
+            matching: find.byType(Stempel),
+          ),
+          findsOneWidget,
+        );
+        BoxDecoration dekor(String kunci) {
+          final kotak = find
+              .descendant(
+                of: find.byKey(ValueKey(kunci)),
+                matching: find.byType(DecoratedBox),
+              )
+              .first;
+          return tester.widget<DecoratedBox>(kotak).decoration as BoxDecoration;
+        }
+
+        final chip = dekor('chip');
+        final stempel = dekor('stempel');
+        expect(chip.borderRadius, Bentuk.sudutStempel);
+        expect(chip.borderRadius, isNot(Bentuk.sudutPil));
+        expect(chip.color, stempel.color);
+        expect(
+          tester.getSize(find.byKey(const ValueKey('chip'))),
+          tester.getSize(find.byKey(const ValueKey('stempel'))),
+        );
+        expect(
+          tester.getSize(find.byKey(const ValueKey('chip'))).height,
+          UkuranKontrol.stempel,
+        );
+      },
+    );
+
+    testWidgets(
+      'kata panjang di 320 dp x huruf 1,3: lencana membungkus dan tumbuh '
+      '(tidak dipotong elipsis), pembaca layar menerima kata utuh',
+      (tester) async {
+        layarHp(tester, lebar: 320, tinggi: 640);
+        final semantik = tester.ensureSemantics();
+        const kata = 'Melewati target selesai dan menunggu konfirmasi';
+        await tester.pumpWidget(
+          _app(
+            const Padding(
+              padding: EdgeInsets.all(Spasi.sisi),
+              child: ChipStatus(
+                StatusTampil(kata, NadaStatus.awas, Icons.schedule),
+              ),
+            ),
+            skala: 1.3,
+          ),
+        );
+        final teks = tester.widget<Text>(find.text(kata));
+        expect(teks.overflow, isNot(TextOverflow.ellipsis));
+        expect(teks.maxLines, isNull);
+        expect(
+          tester.getSize(find.byType(ChipStatus)).height,
+          greaterThan(UkuranKontrol.stempel),
+        );
+        expect(find.bySemanticsLabel('Status: $kata'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        semantik.dispose();
+      },
+    );
 
     testWidgets('lencana KAN: "KAN LK-285-IDN", ikon merah KAN, label baca', (
       tester,
