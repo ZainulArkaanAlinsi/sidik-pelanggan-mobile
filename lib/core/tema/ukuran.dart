@@ -202,6 +202,10 @@ abstract final class UkuranDock {
 
   /// Jarak dock dari tepi bawah sistem.
   static const double dariBawah = 16;
+
+  /// Ikon butir tidak aktif (22) dan butir aktif di dalam pil (20).
+  static const double ikon = 22;
+  static const double ikonAktif = 20;
 }
 
 /// Visual alat (gambar milik sendiri, kanvas 240 x 240).

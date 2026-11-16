@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/screens/rangka.dart';
+import 'package:sidik_pelanggan/widgets/navigasi_utama.dart';
 
 import '../dukungan/fixture_fitur.dart';
 import '../dukungan/layar_uji.dart';
@@ -37,38 +38,46 @@ Widget _rangka() => ProviderScope(
 void main() {
   setUpAll(siapkanTesFitur);
 
-  testWidgets('HP 320 dp, huruf 1,3×: lima label satu baris, ada tooltip', (
+  // P4: navigasi bawah menjadi dock melayang (DockNavigasi). Label hanya di
+  // butir aktif (KOMPONEN.md §Dock), jadi "lima label satu baris" diganti:
+  // tiap butir tetap punya tooltip dan sentuh >= 48 dp, dan label aktif satu
+  // baris. Detail dock ada di test/widgets/dock_navigasi_test.dart.
+  testWidgets('HP 320 dp, huruf 1,3×: lima butir bertooltip, sentuh >= 48 dp', (
     tester,
   ) async {
     layarHp(tester, lebar: 320, tinggi: 640);
     await tester.pumpWidget(_rangka());
     await tester.pumpAndSettle();
 
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(DockNavigasi), findsOneWidget);
     expect(find.byType(NavigationRail), findsNothing);
     expect(tester.takeException(), isNull);
-    final satuBaris = tester.getSize(find.text('Akun')).height;
     for (final nama in _tab) {
-      final label = find.descendant(
-        of: find.byType(NavigationBar),
-        matching: find.text(nama),
+      final butir = find.descendant(
+        of: find.byType(DockNavigasi),
+        matching: find.byTooltip(nama),
       );
-      expect(label, findsOneWidget, reason: nama);
-      expect(
-        tester.getSize(label).height,
-        closeTo(satuBaris, 1),
-        reason: '$nama harus satu baris',
-      );
-      expect(find.byTooltip(nama), findsWidgets, reason: 'tooltip $nama');
+      expect(butir, findsOneWidget, reason: 'tooltip $nama');
+      final ukuran = tester.getSize(butir);
+      expect(ukuran.height, greaterThanOrEqualTo(48), reason: nama);
+      expect(ukuran.width, greaterThanOrEqualTo(48), reason: nama);
     }
-    // Sentuh >= 48 dp.
-    for (final nama in _tab) {
-      final tujuan = find.ancestor(
-        of: find.text(nama),
-        matching: find.byType(NavigationDestination),
-      );
-      expect(tester.getSize(tujuan).height, greaterThanOrEqualTo(48));
-    }
+  });
+
+  testWidgets('HP 360 dp, huruf 1,3×: label butir aktif satu baris', (
+    tester,
+  ) async {
+    layarHp(tester);
+    await tester.pumpWidget(_rangka());
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final label = find.descendant(
+      of: find.byType(DockNavigasi),
+      matching: find.text('Beranda'),
+    );
+    expect(label, findsOneWidget);
+    // 14 sp / 20 dp: satu baris, tidak ikut membesar oleh huruf sistem 1,3×.
+    expect(tester.getSize(label).height, lessThan(24));
   });
 
   testWidgets('HP 360 dp: pindah tab lewat navigasi bawah', (tester) async {
@@ -77,8 +86,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(
       find.descendant(
-        of: find.byType(NavigationBar),
-        matching: find.text('Alat'),
+        of: find.byType(DockNavigasi),
+        matching: find.byTooltip('Alat'),
       ),
     );
     await tester.pumpAndSettle();
@@ -94,7 +103,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.byType(DockNavigasi), findsNothing);
     for (final nama in _tab) {
       expect(
         find.descendant(
@@ -127,7 +136,7 @@ void main() {
     layarHp(tester, lebar: 599, tinggi: 800);
     await tester.pumpWidget(_rangka());
     await tester.pumpAndSettle();
-    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(DockNavigasi), findsOneWidget);
 
     layarHp(tester, lebar: 600, tinggi: 800);
     await tester.pumpAndSettle();

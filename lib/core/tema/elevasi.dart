@@ -12,4 +12,11 @@ abstract final class Elevasi {
 
   /// Tebal garis halus pembatas kartu dan pemisah.
   static const double garis = 1;
+
+  /// Bayangan dock navigasi, SATU-SATUNYA bayangan Bento Lab (tokens.json
+  /// `bayanganDock`): geser ke bawah 16, blur 32, navy 28 %. Warnanya diambil
+  /// pemakai dari tinta navy tema (`WarnaSidik.tintaUbin`).
+  static const double dockGeser = 16;
+  static const double dockBlur = 32;
+  static const double dockOpasitas = 0.28;
 }
