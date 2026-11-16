@@ -11,9 +11,11 @@ import 'package:sidik_pelanggan/models/status_berlaku.dart';
 import 'package:sidik_pelanggan/screens/alat/alat_detail_screen.dart';
 import 'package:sidik_pelanggan/screens/alat/daftar_alat_screen.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_detail_screen.dart';
+import 'package:sidik_pelanggan/widgets/dasar/kontrol_ketuk.dart';
 import 'package:sidik_pelanggan/widgets/garis_waktu_sertifikat.dart';
-import 'package:sidik_pelanggan/widgets/kartu_sidik.dart';
 import 'package:sidik_pelanggan/widgets/kartu_alat.dart';
+import 'package:sidik_pelanggan/widgets/kartu_sidik.dart';
+import 'package:sidik_pelanggan/widgets/saringan_pil.dart';
 
 import 'dukungan/fixture_fitur.dart';
 
@@ -158,6 +160,20 @@ Finder _teksDi(Finder kartu, String teks) =>
 
 Finder _kartuAlat(String nama) => find.widgetWithText(KartuAlat, nama);
 
+/// Pil saringan berlabel [label] (Bento Lab: `SaringanPil` menggantikan
+/// `ChoiceChip`). Teks katanya ada di dalam pil, jadi ketukan di teks sampai
+/// ke pilnya.
+Finder _pil(String label) =>
+    find.descendant(of: find.byType(SaringanPil), matching: find.text(label));
+
+/// Ketuk pil [label]; barisnya bergulir mendatar, jadi pil yang di luar layar
+/// digulirkan masuk dulu (seperti yang dilakukan pengguna).
+Future<void> _ketukPil(WidgetTester tester, String label) async {
+  await tester.ensureVisible(_pil(label));
+  await tester.pumpAndSettle();
+  await tester.tap(_pil(label));
+}
+
 Finder _simpul(String nomor) =>
     find.ancestor(of: find.text(nomor), matching: find.byType(KartuSidik));
 
@@ -190,9 +206,14 @@ void main() {
         _teksDi(_kartuAlat('Tanpa Jadwal'), 'Belum pernah dikalibrasi'),
         findsOneWidget,
       );
-      // Sisa hari tetap ada, di baris tanggal.
-      expect(find.textContaining('Lewat 5 hari'), findsWidgets);
-      expect(find.textContaining('12 hari lagi'), findsWidgets);
+      // Sisa hari tetap ada: ubin alat menyebutnya sebagai angka besar + kata
+      // ("5" + "hari lewat"), bukan kalimat "Lewat 5 hari" (desain Bento Lab).
+      final jangka = _kartuAlat('Jangka Sorong');
+      expect(_teksDi(jangka, '5'), findsOneWidget);
+      expect(_teksDi(jangka, 'hari lewat'), findsOneWidget);
+      final timbangan = _kartuAlat('Timbangan Analitik');
+      expect(_teksDi(timbangan, '12'), findsOneWidget);
+      expect(_teksDi(timbangan, 'hari lagi'), findsOneWidget);
       // Urutan server: paling mendesak di atas.
       final urutan = [
         for (final k in tester.widgetList<KartuAlat>(find.byType(KartuAlat)))
@@ -217,7 +238,7 @@ void main() {
       await tester.pumpWidget(_app(const DaftarAlatScreen(), server));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Lewat jadwal'));
+      await _ketukPil(tester, 'Lewat jadwal');
       await tester.pumpAndSettle();
 
       expect(
@@ -237,7 +258,7 @@ void main() {
       await tester.pumpWidget(_app(const DaftarAlatScreen(), server));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Dalam 61–90 hari'));
+      await _ketukPil(tester, 'Dalam 61–90 hari');
       await tester.pumpAndSettle();
 
       expect(_kartuAlat('Manometer'), findsOneWidget);
@@ -305,11 +326,11 @@ void main() {
         reason: 'keterangan, bukan layar putih',
       );
 
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Lewat jadwal'));
+      await _ketukPil(tester, 'Lewat jadwal');
       await tester.pumpAndSettle();
       expect(find.text('Tidak ada alat yang lewat jadwal'), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Dalam 31–60 hari'));
+      await _ketukPil(tester, 'Dalam 31–60 hari');
       await tester.pumpAndSettle();
       expect(
         find.text('Tidak ada alat yang jatuh tempo dalam 31–60 hari'),
@@ -321,6 +342,12 @@ void main() {
       _layar(tester);
       final server = _server()..gagal.add('/alat');
       await tester.pumpWidget(_app(const DaftarAlatScreen(), server));
+      await tester.pumpAndSettle();
+      // Riverpod mengulang provider yang gagal dengan jeda yang makin panjang
+      // dan selama itu layar menampilkan kerangka. Kerangka lama berdenyut dan
+      // terus menjadwalkan frame, jadi `pumpAndSettle` ikut menunggu semua
+      // pengulangan; kerangka Bento statis, jadi waktu palsu dimajukan sendiri.
+      await tester.pump(const Duration(minutes: 1));
       await tester.pumpAndSettle();
       expect(find.textContaining('Terjadi kendala di server'), findsOneWidget);
 
@@ -335,7 +362,18 @@ void main() {
       final server = _server();
       await tester.pumpWidget(_app(const DaftarAlatScreen(), server));
       await tester.pumpAndSettle();
-      final sebelum = server.yang('GET', '/alat').length;
+      // Daftar berhalaman (tanpa per_page) vs hitungan jatuh tempo (per_page).
+      int daftar() => server
+          .yang('GET', '/alat')
+          .where((r) => r.url.queryParameters['per_page'] == null)
+          .length;
+      int hitungan() => server
+          .yang('GET', '/alat')
+          .where((r) => r.url.queryParameters['per_page'] != null)
+          .length;
+      final sebelum = daftar();
+      final sebelumHitungan = hitungan();
+      final sebelumBeranda = server.yang('GET', '/beranda').length;
 
       await tester.fling(
         find.byType(ListView).first,
@@ -344,62 +382,86 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(server.yang('GET', '/alat').length, sebelum + 1);
+      // Daftar dimuat ulang SATU kali; bulatan saringan (ringkasan Beranda dan
+      // hitungan jatuh tempo) ikut disegarkan, bukan dibiarkan basi.
+      expect(daftar(), sebelum + 1);
+      expect(hitungan(), sebelumHitungan + 1);
+      expect(server.yang('GET', '/beranda').length, sebelumBeranda + 1);
     });
 
-    testWidgets('ketuk kartu membuka detail alat', (tester) async {
+    testWidgets('ketuk kartu membuka detail alat yang diketuk', (tester) async {
       _layar(tester);
       await tester.pumpWidget(_app(const DaftarAlatScreen(), _server()));
       await tester.pumpAndSettle();
 
+      int idDetail() =>
+          tester.widget<AlatDetailScreen>(find.byType(AlatDetailScreen)).id;
+
       await tester.tap(_kartuAlat('Alat Riwayat'));
       await tester.pumpAndSettle();
       expect(find.byType(AlatDetailScreen), findsOneWidget);
+      expect(idDetail(), 10);
+      Navigator.of(tester.element(find.byType(AlatDetailScreen))).pop();
+      await tester.pumpAndSettle();
+
+      // Kartu KEDUA (bukan yang pertama): urutan server, alat paling lewat
+      // jadwal dulu.
+      final kartu = tester
+          .widgetList<KartuAlat>(find.byType(KartuAlat))
+          .toList();
+      expect(kartu.first.alat.id, 12);
+      expect(kartu[1].alat.nama, 'Jangka Sorong');
+      await tester.tap(find.byType(KartuAlat).at(1));
+      await tester.pumpAndSettle();
+      expect(idDetail(), 1);
     });
 
-    testWidgets('320 dp / 1,3×: tanpa luapan, chip tetap bisa digulir', (
-      tester,
-    ) async {
-      _layar(tester, lebar: 320, tinggi: 640);
-      final server = ServerFitur({
-        3: DataPerusahaan(
-          nama: 'PT Panjang Sekali Namanya Perusahaan Ini',
-          alat: [
-            alatJson(
-              1,
-              'Digital Pressure Calibrator Multifungsi Presisi Tinggi 2271A',
-              hari: -365,
-              status: 'lewat_jadwal',
-              merk: 'Fluke Calibration International',
-            ),
-            alatJson(2, 'Timbangan', hari: 12, status: 'mendekati_jadwal'),
-          ],
-        ),
-      });
-      await tester.pumpWidget(
-        _app(const DaftarAlatScreen(), server, skalaHp: true),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
+    testWidgets(
+      '320 dp / 1,3×: tanpa luapan, pil saringan tetap bisa digulir',
+      (tester) async {
+        _layar(tester, lebar: 320, tinggi: 640);
+        final server = ServerFitur({
+          3: DataPerusahaan(
+            nama: 'PT Panjang Sekali Namanya Perusahaan Ini',
+            alat: [
+              alatJson(
+                1,
+                'Digital Pressure Calibrator Multifungsi Presisi Tinggi 2271A',
+                hari: -365,
+                status: 'lewat_jadwal',
+                merk: 'Fluke Calibration International',
+              ),
+              alatJson(2, 'Timbangan', hari: 12, status: 'mendekati_jadwal'),
+            ],
+          ),
+        });
+        await tester.pumpWidget(
+          _app(const DaftarAlatScreen(), server, skalaHp: true),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
 
-      await tester.drag(
-        find.byType(SingleChildScrollView).first,
-        const Offset(-600, 0),
-      );
-      await tester.pumpAndSettle();
-      expect(
-        find.widgetWithText(ChoiceChip, 'Dalam 61–90 hari'),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-      // Chip: target sentuh ≥ 48 dp.
-      expect(
-        tester
-            .getSize(find.widgetWithText(ChoiceChip, 'Dalam 61–90 hari'))
-            .height,
-        greaterThanOrEqualTo(48),
-      );
-    });
+        await tester.drag(
+          find.byType(SingleChildScrollView).first,
+          const Offset(-600, 0),
+        );
+        await tester.pumpAndSettle();
+        expect(_pil('Dalam 61–90 hari'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        // Pil saringan: target sentuh (kotak `KontrolKetuk`) ≥ 48 dp.
+        expect(
+          tester
+              .getSize(
+                find.ancestor(
+                  of: _pil('Dalam 61–90 hari'),
+                  matching: find.byType(KontrolKetuk),
+                ),
+              )
+              .height,
+          greaterThanOrEqualTo(48),
+        );
+      },
+    );
   });
 
   group('riwayat sertifikat per alat (garis waktu)', () {

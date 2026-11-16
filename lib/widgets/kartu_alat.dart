@@ -1,80 +1,59 @@
 import 'package:flutter/material.dart';
 
 import '../core/format.dart';
-import '../core/tema/spasi.dart';
-import '../core/tema/ukuran.dart';
-import '../core/tema/warna_sidik.dart';
 import '../models/data_pelanggan.dart';
-import 'chip_status.dart';
-import 'kartu_sidik.dart';
 import 'pemetaan_status.dart';
+import 'ubin_alat.dart';
 
-/// Kartu satu alat di daftar: nama, merk/seri/lokasi, status masa berlaku, dan
-/// sisa hari menuju jadwal kalibrasi ulang.
+/// Satu alat di daftar "Alat saya": pembungkus tipis `Alat` -> [UbinAlat]
+/// (Bento Lab). Hanya dipakai layar daftar alat; namanya dipertahankan supaya
+/// layar dan tes yang mencari `KartuAlat` tetap menemukannya.
+///
+/// Status dari `pemetaan_status.dart` (satu pemetaan; ikon + kata), sisa hari
+/// dari hitungan server (`hariKeJatuhTempo`, bukan jam HP), tanggal dari
+/// `Format.tanggal`. Alat tanpa jadwal (`jatuhTempo` null) tidak membawa angka
+/// hari dan tanggal: ubinnya menyebut "belum ada jadwal". Lokasi tampil di ubin
+/// bila terisi (pembeda dua alat sejenis tanpa nomor seri); nomor identifikasi
+/// tidak punya tempat di ubin dan tetap ada di detail alat.
+///
+/// [urutan] = urutan masuk layar (35 ms per indeks); null = tanpa animasi.
 class KartuAlat extends StatelessWidget {
-  const KartuAlat({super.key, required this.alat, required this.onTap});
+  const KartuAlat({
+    super.key,
+    required this.alat,
+    required this.onTap,
+    this.urutan,
+  });
 
   final Alat alat;
   final VoidCallback onTap;
+  final int? urutan;
+
+  /// "Merk Model" dalam satu baris; null bila keduanya kosong.
+  String? get _merkTipe {
+    final teks = [
+      alat.merk,
+      alat.model,
+    ].where((x) => x != null && x.isNotEmpty).join(' ');
+    return teks.isEmpty ? null : teks;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t = context.teks;
-    final s = context.skema;
-    final rincian = [
-      alat.merkModel,
-      if (alat.serial != null) 'SN ${alat.serial}',
-      ?alat.lokasi,
-    ].where((x) => x.isNotEmpty).join(' · ');
-    return KartuSidik(
+    final serial = alat.serial;
+    final jatuhTempo = alat.jatuhTempo;
+    return UbinAlat(
+      nama: alat.nama,
+      status: statusAlat(alat.status),
+      merkTipe: _merkTipe,
+      // Awalan "SN" hanya di layar; pembaca layar menerima nomornya saja.
+      serial: serial == null || serial.isEmpty ? null : serial,
+      awalanSerial: 'SN',
+      lokasi: alat.lokasi,
+      hari: jatuhTempo == null ? null : alat.hariKeJatuhTempo,
+      tanggal: jatuhTempo == null ? null : Format.tanggal(jatuhTempo),
       onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(alat.nama, style: t.titleSmall),
-          if (rincian.isNotEmpty) ...[
-            const SizedBox(height: Spasi.xs / 2),
-            Text(
-              rincian,
-              style: t.bodySmall,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          const SizedBox(height: Spasi.md),
-          Wrap(
-            spacing: Spasi.md,
-            runSpacing: Spasi.sm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ChipStatus(statusAlat(alat.status)),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.event_outlined,
-                    size: UkuranIkon.kecil,
-                    color: s.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: Spasi.xs),
-                  Flexible(
-                    child: Text(
-                      alat.jatuhTempo == null
-                          ? 'Belum ada jadwal kalibrasi ulang'
-                          : '${Format.sisaHari(alat.hariKeJatuhTempo)} · '
-                                '${Format.tanggal(alat.jatuhTempo)}',
-                      style: t.bodySmall?.copyWith(
-                        color: s.onSurface,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
+      urutan: urutan,
     );
   }
 }

@@ -28,6 +28,7 @@ import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
 import 'package:sidik_pelanggan/services/pemasang_apk.dart';
 import 'package:sidik_pelanggan/services/push_pelanggan.dart';
 import 'package:sidik_pelanggan/widgets/navigasi_utama.dart';
+import 'package:sidik_pelanggan/widgets/saringan_pil.dart';
 
 import 'dukungan/layar_uji.dart';
 
@@ -239,7 +240,12 @@ void main() {
     await tester.pumpWidget(_bungkus(const DaftarAlatScreen(), palsu));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Lewat jadwal'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(SaringanPil),
+        matching: find.text('Lewat jadwal'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(palsu.saringAlat.last, 'lewat');
