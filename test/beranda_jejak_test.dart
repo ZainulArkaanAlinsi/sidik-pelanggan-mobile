@@ -543,7 +543,8 @@ void main() {
       expect(find.textContaining('Di lab'), findsNothing);
       // Identitas: nama; "merk model · SN seri" satu baris (nomor seri mono).
       expect(find.text('Jangka Sorong Digital'), findsOneWidget);
-      expect(find.text('Mitutoyo CD-15CPX · SN 2201-0457'), findsOneWidget);
+      expect(find.text('Mitutoyo CD-15CPX ·'), findsOneWidget);
+      expect(find.text('SN 2201-0457'), findsOneWidget);
       // Alat yang kurang mendesak tidak digambar sebagai ubin.
       expect(find.text('Timbangan Analitik'), findsNothing);
     });

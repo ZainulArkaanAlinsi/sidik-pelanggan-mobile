@@ -1046,7 +1046,8 @@ void main() {
 
       for (final teks in [
         'Lewat jadwal 9 hari',
-        'Mitutoyo CD-15CPX · SN 2201-0457',
+        'Mitutoyo CD-15CPX ·',
+        'SN 2201-0457',
         'Sedang dikalibrasi',
         'Lihat detail',
         'Gudang 1',

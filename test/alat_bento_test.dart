@@ -232,14 +232,17 @@ void main() {
         expect(oven.hari, -88);
         expect(oven.tanggal, Format.tanggal(DateTime.parse(tanggalUji(-88))));
         expect(oven.nonaktif, isFalse);
-        // Identitas satu baris: "merk model · SN seri".
-        expect(
-          find.descendant(
-            of: _ubin('Oven Memmert'),
-            matching: find.text('Memmert UN55 · SN MM-UN55-19'),
-          ),
-          findsOneWidget,
-        );
+        // Identitas satu baris: "merk model · SN seri" (dua potongan utuh).
+        for (final potongan in ['Memmert UN55 ·', 'SN MM-UN55-19']) {
+          expect(
+            find.descendant(
+              of: _ubin('Oven Memmert'),
+              matching: find.text(potongan),
+            ),
+            findsOneWidget,
+            reason: potongan,
+          );
+        }
         // Lokasi tampil di kartu (pembeda alat sejenis); nomor identifikasi tidak.
         expect(oven.lokasi, 'Gudang 1');
         expect(
@@ -882,11 +885,7 @@ void main() {
         await _buka(tester, _server());
         final u = _ubin('Oven Memmert');
         final nama = y(tester, u, find.text('Oven Memmert'));
-        final identitas = y(
-          tester,
-          u,
-          find.text('Memmert UN55 · SN MM-UN55-19'),
-        );
+        final identitas = y(tester, u, find.text('Memmert UN55 ·'));
         final lokasi = y(tester, u, find.text('Gudang 1'));
         final status = y(tester, u, find.byType(Stempel).first);
         final aksi = y(tester, u, find.text('Lihat detail'));
@@ -902,7 +901,8 @@ void main() {
         final ukuranNama = ukuran(find.text('Oven Memmert'));
         expect(ukuranNama, 20);
         for (final lain in [
-          find.text('Memmert UN55 · SN MM-UN55-19'),
+          find.text('Memmert UN55 ·'),
+          find.text('SN MM-UN55-19'),
           find.text('Gudang 1'),
           find.text('Lihat detail'),
           find.text('Lewat jadwal 88 hari'),
@@ -916,18 +916,36 @@ void main() {
       tester,
     ) async {
       await _buka(tester, _server());
-      final teks = tester.widget<Text>(
-        find.descendant(
-          of: _ubin('Oven Memmert'),
-          matching: find.text('Memmert UN55 · SN MM-UN55-19'),
-        ),
+      Text potongan(String teks) => tester.widget<Text>(
+        find.descendant(of: _ubin('Oven Memmert'), matching: find.text(teks)),
       );
-      final anak = (teks.textSpan! as TextSpan).children!.cast<TextSpan>();
-      final serial = anak.firstWhere((x) => x.text == 'SN MM-UN55-19');
+      final serial = potongan('SN MM-UN55-19');
       expect(serial.style!.fontFamily, TipografiSidik.keluargaAngka);
-      final merk = anak.firstWhere((x) => x.text == 'Memmert UN55');
-      expect(merk.style, isNull);
-      expect(teks.style!.fontFamily, TipografiSidik.keluarga);
+      expect(serial.style!.fontSize, 13);
+      final merk = potongan('Memmert UN55 ·');
+      expect(merk.style!.fontFamily, TipografiSidik.keluarga);
+      expect(merk.style!.fontSize, 13);
+    });
+
+    testWidgets('di 320 dp x huruf 1,3 "SN seri" membungkus UTUH (tidak '
+        'terbelah antara SN dan nomornya), titik pemisah di ujung potongan '
+        'merk', (tester) async {
+      await _buka(tester, _server(), skala: 1.3, lebar: 320, tinggi: 2400);
+      final u = _ubin('Oven Memmert');
+      final merk = find.descendant(
+        of: u,
+        matching: find.text('Memmert UN55 ·'),
+      );
+      final serial = find.descendant(
+        of: u,
+        matching: find.text('SN MM-UN55-19'),
+      );
+      final satuBaris = 13 * 1.3 * (18 / 13) + 1;
+      expect(tester.getSize(serial).height, lessThan(satuBaris));
+      expect(tester.getSize(merk).height, lessThan(satuBaris));
+      // Titik hanya di ujung potongan merk; potongan seri tidak diawali titik.
+      expect(tester.widget<Text>(serial).data!.startsWith('·'), isFalse);
+      expect(tester.widget<Text>(merk).data!.endsWith('·'), isTrue);
     });
 
     testWidgets(

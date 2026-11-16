@@ -100,10 +100,12 @@ data, dan aturan baca-saja tidak berubah.
   simpul semantik, ruang agar tombol tidak tertutup papan ketik).
 - **Lencana bersama**: `ChipStatus` mendelegasikan ke `Stempel` (24, sudut 6, ikon 14);
   kata panjang membungkus, tidak dipotong.
-- **Pengecualian sadar pada penjaga desain** (REVISI-2 butir 2 menetapkan "merk model · SN
-  seri"): empat penjaga ' · ' (`anti_slop_test`, `komponen_jejak_test`, gerbang token
-  `komponen_bento_ubin_test`, dan galeri `render_komponen_test`) mengizinkan SATU
-  pemisah itu di `UbinAlat`; pemakaian lain tetap terlarang.
+- **Pemisah "merk model · SN seri"**: REVISI-2 butir 2 menetapkan baris itu, sedangkan
+  penjaga desain lama (`anti_slop_test`, `komponen_jejak_test`, gerbang token, galeri
+  render) melarang string " · " di teks. Penjaganya TIDAK dilonggarkan: baris dibangun
+  dari dua potongan yang membungkus utuh (`Text("Mitutoyo CD-15CPX ·")` dan
+  `Text("SN 2201-0457")` mono), jadi tidak ada string " · " di kode, dan "SN seri" tidak
+  pernah terbelah di layar sempit.
 
 ## Belum dikerjakan (PR berikutnya)
 

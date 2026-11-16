@@ -83,10 +83,6 @@ void main() {
         'lib/models/data_pelanggan.dart': 1,
         'lib/widgets/kartu_paket.dart': 1,
         'lib/widgets/kartu_sertifikat.dart': 2,
-        // REVISI-2 butir 2 (16 Nov 2026) menetapkan baris identitas kartu alat
-        // "Mitutoyo CD-15CPX · SN 2201-0457" (nomor serinya IBM Plex Mono, tidak
-        // tenggelam): SATU pemisah itu, di `UbinAlat`. Pemakaian lain tetap utang.
-        'lib/widgets/ubin_alat.dart': 1,
       },
     ),
     _Aturan(

@@ -17,7 +17,8 @@ import 'stempel.dart';
 /// Isi dari atas, lima baris:
 /// 1. [nama] 20/26 semibold, paling menonjol (paling banyak [maksBarisNama]);
 /// 2. [merkTipe] lalu `SN` + [serial] dalam IBM Plex Mono, satu baris
-///    ("Mitutoyo CD-15CPX · SN 2201-0457"; membungkus bila sempit);
+///    ("Mitutoyo CD-15CPX · SN 2201-0457"); bila sempit dua potongan itu
+///    membungkus utuh, "SN 2201-0457" tidak pernah terbelah;
 /// 3. [lokasi] (hanya bila terisi; pembeda dua alat sejenis tanpa nomor seri);
 /// 4. baris status: [Stempel] status, ditambah [tahap] (alat sedang di lab)
 ///    bila ada. Waktunya ikut di kata lencana untuk tiga status jadwal:
@@ -187,16 +188,16 @@ class UbinAlat extends StatelessWidget {
           if (adaMerk || adaSerial)
             Padding(
               padding: const EdgeInsets.only(top: Spasi.xs),
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    if (adaMerk) TextSpan(text: merkTipe),
-                    if (adaMerk && adaSerial) const TextSpan(text: ' · '),
-                    if (adaSerial)
-                      TextSpan(text: '$awalan$serial', style: gayaKet?.nomor),
-                  ],
-                ),
-                style: gayaKet,
+              // Dua potongan yang membungkus UTUH: "SN 2201-0457" tidak pernah
+              // terbelah antara "SN" dan nomornya, dan titik pemisah menempel di
+              // ujung potongan merk (tidak mulai baris baru).
+              child: Wrap(
+                spacing: Spasi.xs,
+                children: [
+                  if (adaMerk)
+                    Text(adaSerial ? '$merkTipe ·' : merkTipe!, style: gayaKet),
+                  if (adaSerial) Text('$awalan$serial', style: gayaKet?.nomor),
+                ],
               ),
             ),
           if (_lokasiTampil != null)

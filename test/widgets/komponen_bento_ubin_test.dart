@@ -532,20 +532,18 @@ void main() {
       // batas memaksa satu baris).
       expect(nama.maxLines, isNull);
       expect(nama.overflow, TextOverflow.clip);
-      final identitas = tester.widget<Text>(
-        find.text('Memmert UF55 · SN 0457-2201'),
-      );
-      expect(identitas.style!.fontSize, 13);
-      final anak = (identitas.textSpan! as TextSpan).children!.cast<TextSpan>();
-      expect(anak.map((x) => x.text), ['Memmert UF55', ' · ', 'SN 0457-2201']);
-      final seri = anak.last.style!;
+      // Dua potongan: merk + titik pemisah di ujungnya (Inter), "SN seri" mono.
+      final merk = tester.widget<Text>(find.text('Memmert UF55 ·'));
+      expect(merk.style!.fontSize, 13);
+      expect(merk.style!.fontFamily, 'Inter', reason: 'merk = Inter');
+      final seri = tester.widget<Text>(find.text('SN 0457-2201')).style!;
+      expect(seri.fontSize, 13);
       expect(
         seri.fontFamily,
         'IBMPlexMono',
         reason: 'nomor seri = IBM Plex Mono',
       );
       expect(seri.fontFeatures, contains(const FontFeature.tabularFigures()));
-      expect(anak.first.style, isNull, reason: 'merk memakai gaya Inter induk');
       expect(tester.widget<Text>(find.text('Gudang 1')).style!.fontSize, 13);
       final aksi = tester.widget<Text>(find.text('Lihat detail')).style!;
       expect(aksi.color, _skema(false).primary);
@@ -554,10 +552,10 @@ void main() {
       // merk; tanpa keduanya: tanpa baris identitas.
       await tester.pumpWidget(_app(_ubinAlat(merkTipe: null)));
       expect(find.text('SN 0457-2201'), findsOneWidget);
-      expect(find.textContaining(' · '), findsNothing);
+      expect(find.textContaining('·'), findsNothing);
       await tester.pumpWidget(_app(_ubinAlat(serial: null)));
       expect(find.text('Memmert UF55'), findsOneWidget);
-      expect(find.textContaining(' · '), findsNothing);
+      expect(find.textContaining('·'), findsNothing);
       await tester.pumpWidget(_app(_ubinAlat(serial: null, merkTipe: null)));
       expect(find.textContaining('SN'), findsNothing);
       expect(find.textContaining('UF55'), findsNothing);
@@ -1297,12 +1295,7 @@ void main() {
           isEmpty,
         );
         expect(RegExp(r'\bColors\.(?!transparent)\w+').hasMatch(c), isFalse);
-        // Satu pengecualian sadar: baris identitas kartu alat "merk model · SN
-        // seri" (REVISI-2 butir 2); berkas lain tetap tanpa pemisah ' · '.
-        expect(
-          ' · '.allMatches(c).length,
-          b == 'lib/widgets/ubin_alat.dart' ? 1 : 0,
-        );
+        expect(c.contains(' · '), isFalse);
         expect(c.contains('KartuSidik('), isFalse);
         expect(c.contains('ChipStatus('), isFalse);
       });
