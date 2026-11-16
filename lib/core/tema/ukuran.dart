@@ -227,3 +227,22 @@ abstract final class UkuranVisual {
   /// Visual ubin pasangan dan menu keluar 10 di kedua sisi.
   static const double keluarKecil = 10;
 }
+
+/// Layar auth (Sambutan, Masuk, Lupa sandi, Terima undangan): susunan E0 Masuk
+/// (ELEMEN.md) dengan palet Bento. Hero kuning di atas, plat logo putih di
+/// dalamnya, kartu putih yang menumpang ke tepi bawah hero.
+abstract final class UkuranAuth {
+  /// Tinggi hero paling kecil di layar akar (Sambutan, Masuk), diukur dari
+  /// tepi atas layar sampai tepi bawah warna kuning (kartu ikut menumpang
+  /// di dalamnya). Tumbuh bila isi (huruf besar, status bar) lebih tinggi.
+  static const double hero = 330;
+
+  /// Kartu menumpang ke dalam hero sedalam ini.
+  static const double kartuTumpang = 36;
+
+  /// Plat logo putih di layar akar; logo di dalamnya = plat - 2 x `Spasi.lg`.
+  static const double platLogo = 104;
+
+  /// Plat logo di layar anak (Lupa sandi, Terima undangan): hero pendek.
+  static const double platLogoAnak = 80;
+}
