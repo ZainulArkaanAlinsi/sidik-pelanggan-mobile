@@ -18,9 +18,11 @@ import 'stempel.dart';
 /// Isi dari atas: [Stempel] di atas ubin (SELALU tampil: ubinnya sudah berwarna
 /// dan stempel menyebut katanya; istilah dari `pemetaan_status.dart`) → [nama]
 /// 22/28 (paling banyak dua baris) → [merkTipe] 14 → [serial] 14 `.nomor` di
-/// baris sendiri → (didorong ke bawah) angka sisa hari 44 (Beranda: 64) + kata
-/// "hari lewat" / "hari lagi" 12/700 + [tanggal] 12/500. Kata dan angka dari
-/// `AngkaHari` (satu sumber istilah dengan seluruh app).
+/// baris sendiri → [lokasi] 14 (paling banyak dua baris; pembeda dua alat
+/// sejenis tanpa nomor seri, hanya bila terisi) → (didorong ke bawah) angka sisa
+/// hari 44 (Beranda: 64) + kata "hari lewat" / "hari lagi" 12/700 + [tanggal]
+/// 12/500. Kata dan angka dari `AngkaHari` (satu sumber istilah dengan seluruh
+/// app).
 ///
 /// Tinggi 196 (Beranda 232) adalah MINIMUM: ubin tumbuh bersama huruf. Teks
 /// SELALU navy di atas pastel (kontras > 7:1), tidak pernah `teksKedua` (3,3:1
@@ -38,6 +40,8 @@ class UbinAlat extends StatelessWidget {
     required this.status,
     this.merkTipe,
     this.serial,
+    this.awalanSerial,
+    this.lokasi,
     this.hari,
     this.tanggal,
     this.visual,
@@ -51,7 +55,17 @@ class UbinAlat extends StatelessWidget {
   final String nama;
   final StatusTampil status;
   final String? merkTipe;
+
+  /// Nomor seri apa adanya (tanpa awalan).
   final String? serial;
+
+  /// Awalan yang HANYA tampil di depan [serial] (mis. "SN"); pembaca layar
+  /// menerima nomornya saja, supaya tidak terbaca "S N" dua kali.
+  final String? awalanSerial;
+
+  /// Lokasi alat. Dua alat sejenis tanpa nomor seri dan berjadwal sama hanya
+  /// terbedakan oleh baris ini; kosong atau spasi saja = tidak ada baris.
+  final String? lokasi;
 
   /// Sisa hari menuju jadwal; negatif = lewat; null = belum ada jadwal.
   final int? hari;
@@ -71,12 +85,20 @@ class UbinAlat extends StatelessWidget {
   final int? urutan;
   final int maksBarisNama;
 
+  /// [lokasi] tanpa spasi pinggir; null bila kosong, jadi tidak ada baris dan
+  /// tidak ada kata "Lokasi" di kalimat pembaca layar.
+  String? get _lokasiTampil {
+    final l = lokasi?.trim();
+    return l == null || l.isEmpty ? null : l;
+  }
+
   /// Kalimat bawaan untuk pembaca layar, dari isi ubin.
   String get kalimat => [
     nama,
     'Status: ${status.label}',
     if (merkTipe != null && merkTipe!.isNotEmpty) merkTipe!,
     if (serial != null && serial!.isNotEmpty) 'Nomor seri $serial',
+    if (_lokasiTampil != null) 'Lokasi $_lokasiTampil',
     Format.sisaHari(hari),
     if (tanggal != null && tanggal!.isNotEmpty) tanggal!,
   ].join('. ');
@@ -123,7 +145,19 @@ class UbinAlat extends StatelessWidget {
               if (merkTipe != null && merkTipe!.isNotEmpty)
                 Text(merkTipe!, style: gayaKet),
               if (serial != null && serial!.isNotEmpty)
-                Text(serial!, style: gayaKet?.nomor),
+                Text(
+                  awalanSerial == null || awalanSerial!.isEmpty
+                      ? serial!
+                      : '$awalanSerial $serial',
+                  style: gayaKet?.nomor,
+                ),
+              if (_lokasiTampil != null)
+                Text(
+                  _lokasiTampil!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: gayaKet,
+                ),
             ],
           ),
         ),

@@ -12,8 +12,9 @@ import 'ubin_alat.dart';
 /// Status dari `pemetaan_status.dart` (satu pemetaan; ikon + kata), sisa hari
 /// dari hitungan server (`hariKeJatuhTempo`, bukan jam HP), tanggal dari
 /// `Format.tanggal`. Alat tanpa jadwal (`jatuhTempo` null) tidak membawa angka
-/// hari dan tanggal: ubinnya menyebut "belum ada jadwal". Lokasi dan nomor
-/// identifikasi tidak punya tempat di ubin; keduanya tetap ada di detail alat.
+/// hari dan tanggal: ubinnya menyebut "belum ada jadwal". Lokasi tampil di ubin
+/// bila terisi (pembeda dua alat sejenis tanpa nomor seri); nomor identifikasi
+/// tidak punya tempat di ubin dan tetap ada di detail alat.
 ///
 /// [urutan] = urutan masuk layar (35 ms per indeks); null = tanpa animasi.
 class KartuAlat extends StatelessWidget {
@@ -45,7 +46,10 @@ class KartuAlat extends StatelessWidget {
       nama: alat.nama,
       status: statusAlat(alat.status),
       merkTipe: _merkTipe,
-      serial: serial == null || serial.isEmpty ? null : 'SN $serial',
+      // Awalan "SN" hanya di layar; pembaca layar menerima nomornya saja.
+      serial: serial == null || serial.isEmpty ? null : serial,
+      awalanSerial: 'SN',
+      lokasi: alat.lokasi,
       hari: jatuhTempo == null ? null : alat.hariKeJatuhTempo,
       tanggal: jatuhTempo == null ? null : Format.tanggal(jatuhTempo),
       onTap: onTap,

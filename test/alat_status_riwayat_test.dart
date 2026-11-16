@@ -362,7 +362,18 @@ void main() {
       final server = _server();
       await tester.pumpWidget(_app(const DaftarAlatScreen(), server));
       await tester.pumpAndSettle();
-      final sebelum = server.yang('GET', '/alat').length;
+      // Daftar berhalaman (tanpa per_page) vs hitungan jatuh tempo (per_page).
+      int daftar() => server
+          .yang('GET', '/alat')
+          .where((r) => r.url.queryParameters['per_page'] == null)
+          .length;
+      int hitungan() => server
+          .yang('GET', '/alat')
+          .where((r) => r.url.queryParameters['per_page'] != null)
+          .length;
+      final sebelum = daftar();
+      final sebelumHitungan = hitungan();
+      final sebelumBeranda = server.yang('GET', '/beranda').length;
 
       await tester.fling(
         find.byType(ListView).first,
@@ -371,17 +382,38 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(server.yang('GET', '/alat').length, sebelum + 1);
+      // Daftar dimuat ulang SATU kali; bulatan saringan (ringkasan Beranda dan
+      // hitungan jatuh tempo) ikut disegarkan, bukan dibiarkan basi.
+      expect(daftar(), sebelum + 1);
+      expect(hitungan(), sebelumHitungan + 1);
+      expect(server.yang('GET', '/beranda').length, sebelumBeranda + 1);
     });
 
-    testWidgets('ketuk kartu membuka detail alat', (tester) async {
+    testWidgets('ketuk kartu membuka detail alat yang diketuk', (tester) async {
       _layar(tester);
       await tester.pumpWidget(_app(const DaftarAlatScreen(), _server()));
       await tester.pumpAndSettle();
 
+      int idDetail() =>
+          tester.widget<AlatDetailScreen>(find.byType(AlatDetailScreen)).id;
+
       await tester.tap(_kartuAlat('Alat Riwayat'));
       await tester.pumpAndSettle();
       expect(find.byType(AlatDetailScreen), findsOneWidget);
+      expect(idDetail(), 10);
+      Navigator.of(tester.element(find.byType(AlatDetailScreen))).pop();
+      await tester.pumpAndSettle();
+
+      // Kartu KEDUA (bukan yang pertama): urutan server, alat paling lewat
+      // jadwal dulu.
+      final kartu = tester
+          .widgetList<KartuAlat>(find.byType(KartuAlat))
+          .toList();
+      expect(kartu.first.alat.id, 12);
+      expect(kartu[1].alat.nama, 'Jangka Sorong');
+      await tester.tap(find.byType(KartuAlat).at(1));
+      await tester.pumpAndSettle();
+      expect(idDetail(), 1);
     });
 
     testWidgets(

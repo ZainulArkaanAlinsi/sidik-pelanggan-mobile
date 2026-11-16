@@ -219,11 +219,27 @@ void main() {
       expect(oven.status.label, 'Lewat jadwal');
       expect(oven.status.nada, NadaStatus.gagal);
       expect(oven.merkTipe, 'Memmert UN55');
-      expect(oven.serial, 'SN MM-UN55-19');
+      // Nomor seri apa adanya; awalan "SN" hanya tampilan.
+      expect(oven.serial, 'MM-UN55-19');
+      expect(oven.awalanSerial, 'SN');
+      expect(
+        find.descendant(
+          of: _ubin('Oven Memmert'),
+          matching: find.text('SN MM-UN55-19'),
+        ),
+        findsOneWidget,
+      );
       expect(oven.hari, -88);
       expect(oven.tanggal, Format.tanggal(DateTime.parse(tanggalUji(-88))));
-      // Lokasi tidak punya tempat di ubin (tetap di detail alat).
-      expect(find.textContaining('Gudang'), findsNothing);
+      // Lokasi tampil di ubin (pembeda alat sejenis); nomor identifikasi tidak.
+      expect(oven.lokasi, 'Gudang 1');
+      expect(
+        find.descendant(
+          of: _ubin('Oven Memmert'),
+          matching: find.text('Gudang 1'),
+        ),
+        findsOneWidget,
+      );
 
       // Kata + ikon status, bukan warna saja.
       expect(
@@ -266,6 +282,95 @@ void main() {
         tester.widget<UbinAlat>(_ubin('Alat Nonaktif')).status.nada,
         NadaStatus.netral,
       );
+    });
+
+    testWidgets('lokasi membedakan dua alat sejenis tanpa nomor seri; tanpa '
+        'lokasi tidak ada baris kosong', (tester) async {
+      final semantik = tester.ensureSemantics();
+      // Timbangan yang sama persis (merk, tipe, status, jadwal), tanpa nomor
+      // seri; hanya lokasinya yang berbeda.
+      Map<String, dynamic> timbangan(int id, String nama, String? lokasi) => {
+        ...alatJson(
+          id,
+          nama,
+          hari: 12,
+          status: 'mendekati_jadwal',
+          merk: 'Ohaus',
+          model: 'PA224',
+        ),
+        'serial': null,
+        'lokasi': lokasi,
+      };
+      final server = ServerFitur({
+        3: DataPerusahaan(
+          nama: 'PT Alfa',
+          alat: [
+            timbangan(1, 'Timbangan Ohaus', 'Gudang A'),
+            timbangan(2, 'Timbangan Ohaus', 'Lab Lantai 2'),
+            timbangan(3, 'Timbangan Polos', null),
+            timbangan(4, 'Timbangan Spasi', '   '),
+          ],
+        ),
+      });
+      await _buka(tester, server);
+      expect(find.byType(UbinAlat), findsNWidgets(4));
+
+      final a = find.widgetWithText(UbinAlat, 'Gudang A');
+      final b = find.widgetWithText(UbinAlat, 'Lab Lantai 2');
+      expect(a, findsOneWidget);
+      expect(b, findsOneWidget);
+      final ua = tester.widget<UbinAlat>(a);
+      final ub = tester.widget<UbinAlat>(b);
+      // Selain lokasi, keduanya tak terbedakan.
+      expect(ua.nama, ub.nama);
+      expect(ua.merkTipe, ub.merkTipe);
+      expect(ua.serial, isNull);
+      expect(ub.serial, isNull);
+      expect(ua.hari, ub.hari);
+      expect(ua.tanggal, ub.tanggal);
+      expect(ua.status.label, ub.status.label);
+
+      // Secara visual: tiap ubin menampilkan lokasinya sendiri.
+      Finder teks(Finder ubin, String t) =>
+          find.descendant(of: ubin, matching: find.text(t));
+      expect(teks(a, 'Gudang A'), findsOneWidget);
+      expect(teks(a, 'Lab Lantai 2'), findsNothing);
+      expect(teks(b, 'Lab Lantai 2'), findsOneWidget);
+      expect(teks(b, 'Gudang A'), findsNothing);
+
+      // Secara semantik: dua kalimat berbeda, masing-masing menyebut lokasinya.
+      String kalimat(Pattern p) => tester
+          .getSemantics(find.bySemanticsLabel(p))
+          .getSemanticsData()
+          .label;
+      final kalimatA = kalimat(RegExp('Lokasi Gudang A'));
+      final kalimatB = kalimat(RegExp('Lokasi Lab Lantai 2'));
+      expect(kalimatA, isNot(kalimatB));
+      expect(kalimatA, startsWith('Timbangan Ohaus. Status: '));
+      expect(kalimatB, startsWith('Timbangan Ohaus. Status: '));
+      expect(kalimatA, isNot(contains('Nomor seri')));
+
+      // Tanpa lokasi (null atau spasi saja): tidak ada baris tambahan dan tidak
+      // ada kata "Lokasi" di kalimat.
+      int jumlahTeks(Finder ubin) => tester
+          .widgetList(find.descendant(of: ubin, matching: find.byType(Text)))
+          .length;
+      for (final nama in ['Timbangan Polos', 'Timbangan Spasi']) {
+        final u = _ubin(nama);
+        expect(jumlahTeks(u), jumlahTeks(a) - 1, reason: nama);
+        expect(
+          find.descendant(
+            of: u,
+            matching: find.byWidgetPredicate(
+              (w) => w is Text && (w.data ?? '').trim().isEmpty,
+            ),
+          ),
+          findsNothing,
+          reason: nama,
+        );
+        expect(kalimat(RegExp('^$nama')), isNot(contains('Lokasi')));
+      }
+      semantik.dispose();
     });
 
     testWidgets(
@@ -419,7 +524,8 @@ void main() {
         expect(find.byType(UbinAlat), findsNothing);
         expect(find.byType(PilJumlahAlat), findsNothing);
         // Ringkasan Beranda terbaca; hitungan 31–90 hari (dari /alat) tidak.
-        expect(_jumlahPil(tester, 'Semua'), 7);
+        // "Semua" memang tanpa bulatan (lihat 'Semua tanpa bulatan' di bawah).
+        expect(_jumlahPil(tester, 'Semua'), isNull);
         expect(_jumlahPil(tester, 'Lewat jadwal'), 1);
         expect(_jumlahPil(tester, 'Dalam 30 hari'), 1);
         expect(_jumlahPil(tester, 'Dalam 31–60 hari'), isNull);
@@ -522,7 +628,7 @@ void main() {
       await _buka(tester, _server());
       expect(find.byType(PilJumlahAlat), findsOneWidget);
       expect(find.text('7 alat'), findsOneWidget);
-      expect(_jumlahPil(tester, 'Semua'), 7);
+      expect(_jumlahPil(tester, 'Semua'), isNull);
       expect(_jumlahPil(tester, 'Lewat jadwal'), 1);
       expect(_jumlahPil(tester, 'Dalam 30 hari'), 1);
       expect(_jumlahPil(tester, 'Dalam 31–60 hari'), 1);
@@ -547,6 +653,86 @@ void main() {
       expect(find.text('1 alat'), findsOneWidget);
       expect(_ubin('Oven Memmert'), findsOneWidget);
     });
+
+    testWidgets('Semua tanpa bulatan: jumlah_alat server (2) beda dari /alat (3) '
+        'tidak menjadi dua angka', (tester) async {
+      // Server menjawab "2" (hanya alat aktif) di ringkasan Beranda, sedangkan
+      // GET /alat tanpa saringan memuat semua status: tiga.
+      final server = ServerFitur({
+        3: DataPerusahaan(
+          nama: 'PT Alfa',
+          alat: [
+            alatJson(1, 'Oven', hari: -10, status: 'lewat_jadwal'),
+            alatJson(2, 'Timbangan', hari: 12, status: 'mendekati_jadwal'),
+            alatJson(3, 'Alat Nonaktif', hari: 100, status: 'nonaktif'),
+          ],
+          ringkasanTambahan: {'jumlah_alat': 2},
+        ),
+      });
+      await _buka(tester, server);
+      final wadah = ProviderScope.containerOf(
+        tester.element(find.byType(DaftarAlatScreen)),
+      );
+      expect(wadah.read(berandaProvider).value!.jumlahAlat, 2);
+      expect(find.byType(UbinAlat), findsNWidgets(3));
+
+      // Terpilih dan tidak terpilih sama: tanpa bulatan, tidak pernah 2 atau 3.
+      expect(find.text('3 alat'), findsOneWidget);
+      expect(_jumlahPil(tester, 'Semua'), isNull);
+      await _ketukPil(tester, 'Lewat jadwal');
+      expect(find.text('1 alat'), findsOneWidget);
+      expect(_jumlahPil(tester, 'Semua'), isNull);
+      expect(_jumlahPil(tester, 'Lewat jadwal'), 1);
+      await _ketukPil(tester, 'Semua');
+      expect(find.text('3 alat'), findsOneWidget);
+      expect(_jumlahPil(tester, 'Semua'), isNull);
+      // Pembaca layar: kata saja, tanpa angka.
+      expect(
+        _pilihan(tester).firstWhere((p) => p.label == 'Semua').semantik,
+        'Semua',
+      );
+    });
+
+    for (final (awal, nama) in [
+      (FilterAlat.semua, 'Semua'),
+      (FilterAlat.hari60, 'Dalam 31–60 hari'),
+    ]) {
+      testWidgets('tarik-segarkan di $nama menyegarkan bulatan Lewat jadwal '
+          'dan 31–60 (bukan hanya daftar)', (tester) async {
+        final server = _server();
+        // Layar pendek: ambang tarik RefreshIndicator = seperempat tinggi layar.
+        layarHp(tester, tinggi: 900);
+        await tester.pumpWidget(
+          _app(DaftarAlatScreen(filterAwal: awal), server),
+        );
+        await tester.pumpAndSettle();
+        expect(_jumlahPil(tester, 'Lewat jadwal'), 1);
+        expect(_jumlahPil(tester, 'Dalam 31–60 hari'), 1);
+
+        // Sesudah layar terbuka, server mendapat satu alat lewat jadwal dan
+        // satu alat 31–60 hari.
+        server.data[3]!.alat.addAll([
+          alatJson(50, 'Oven Baru', hari: -3, status: 'lewat_jadwal'),
+          alatJson(51, 'Termometer Baru', hari: 50),
+        ]);
+        final sebelumBeranda = server.yang('GET', '/beranda').length;
+        await tester.fling(
+          find
+              .descendant(
+                of: find.byType(RefreshIndicator),
+                matching: find.byType(ListView),
+              )
+              .first,
+          const Offset(0, 400),
+          1000,
+        );
+        await tester.pumpAndSettle();
+
+        expect(server.yang('GET', '/beranda').length, sebelumBeranda + 1);
+        expect(_jumlahPil(tester, 'Lewat jadwal'), 2);
+        expect(_jumlahPil(tester, 'Dalam 31–60 hari'), 2);
+      });
+    }
 
     testWidgets('paginasi tidak berubah: halaman berikut saat ujung terlihat', (
       tester,
@@ -725,17 +911,17 @@ void main() {
           .flagsCollection
           .isSelected
           .toBoolOrNull();
-      expect(terpilih('Semua, 7'), isTrue);
+      expect(terpilih('Semua'), isTrue);
       expect(terpilih('Lewat jadwal, 1'), isFalse);
 
       // Pil bisa diaktifkan lewat pembaca layar dan terpilihnya berpindah.
       tester.semantics.tap(find.semantics.byLabel('Lewat jadwal, 1'));
       await tester.pumpAndSettle();
       expect(terpilih('Lewat jadwal, 1'), isTrue);
-      expect(terpilih('Semua, 7'), isFalse);
+      expect(terpilih('Semua'), isFalse);
       expect(_ubin('Oven Memmert'), findsOneWidget);
       expect(_ubin('Termometer'), findsNothing);
-      tester.semantics.tap(find.semantics.byLabel('Semua, 7'));
+      tester.semantics.tap(find.semantics.byLabel('Semua'));
       await tester.pumpAndSettle();
 
       // Ubin: SATU simpul berisi nama, status, seri, sisa hari, tanggal.
@@ -745,12 +931,50 @@ void main() {
           .label;
       expect(kalimat, contains('Status: Lewat jadwal'));
       expect(kalimat, contains('Memmert UN55'));
-      expect(kalimat, contains('Nomor seri SN MM-UN55-19'));
+      // Nomor serinya saja: "SN" hanya di layar, supaya tidak terbaca "S N" dua
+      // kali ("Nomor seri SN ...").
+      expect(kalimat, contains('Nomor seri MM-UN55-19'));
+      expect(kalimat, isNot(contains('SN')));
+      expect(kalimat, contains('Lokasi Gudang 1'));
       expect(kalimat, contains('Lewat 88 hari'));
       tester.semantics.tap(find.semantics.byLabel(RegExp(r'^Oven Memmert')));
       await tester.pumpAndSettle();
       expect(find.byType(AlatDetailScreen), findsOneWidget);
+      expect(
+        tester.widget<AlatDetailScreen>(find.byType(AlatDetailScreen)).id,
+        1,
+      );
       semantik.dispose();
+    });
+
+    testWidgets('ketuk ubin kedua dan terakhir membuka alat yang diketuk', (
+      tester,
+    ) async {
+      await _buka(tester, _server());
+      final kartu = tester
+          .widgetList<KartuAlat>(find.byType(KartuAlat))
+          .toList();
+      // Urutan server: Oven (1), lalu Alat Nonaktif (6), ..., Tanpa Jadwal (7).
+      expect(kartu.first.alat.id, 1);
+      expect(kartu[1].alat.id, 6);
+      expect(kartu.last.alat.id, 7);
+
+      int idDetail() =>
+          tester.widget<AlatDetailScreen>(find.byType(AlatDetailScreen)).id;
+      Future<void> kembali() async {
+        Navigator.of(tester.element(find.byType(AlatDetailScreen))).pop();
+        await tester.pumpAndSettle();
+        expect(find.byType(AlatDetailScreen), findsNothing);
+      }
+
+      await tester.tap(find.byType(KartuAlat).at(1));
+      await tester.pumpAndSettle();
+      expect(idDetail(), 6);
+      await kembali();
+
+      await tester.tap(find.byType(KartuAlat).last);
+      await tester.pumpAndSettle();
+      expect(idDetail(), 7);
     });
 
     testWidgets('pedoman Flutter: sasaran sentuh 48 dp dan semua berlabel', (

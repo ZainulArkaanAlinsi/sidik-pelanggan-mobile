@@ -79,8 +79,10 @@ enum FilterAlat {
 ///
 /// Jumlah di layar hanya dari data yang terbaca: pil kepala dari daftar yang
 /// sedang tampil, bulatan saringan dari ringkasan Beranda (`berandaProvider`)
-/// dan hitungan jatuh tempo (`jatuhTempoProvider`). Bagian yang masih memuat
-/// atau gagal tidak digambar, bukan terbaca "0".
+/// dan hitungan jatuh tempo (`jatuhTempoProvider`; "Semua" tanpa bulatan,
+/// alasannya di `_jumlahPil`). Bagian yang masih memuat atau gagal tidak
+/// digambar, bukan terbaca "0". Tarik-untuk-muat-ulang menyegarkan daftar DAN
+/// kedua sumber bulatan itu.
 class DaftarAlatScreen extends ConsumerStatefulWidget {
   const DaftarAlatScreen({super.key, this.filterAwal = FilterAlat.semua});
 
@@ -154,22 +156,29 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
     return r == null ? null : _saringLokal(r).length;
   }
 
-  /// Bulatan jumlah di saringan. Semua / Lewat jadwal / Dalam 30 hari dari
-  /// ringkasan server di Beranda, 31–60 dan 61–90 dari hitungan jatuh tempo
-  /// yang sama dengan daftarnya. Saringan yang sedang dipilih (tanpa kata cari)
-  /// memakai jumlah daftar yang tampil, supaya bulatannya tidak berbeda dari
-  /// daftar di bawahnya. Sumber yang belum terbaca = null (tanpa bulatan).
+  /// Bulatan jumlah di saringan. Lewat jadwal / Dalam 30 hari dari ringkasan
+  /// server di Beranda, 31–60 dan 61–90 dari hitungan jatuh tempo yang sama
+  /// dengan daftarnya. Saringan yang sedang dipilih (tanpa kata cari) memakai
+  /// jumlah daftar yang tampil, supaya bulatannya tidak berbeda dari daftar di
+  /// bawahnya. Sumber yang belum terbaca = null (tanpa bulatan).
+  ///
+  /// "Semua" TIDAK punya bulatan: `jumlah_alat` di ringkasan Beranda hanya
+  /// menghitung alat aktif, sedangkan `GET /alat` tanpa saringan memuat semua
+  /// status, jadi dua sumber itu memberi dua angka untuk satu kata dan bulatan
+  /// berganti angka begitu pilnya dipilih. Jumlah seluruh alat tetap terbaca di
+  /// pil kepala ("N alat") yang berasal dari daftar yang tampil.
   int? _jumlahPil(
     FilterAlat f,
     Beranda? beranda,
     RingkasanJatuhTempo? jatuhTempo,
     int? jumlahTampil,
   ) {
+    if (f == FilterAlat.semua) return null;
     if (f == _filter && _kata.isEmpty && jumlahTampil != null) {
       return jumlahTampil;
     }
     return switch (f) {
-      FilterAlat.semua => beranda?.jumlahAlat,
+      FilterAlat.semua => null,
       FilterAlat.lewatJadwal => beranda?.lewatJatuhTempo,
       FilterAlat.hari30 => beranda?.segeraJatuhTempo,
       FilterAlat.hari60 => jatuhTempo?.kelompok2.length,
@@ -255,6 +264,14 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
     ],
   );
 
+  /// Tarik-untuk-muat-ulang: bulatan saringan membaca ringkasan Beranda dan
+  /// hitungan jatuh tempo, jadi keduanya ikut disegarkan (cara yang sama dengan
+  /// Beranda). Tanpa ini daftarnya baru sedangkan bulatannya tetap angka lama.
+  void _segarkanHitungan() {
+    ref.invalidate(berandaProvider);
+    ref.invalidate(jatuhTempoProvider);
+  }
+
   /// Semua / Lewat jadwal / Dalam 30 hari: disaring dan dicari SERVER, 20 per
   /// halaman, halaman berikut dimuat saat daftar digulir.
   Widget _dariServer() {
@@ -263,6 +280,7 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
     final koneksi = ref.watch(koneksiProvider);
     return RefreshIndicator(
       onRefresh: () async {
+        _segarkanHitungan();
         ref.invalidate(daftarAlatProvider(kunci));
         await ref.read(daftarAlatProvider(kunci).future);
       },
@@ -298,7 +316,7 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
     final koneksi = ref.watch(koneksiProvider);
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(jatuhTempoProvider);
+        _segarkanHitungan();
         await ref.read(jatuhTempoProvider.future);
       },
       child: async.when(

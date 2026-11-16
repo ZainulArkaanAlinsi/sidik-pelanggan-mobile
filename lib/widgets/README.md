@@ -48,8 +48,8 @@ dari token, tanpa paket atau font baru; tiap komponen punya tes widget di
 | Berkas | Komponen | Menggantikan |
 |---|---|---|
 | `panel_sidik.dart` | `PanelSidik`: satu panel sudut 28, butir dipisah garis halus. Satu butir = satu baris. `padding`: `paddingBaris` (6) atau `paddingIsi` (18); bawaan nol. | `KartuSidik` per butir |
-| `baris_sidik.dart` | `BarisSidik` + `tataLetakKompak`: baris min 72 dp, slot angka/judul/keterangan/akhir, kompak di < 340 dp atau huruf > 1,15x, `gayaNomor`. | `KartuAlat`, `KartuPaket`, `KartuSertifikat`, `BarisMenu` |
-| `baris_alat.dart` | `BarisAlat`: sisa hari memimpin, nama dan merk paling banyak 2 baris, nomor seri sendiri, jejak tahap bila di lab; belum ada jadwal = satu baris di atas nama. | `KartuAlat` |
+| `baris_sidik.dart` | `BarisSidik` + `tataLetakKompak`: baris min 72 dp, slot angka/judul/keterangan/akhir, kompak di < 340 dp atau huruf > 1,15x, `gayaNomor`. | `KartuPaket`, `KartuSertifikat`, `BarisMenu` |
+| `baris_alat.dart` | `BarisAlat`: sisa hari memimpin, nama dan merk paling banyak 2 baris, nomor seri sendiri, jejak tahap bila di lab; belum ada jadwal = satu baris di atas nama. Daftar "Alat saya" tidak memakainya lagi (kini `UbinAlat`). | kartu alat lama |
 | `angka_hari.dart` | `AngkaHari` (kolom, kompak, bintang 44) dan `AngkaKata`. | ikon kalender + `Format.sisaHari` |
 | `stempel.dart` | `Stempel`: pil 30 (sudut 15), ikon 14 + kata 12/700, latar pastel status bertinta navy; `tenang` = tanpa latar; `diAtasUbin` = navy + putih (gagal) atau putih + navy di atas ubin berwarna. | `ChipStatus` |
 | `jejak_tahap.dart` | `JejakTahap` + `posisiTahap`: satu tik per langkah `garis_waktu`, kata wajib. | ikon radio/centang bawaan |
@@ -83,7 +83,7 @@ galeri halaman `bento` di `test/dukungan/galeri_komponen.dart`.
 | `tombol_bulat.dart` | `TombolBulat`: `.cari` 44 navy, `.kembali` 48 putih, `.aksi` 52 kuning/navy, `.hiasan` (tanpa ketukan, untuk di dalam ubin). Label baca wajib, area sentuh 48. | `IconButton`, ikon di app bar |
 | `saringan_pil.dart` | `SaringanPil` + `PilihanPil`: pil 44, bulatan jumlah 32 (berwarna status saat tidak terpilih), baris bergulir mendatar. | `SaringanTeks`, `ChoiceChip` |
 | `segmen_pil.dart` | `SegmenPil`: wadah 56, pil 44 bergeser 240 ms, dua sampai beberapa pilihan. | `SegmentedButton`, `SaringanTeks` sebagai "Daftar / Arsip" |
-| `ubin_alat.dart` | `UbinAlat`: ubin 196 (Beranda 232) berwarna status: stempel, nama, merk, nomor seri, angka sisa hari, visual di kanan bawah. | `BarisAlat`, `KartuAlat` |
+| `ubin_alat.dart` | `UbinAlat`: ubin 196 (Beranda 232) berwarna status: stempel, nama, merk, nomor seri, lokasi (hanya bila terisi), angka sisa hari, visual di kanan bawah. `KartuAlat` (`kartu_alat.dart`) tinggal pembungkus tipis `Alat` ke `UbinAlat` untuk daftar "Alat saya". | `BarisAlat`, kartu alat lama |
 | `ubin_ringkas.dart` | `UbinRingkas`: ubin pasangan 188, judul, kalimat, "Lihat semua". | kartu ringkasan |
 | `ubin_menu.dart` | `UbinMenu`: ubin menu 140, judul, penanda bulat 40, visual atau tumpukan avatar. | `BarisMenu` besar |
 
