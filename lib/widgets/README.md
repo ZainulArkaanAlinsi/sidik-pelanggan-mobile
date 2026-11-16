@@ -19,7 +19,7 @@ ulang di sini. Lihat `lib/core/tema/README.md`.
 | Berkas | Komponen |
 |---|---|
 | `kartu_sidik.dart` | `KartuSidik`: kartu datar; diketuk = ripple standar. |
-| `kartu_alat.dart`, `kartu_sertifikat.dart`, `kartu_paket.dart` | Kartu domain di daftar dan Beranda. |
+| `kartu_alat.dart`, `kartu_sertifikat.dart`, `kartu_paket.dart` | Kartu domain di daftar dan Beranda. Daftar "Sertifikat" tidak memakai `KartuSertifikat` lagi (kini `BarisSertifikat`, baris ringkas lokal di `lib/screens/sertifikat/daftar_sertifikat_bagian.dart`); `KartuSertifikat` tinggal untuk Arsip sampai langkah desainnya. |
 | `kartu_kelompok_arsip.dart` | `KartuKelompokArsip`: satu tahun, bulan, atau pekan di Arsip sertifikat (label dan jumlah dari server, panah buka). |
 | `garis_waktu_sertifikat.dart` | Riwayat sertifikat satu alat. |
 | `baris_info.dart` | `BarisInfo`: label dan nilai di lembar detail. |
@@ -82,7 +82,7 @@ galeri halaman `bento` di `test/dukungan/galeri_komponen.dart`.
 |---|---|---|
 | `tombol_bulat.dart` | `TombolBulat`: `.cari` 44 navy, `.kembali` 48 putih, `.aksi` 52 kuning/navy, `.hiasan` (tanpa ketukan, untuk di dalam ubin). Label baca wajib, area sentuh 48. | `IconButton`, ikon di app bar |
 | `saringan_pil.dart` | `SaringanPil` + `PilihanPil`: pil 44, bulatan jumlah 32 (berwarna status saat tidak terpilih), baris bergulir mendatar. | `SaringanTeks`, `ChoiceChip` |
-| `segmen_pil.dart` | `SegmenPil`: wadah 56, pil 44 bergeser 240 ms, dua sampai beberapa pilihan. | `SegmentedButton`, `SaringanTeks` sebagai "Daftar / Arsip" |
+| `segmen_pil.dart` | `SegmenPil`: wadah 56, pil 44 bergeser 240 ms, dua sampai beberapa pilihan. Dipakai tab Sertifikat (Daftar \| Arsip). | `SegmentedButton`, `SaringanTeks` sebagai "Daftar / Arsip" |
 | `ubin_alat.dart` | `UbinAlat`: ubin 196 (Beranda 232) berwarna status: stempel, nama, merk, nomor seri, lokasi (hanya bila terisi), angka sisa hari, visual di kanan bawah. `KartuAlat` (`kartu_alat.dart`) tinggal pembungkus tipis `Alat` ke `UbinAlat` untuk daftar "Alat saya". | `BarisAlat`, kartu alat lama |
 | `ubin_ringkas.dart` | `UbinRingkas`: ubin pasangan 188, judul, kalimat, "Lihat semua". | kartu ringkasan |
 | `ubin_menu.dart` | `UbinMenu`: ubin menu 140, judul, penanda bulat 40, visual atau tumpukan avatar. | `BarisMenu` besar |
