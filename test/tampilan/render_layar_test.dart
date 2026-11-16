@@ -703,7 +703,27 @@ final _layarKunci = <_Layar>[
     tab: IndeksTab.sertifikat,
     kunci: true,
   ),
-  // Segmen Arsip terpilih di tab Sertifikat (centang di segmen terpilih).
+  // Keadaan kosong tab Sertifikat (panel kosong netral, ikon kecil).
+  _layar(
+    'sertifikat_kosong',
+    () => const Rangka(),
+    tab: IndeksTab.sertifikat,
+    perusahaan: 5,
+    kunci: true,
+  ),
+  // Tanpa koneksi: catatan "Terakhir diperbarui" di atas daftar yang tersimpan.
+  _layar(
+    'sertifikat_offline',
+    () => const Rangka(),
+    tab: IndeksTab.sertifikat,
+    kunci: true,
+    sesudah: (tester) async {
+      ProviderScope.containerOf(
+        tester.element(find.byType(Rangka)),
+      ).read(koneksiProvider.notifier).offline(DateTime(2026, 11, 12, 8, 12));
+    },
+  ),
+  // Segmen Arsip terpilih di tab Sertifikat (pil penuh di segmen terpilih).
   _layar(
     'sertifikat_arsip',
     () => const Rangka(),

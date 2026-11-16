@@ -17,6 +17,8 @@ import 'package:sidik_pelanggan/models/arsip.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/arsip_screen.dart';
+import 'package:sidik_pelanggan/screens/sertifikat/daftar_sertifikat_bagian.dart'
+    show BarisSakelar;
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_screen.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_detail_screen.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
@@ -24,6 +26,7 @@ import 'package:sidik_pelanggan/widgets/kartu_kelompok_arsip.dart';
 import 'package:sidik_pelanggan/widgets/kartu_sertifikat.dart';
 import 'package:sidik_pelanggan/widgets/kerangka.dart';
 import 'package:sidik_pelanggan/widgets/kolom_cari.dart';
+import 'package:sidik_pelanggan/widgets/segmen_pil.dart';
 
 import 'dukungan/dukungan.dart';
 import 'dukungan/fixture_arsip.dart';
@@ -132,12 +135,6 @@ Future<void> _bukaTab(
   await tester.pumpAndSettle();
 }
 
-/// Centang penanda segmen terpilih di dalam segmen berlabel [label].
-Finder _centang(String label) => find.descendant(
-  of: find.ancestor(of: find.text(label), matching: find.byType(TextButton)),
-  matching: find.byIcon(Icons.check),
-);
-
 /// Rasio kontras WCAG antara dua warna buram.
 double _kontras(Color a, Color b) {
   final la = a.computeLuminance();
@@ -145,8 +142,10 @@ double _kontras(Color a, Color b) {
   return ((la > lb ? la : lb) + 0.05) / ((la > lb ? lb : la) + 0.05);
 }
 
-Finder get _segmen =>
-    find.byWidgetPredicate((w) => w is SegmentedButton, description: 'segmen');
+/// Segmen Daftar | Arsip (SegmenPil sejak P5c; dulu SegmentedButton). Lapisan
+/// ketuk SegmenPil menutupi kata di bawahnya, jadi ketukan pada `find.text`
+/// memakai `warnIfMissed: false` (ketukan tetap sampai ke sel).
+Finder get _segmen => find.byType(SegmenPil);
 
 void main() {
   setUpAll(siapkanTesFitur);
@@ -990,14 +989,14 @@ void main() {
       final palsu = palsuTab();
       await _bukaTab(tester, palsu);
 
-      await tester.tap(find.text('Arsip'));
+      await tester.tap(find.text('Arsip'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       expect(find.text('2026'), findsOneWidget);
       expect(find.text('Tampilkan juga yang sudah direvisi'), findsNothing);
       expect(palsu.panggilan, hasLength(1));
 
-      await tester.tap(find.text('Daftar'));
+      await tester.tap(find.text('Daftar'), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(find.text('Tampilkan juga yang sudah direvisi'), findsOneWidget);
       expect(find.text('2026'), findsNothing);
@@ -1012,11 +1011,11 @@ void main() {
 
       // Daftar: kata cari dan sakelar.
       await _ketik(tester, 'ab');
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.byType(BarisSakelar));
       await tester.pumpAndSettle();
 
       // Arsip: kata cari sendiri, hasil daftar datar.
-      await tester.tap(find.text('Arsip'));
+      await tester.tap(find.text('Arsip'), warnIfMissed: false);
       await tester.pumpAndSettle();
       await _ketik(tester, 'sn-9');
       expect(find.text('CAL/2026/10/0001'), findsOneWidget);
@@ -1024,19 +1023,19 @@ void main() {
       final permintaanArsip = palsu.panggilan.length;
 
       // Kembali ke Daftar: isian dan sakelar utuh, tanpa muat ulang.
-      await tester.tap(find.text('Daftar'));
+      await tester.tap(find.text('Daftar'), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
         'ab',
       );
       expect(
-        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        tester.widget<BarisSakelar>(find.byType(BarisSakelar)).nilai,
         isTrue,
       );
 
       // Kembali ke Arsip: isian dan hasil cari utuh, tanpa muat ulang.
-      await tester.tap(find.text('Arsip'));
+      await tester.tap(find.text('Arsip'), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(
         tester.widget<TextField>(find.byType(TextField)).controller!.text,
@@ -1053,7 +1052,7 @@ void main() {
       layarHp(tester);
       final palsu = palsuTab();
       await _bukaTab(tester, palsu);
-      await tester.tap(find.text('Arsip'));
+      await tester.tap(find.text('Arsip'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('2026'));
@@ -1080,49 +1079,32 @@ void main() {
       final palsu = palsuTab();
       await _bukaTab(tester, palsu);
 
+      // P5c: SegmenPil menggantikan SegmentedButton. Label kelompok tetap;
+      // tooltip panjang ("Arsip sertifikat menurut tanggal terbit") dan
+      // centang tidak ada lagi: kata + `selected` + pil navy yang membedakan.
       expect(find.bySemanticsLabel('Tampilan sertifikat'), findsOneWidget);
-      expect(find.byTooltip('Daftar sertifikat'), findsOneWidget);
-      expect(
-        find.byTooltip('Arsip sertifikat menurut tanggal terbit'),
-        findsOneWidget,
-      );
-      // Tinggi dan lebar tiap segmen >= 48 dp.
+      // Tinggi segmen 56 dan tinggi serta lebar tiap sel ketuk >= 48 dp.
       expect(tester.getSize(_segmen).height, greaterThanOrEqualTo(48));
       for (final label in ['Daftar', 'Arsip']) {
-        final segmen = find.ancestor(
-          of: find.text(label),
-          matching: find.byType(TextButton),
-        );
-        expect(segmen, findsOneWidget, reason: label);
-        expect(tester.getSize(segmen).height, greaterThanOrEqualTo(48));
-        expect(tester.getSize(segmen).width, greaterThanOrEqualTo(48));
+        final sel = find.bySemanticsLabel(label);
+        expect(sel, findsOneWidget, reason: label);
+        final ukuran = tester.getSemantics(sel).rect.size;
+        expect(ukuran.height, greaterThanOrEqualTo(48), reason: label);
+        expect(ukuran.width, greaterThanOrEqualTo(48), reason: label);
       }
       // Segmen terpilih terbaca sebagai terpilih; yang lain tidak.
       bool terpilih(String label) => tester
-          .getSemantics(find.text(label))
+          .getSemantics(find.bySemanticsLabel(label))
           .getSemanticsData()
           .flagsCollection
           .isSelected
           .toBoolOrNull()!;
       expect(terpilih('Daftar'), isTrue);
       expect(terpilih('Arsip'), isFalse);
-      // Penanda NON-warna: hanya segmen terpilih yang bercentang.
-      expect(_centang('Daftar'), findsOneWidget);
-      expect(_centang('Arsip'), findsNothing);
-      await tester.tap(find.text('Arsip'));
+      await tester.tap(find.text('Arsip'), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(terpilih('Daftar'), isFalse);
       expect(terpilih('Arsip'), isTrue);
-      expect(_centang('Arsip'), findsOneWidget);
-      expect(_centang('Daftar'), findsNothing);
-      // Segmen yang tidak terpilih memakai ikonnya sendiri.
-      expect(
-        find.descendant(
-          of: _segmen,
-          matching: find.byIcon(Icons.list_alt_outlined),
-        ),
-        findsOneWidget,
-      );
       semantik.dispose();
     });
 
@@ -1138,7 +1120,7 @@ void main() {
         return _server(p, h);
       });
       await _bukaTab(tester, palsu);
-      await tester.tap(find.text('Arsip'));
+      await tester.tap(find.text('Arsip'), warnIfMissed: false);
       await tester.pumpAndSettle();
 
       expect(find.text('Tidak ditemukan'), findsOneWidget);
@@ -1154,38 +1136,28 @@ void main() {
     });
 
     testWidgets(
-      'keadaan terpilih: beda latar < 3:1, jadi wajib ada penanda non-warna',
+      'keadaan terpilih: pil navy berbeda >= 3:1 dari wadahnya, teksnya >= 4,5:1',
       (tester) async {
         layarHp(tester);
         await _bukaTab(tester, palsuTab());
-        final penanda = tester
-            .widget<SegmentedButton<Object>>(_segmen)
-            .showSelectedIcon;
-
+        // SegmenPil (P5c) membedakan pilihan dengan pil `primary` di atas wadah
+        // `surface` (selain kata dan `selected`): bedanya >= 3:1 di dua tema,
+        // jadi warna cukup sebagai penanda bentuk; tanpa centang.
+        expect(_segmen, findsOneWidget);
         for (final (nama, tema) in [
           ('terang', TemaSidik.terang),
           ('gelap', TemaSidik.gelap),
         ]) {
-          final gaya = tema.segmentedButtonTheme.style!;
-          final latarTerpilih = gaya.backgroundColor!.resolve({
-            WidgetState.selected,
-          })!;
-          final latarBiasa = gaya.backgroundColor!.resolve({})!;
-          final selisih = _kontras(latarTerpilih, latarBiasa);
-          // Warna saja baru cukup bila selisihnya >= 3:1 (WCAG 1.4.11).
+          final skema = tema.colorScheme;
           expect(
-            selisih >= 3 || penanda,
-            isTrue,
-            reason:
-                '$nama: selisih ${selisih.toStringAsFixed(2)}:1 tanpa centang',
+            _kontras(skema.primary, skema.surface),
+            greaterThanOrEqualTo(3),
+            reason: '$nama: pil terpilih lawan wadah',
           );
-          // Teks segmen terpilih terbaca di latarnya.
-          final tulisanTerpilih = gaya.foregroundColor!.resolve({
-            WidgetState.selected,
-          })!;
           expect(
-            _kontras(tulisanTerpilih, latarTerpilih),
+            _kontras(skema.onPrimary, skema.primary),
             greaterThanOrEqualTo(4.5),
+            reason: '$nama: teks terpilih lawan pil',
           );
         }
       },
@@ -1206,7 +1178,7 @@ void main() {
       layarHp(tester, lebar: 320, tinggi: 640);
       await _bukaTab(tester, palsuTab(), skalaHuruf: 1.3);
       expect(tester.takeException(), isNull);
-      await tester.tap(find.text('Arsip'));
+      await tester.tap(find.text('Arsip'), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(find.text('2026'), findsOneWidget);
       expect(tester.takeException(), isNull);
