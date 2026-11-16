@@ -34,17 +34,15 @@ class TujuanNavigasi {
   /// Jumlah pada lencana; 0 = tanpa lencana.
   final int lencana;
 
-  /// [latarLencana] dan [tintaLencana] hanya diisi dock (lencana koral); rel
-  /// memakai warna bawaan `Badge`.
-  Widget _ikon(IconData data, {Color? latarLencana, Color? tintaLencana}) {
+  /// Teks lencana: angka, atau "99+" di atas 99.
+  String get _teksLencana => lencana > 99 ? '99+' : '$lencana';
+
+  /// Ikon untuk rel, lencana bawaan `Badge` di sudutnya. Dock menggambar
+  /// lencananya sendiri (koral) di lapisan terpisah: lihat [_ButirDock].
+  Widget _ikon(IconData data) {
     final isi = Icon(data);
     if (lencana <= 0) return isi;
-    return Badge(
-      backgroundColor: latarLencana,
-      textColor: tintaLencana,
-      label: Text(lencana > 99 ? '99+' : '$lencana'),
-      child: isi,
-    );
+    return Badge(label: Text(_teksLencana), child: isi);
   }
 }
 
@@ -226,10 +224,15 @@ class _Susunan {
 /// langsung).
 ///
 /// Tiap butir adalah satu simpul pembaca layar berlabel (`tooltip ?? label`)
-/// dengan `selected` benar, area sentuh >= 48 dp, dan tooltip: butir tidak
+/// dengan `selected` benar, petunjuk posisi ("Tab 2 dari 5", sama dengan
+/// `NavigationBar` sebelumnya), area sentuh >= 48 dp, dan tooltip: butir tidak
 /// aktif tidak menampilkan label. Label aktif tidak ikut membesar melebihi
 /// 1,0x (sama dengan navigasi bawah sebelumnya); bila label terpanjang tidak
 /// muat di lebar yang ada, jarak dirapatkan, lalu pil aktif hanya berikon.
+///
+/// Tema gelap: navy dock nyaris sama dengan latar (1,16:1) dan bayangan navy
+/// tidak terlihat di atasnya, jadi dock diberi garis tepi tipis `outline`
+/// (>= 3:1 terhadap latar). Tema terang tanpa garis.
 ///
 /// Dock tidak menempatkan dirinya: [NavigasiUtama] memberinya pita (jarak dari
 /// tepi sistem) dan batas lebar.
@@ -271,6 +274,7 @@ class DockNavigasi extends StatelessWidget {
       'indeks dock di luar daftar tujuan',
     );
     final w = context.warna;
+    final gelap = Theme.of(context).brightness == Brightness.dark;
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: 1,
       child: LayoutBuilder(
@@ -293,6 +297,13 @@ class DockNavigasi extends StatelessWidget {
             decoration: BoxDecoration(
               color: w.tintaUbin,
               borderRadius: Bentuk.sudutDock,
+              // Digambar di dalam kotak dock (tidak menambah ukuran).
+              border: gelap
+                  ? Border.all(
+                      color: context.skema.outline,
+                      width: Elevasi.garis,
+                    )
+                  : null,
               boxShadow: [
                 BoxShadow(
                   color: w.tintaUbin.withValues(alpha: Elevasi.dockOpasitas),
@@ -333,6 +344,8 @@ class DockNavigasi extends StatelessWidget {
                         if (i > 0) SizedBox(width: susunan.jarakButir),
                         _ButirDock(
                           tujuan: tujuan[i],
+                          posisi: i,
+                          jumlah: tujuan.length,
                           terpilih: i == indeks,
                           onTap: () => onPilih(i),
                           susunan: susunan,
@@ -355,10 +368,19 @@ class DockNavigasi extends StatelessWidget {
 
 /// Satu butir dock: kontrol ketuk Bento ([KontrolKetuk]: semantik tombol,
 /// `selected`, area sentuh >= 48 dp, umpan balik tekan, cincin fokus) yang
-/// transparan di atas pil kuning, ditambah tooltip.
-class _ButirDock extends StatelessWidget {
+/// transparan di atas pil kuning, ditambah tooltip dan petunjuk posisi tab.
+///
+/// Lencana TIDAK digambar di dalam [KontrolKetuk]: kontrol itu memotong isinya
+/// ke kotak 48 dp-nya (`Material` ber-`clipBehavior`), sedangkan "99+" menjorok
+/// keluar dari kotak itu dan jadi terpotong. Lencana digambar di lapisan atas
+/// butir tanpa klip, ditambatkan ke ikon lewat [LayerLink] supaya ikut ikon
+/// ketika pil meluncur. Lapisan itu tidak menerima ketukan dan tidak masuk
+/// semantik (hitungannya sudah ada di label butir).
+class _ButirDock extends StatefulWidget {
   const _ButirDock({
     required this.tujuan,
+    required this.posisi,
+    required this.jumlah,
     required this.terpilih,
     required this.onTap,
     required this.susunan,
@@ -368,6 +390,10 @@ class _ButirDock extends StatelessWidget {
   });
 
   final TujuanNavigasi tujuan;
+
+  /// Urutan butir (mulai 0) dan jumlah butir, untuk petunjuk "Tab n dari m".
+  final int posisi;
+  final int jumlah;
   final bool terpilih;
   final VoidCallback onTap;
   final _Susunan susunan;
@@ -376,44 +402,50 @@ class _ButirDock extends StatelessWidget {
   final TextStyle gaya;
 
   @override
+  State<_ButirDock> createState() => _ButirDockState();
+}
+
+class _ButirDockState extends State<_ButirDock> {
+  /// Menambatkan lapisan lencana ke ikon butir.
+  final LayerLink _tautanIkon = LayerLink();
+
+  @override
   Widget build(BuildContext context) {
     final w = context.warna;
     final tema = Theme.of(context);
+    final tujuan = widget.tujuan;
+    final terpilih = widget.terpilih;
     final nama = tujuan.tooltip ?? tujuan.label;
+    final ukuranIkon = terpilih ? UkuranDock.ikonAktif : UkuranDock.ikon;
     final isi = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Warna ikon ikut meluncur bersama pil: putih di atas navy, navy di
         // atas kuning.
-        TweenAnimationBuilder<Color?>(
-          tween: ColorTween(end: terpilih ? w.tintaUbin : w.kertasUbin),
-          duration: durasi,
-          builder: (context, warna, _) => IconTheme(
-            data: IconThemeData(
-              size: terpilih ? UkuranDock.ikonAktif : UkuranDock.ikon,
-              color: warna,
-            ),
-            child: tujuan._ikon(
-              terpilih ? tujuan.ikonAktif : tujuan.ikon,
-              // Lencana koral dengan angka navy (kontras > 4,5:1).
-              latarLencana: w.ubinGagal,
-              tintaLencana: w.tintaUbin,
+        CompositedTransformTarget(
+          link: _tautanIkon,
+          child: TweenAnimationBuilder<Color?>(
+            tween: ColorTween(end: terpilih ? w.tintaUbin : w.kertasUbin),
+            duration: widget.durasi,
+            builder: (context, warna, _) => IconTheme(
+              data: IconThemeData(size: ukuranIkon, color: warna),
+              child: Icon(terpilih ? tujuan.ikonAktif : tujuan.ikon),
             ),
           ),
         ),
-        if (terpilih && susunan.label) ...[
-          SizedBox(width: susunan.jarakIkon),
+        if (terpilih && widget.susunan.label) ...[
+          SizedBox(width: widget.susunan.jarakIkon),
           Text(
             tujuan.label,
             maxLines: 1,
             softWrap: false,
             overflow: TextOverflow.clip,
-            style: gaya,
+            style: widget.gaya,
           ),
         ],
       ],
     );
-    return Tooltip(
+    final kontrol = Tooltip(
       message: nama,
       preferBelow: false,
       // Pembaca layar sudah menerima `nama` dari KontrolKetuk: tooltip tidak
@@ -425,27 +457,60 @@ class _ButirDock extends StatelessWidget {
         data: tema.copyWith(
           colorScheme: tema.colorScheme.copyWith(primary: w.kertasUbin),
         ),
-        child: KontrolKetuk(
-          onTap: onTap,
-          semantik: nama,
-          terpilih: terpilih,
-          warna: Colors.transparent,
-          sudut: Bentuk.sudutPil,
-          child: AnimatedContainer(
-            duration: durasi,
-            curve: AppMotion.masuk,
-            width: lebar,
-            height: UkuranDock.butir,
-            child: ClipRect(
-              child: OverflowBox(
-                minWidth: 0,
-                maxWidth: double.infinity,
-                child: isi,
+        // Petunjuk posisi menyatu ke simpul butir (bukan simpul tambahan),
+        // dibacakan setelah label; teksnya dari lokalisasi Material
+        // ("Tab 2 dari 5"), sama dengan `NavigationBar` sebelumnya.
+        child: Semantics(
+          hint: MaterialLocalizations.of(
+            context,
+          ).tabLabel(tabIndex: widget.posisi + 1, tabCount: widget.jumlah),
+          child: KontrolKetuk(
+            onTap: widget.onTap,
+            semantik: nama,
+            terpilih: terpilih,
+            warna: Colors.transparent,
+            sudut: Bentuk.sudutPil,
+            child: AnimatedContainer(
+              duration: widget.durasi,
+              curve: AppMotion.masuk,
+              width: widget.lebar,
+              height: UkuranDock.butir,
+              // Klip ini hanya untuk ikon dan label (label yang melebar saat
+              // pil masih meluncur); lencana ada di luarnya.
+              child: ClipRect(
+                child: OverflowBox(
+                  minWidth: 0,
+                  maxWidth: double.infinity,
+                  child: isi,
+                ),
               ),
             ),
           ),
         ),
       ),
+    );
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        kontrol,
+        if (tujuan.lencana > 0)
+          IgnorePointer(
+            child: ExcludeSemantics(
+              child: CompositedTransformFollower(
+                link: _tautanIkon,
+                showWhenUnlinked: false,
+                // Lencana koral dengan angka navy (kontras > 4,5:1); kotak
+                // `ukuranIkon` menggantikan ikon sebagai sauh `Badge`.
+                child: Badge(
+                  backgroundColor: w.ubinGagal,
+                  textColor: w.tintaUbin,
+                  label: Text(tujuan._teksLencana),
+                  child: SizedBox.square(dimension: ukuranIkon),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

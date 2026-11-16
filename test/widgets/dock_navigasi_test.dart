@@ -1,11 +1,13 @@
 // Dock navigasi navy melayang (P4, KOMPONEN.md §Dock): ukuran, bentuk, warna
-// dan bayangan dari token; tiap tab terpilih/tidak (semantik, pil, label,
-// ikon); lencana; sentuh >= 48 dp di seluruh butir; huruf 1,3x di 320/360/390;
-// "kurangi gerak"; cincin fokus papan ketik; isi tidak tertutup dock (tepi
-// sistem dan banner); rel >= 600 dp tidak berubah.
+// dan bayangan dari token; garis tepi tema gelap; tiap tab terpilih/tidak
+// (semantik, petunjuk posisi, pil, label, ikon); lencana, termasuk "99+" yang
+// tidak boleh terpotong; sentuh >= 48 dp di seluruh butir; huruf 1,3x di
+// 320/360/390; "kurangi gerak"; cincin fokus papan ketik; isi tidak tertutup
+// dock (tepi sistem dan banner); rel >= 600 dp tidak berubah.
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/core/motion/app_motion.dart';
@@ -55,8 +57,17 @@ Widget _app({
   double tepi = 0,
   Widget isi = const SizedBox.expand(),
   Widget? penutup,
+  bool bahasaId = false,
 }) => MaterialApp(
   debugShowCheckedModeBanner: false,
+  // Bahasa aplikasi (id); tanpa ini tes memakai bahasa Inggris bawaan Material.
+  locale: bahasaId ? const Locale('id', 'ID') : null,
+  supportedLocales: bahasaId
+      ? const [Locale('id', 'ID'), Locale('en')]
+      : const [Locale('en', 'US')],
+  localizationsDelegates: bahasaId
+      ? GlobalMaterialLocalizations.delegates
+      : null,
   theme: TemaSidik.terang,
   darkTheme: TemaSidik.gelap,
   themeMode: gelap ? ThemeMode.dark : ThemeMode.light,
@@ -91,6 +102,90 @@ void _kurangiGerak(WidgetTester tester) {
 }
 
 WarnaSidik _warna(bool gelap) => gelap ? WarnaSidik.gelap : WarnaSidik.terang;
+
+/// Petunjuk posisi yang diharapkan di butir ke-[i] (bahasa Inggris bawaan
+/// Material di tes: "Tab 1 of 5").
+String _petunjuk(int i) => const DefaultMaterialLocalizations().tabLabel(
+  tabIndex: i + 1,
+  tabCount: _nama.length,
+);
+
+const _kunciPotret = ValueKey<String>('potret-dock');
+
+/// Membungkus aplikasi uji dalam batas gambar supaya pikselnya bisa dibaca.
+Widget _potret(Widget app) => RepaintBoundary(key: _kunciPotret, child: app);
+
+/// Warna piksel (ARGB) di titik ([x], [y]) layar uji; layar harus berkerapatan
+/// 1,0 (`layarHp`) dan dibungkus [_potret].
+Future<int> _piksel(WidgetTester tester, double x, double y) async {
+  final batas = tester.renderObject<RenderRepaintBoundary>(
+    find.byKey(_kunciPotret),
+  );
+  final hasil = await tester.runAsync(() async {
+    final gambar = await batas.toImage();
+    final data = (await gambar.toByteData())!;
+    final i = (y.floor() * gambar.width + x.floor()) * 4;
+    final argb =
+        (data.getUint8(i + 3) << 24) |
+        (data.getUint8(i) << 16) |
+        (data.getUint8(i + 1) << 8) |
+        data.getUint8(i + 2);
+    gambar.dispose();
+    return argb;
+  });
+  return hasil!;
+}
+
+/// Kotak pil lencana (isi koral): `DecoratedBox` ber-`ShapeDecoration` di dalam
+/// `Badge`.
+Finder get _pilLencana => find.descendant(
+  of: find.byType(Badge),
+  matching: find.byWidgetPredicate(
+    (w) => w is DecoratedBox && w.decoration is ShapeDecoration,
+  ),
+);
+
+bool _memuat(Rect luar, Rect dalam, [double toleransi = 0.01]) =>
+    luar.left - toleransi <= dalam.left &&
+    luar.top - toleransi <= dalam.top &&
+    luar.right + toleransi >= dalam.right &&
+    luar.bottom + toleransi >= dalam.bottom;
+
+Clip? _klipDari(RenderObject r) => switch (r) {
+  RenderClipRect(:final clipBehavior) ||
+  RenderClipRRect(:final clipBehavior) ||
+  RenderClipPath(:final clipBehavior) ||
+  RenderClipOval(:final clipBehavior) ||
+  RenderPhysicalShape(:final clipBehavior) ||
+  RenderPhysicalModel(:final clipBehavior) ||
+  RenderStack(:final clipBehavior) ||
+  RenderFlex(:final clipBehavior) => clipBehavior,
+  _ => null,
+};
+
+/// Pembungkus pemotong (klip) antara [sasaran] dan dock yang kotaknya TIDAK
+/// memuat [sasaran]; kosong = tidak ada yang memotongnya.
+List<String> _pemotong(WidgetTester tester, Finder sasaran) {
+  final kotak = tester.getRect(sasaran);
+  final dock = tester.renderObject(_dock);
+  final hasil = <String>[];
+  for (
+    RenderObject? r = tester.renderObject(sasaran).parent;
+    r != null && r != dock;
+    r = r.parent
+  ) {
+    final klip = _klipDari(r);
+    if (klip == null || klip == Clip.none || r is! RenderBox) continue;
+    final milik = MatrixUtils.transformRect(
+      r.getTransformTo(null),
+      Offset.zero & r.size,
+    );
+    if (!_memuat(milik, kotak)) {
+      hasil.add('${r.runtimeType} ($klip) $milik tidak memuat $kotak');
+    }
+  }
+  return hasil;
+}
 
 /// Nilai IconTheme di sekitar ikon [data] (ukuran dan warna yang dipakai).
 IconThemeData _tema(WidgetTester tester, IconData data) => IconTheme.of(
@@ -157,6 +252,63 @@ void main() {
       });
     }
 
+    for (final gelap in [false, true]) {
+      testWidgets(
+        gelap
+            ? 'tema gelap: garis tepi token outline 1 dp, >= 3:1 terhadap '
+                  'latar dan navy dock'
+            : 'tema terang: tanpa garis tepi',
+        (tester) async {
+          layarHp(tester, lebar: 390, tinggi: 800);
+          await tester.pumpWidget(_potret(_app(gelap: gelap)));
+          await tester.pumpAndSettle();
+
+          final tema = gelap ? TemaSidik.gelap : TemaSidik.terang;
+          final navy = _warna(gelap).tintaUbin;
+          final dock = tester.getRect(_dock);
+          final dekor =
+              tester
+                      .widget<DecoratedBox>(
+                        find
+                            .descendant(
+                              of: _dock,
+                              matching: find.byType(DecoratedBox),
+                            )
+                            .first,
+                      )
+                      .decoration
+                  as BoxDecoration;
+          // Garis tidak menambah ukuran dock (digambar di dalam kotaknya).
+          expect(dock.height, UkuranDock.tinggi);
+
+          // Baris piksel teratas dock (y = 720, bilangan bulat): garis tepi
+          // bila ada, navy dock bila tidak.
+          final tepiAtas = await _piksel(tester, dock.center.dx, dock.top);
+          if (gelap) {
+            final garis = tema.colorScheme.outline;
+            expect(
+              dekor.border,
+              Border.all(color: garis, width: Elevasi.garis),
+            );
+            expect(tepiAtas, garis.toARGB32(), reason: 'garis tepi tergambar');
+            expect(
+              rasioKontras(garis, tema.scaffoldBackgroundColor),
+              greaterThanOrEqualTo(3),
+              reason: 'garis terhadap latar halaman gelap',
+            );
+            expect(
+              rasioKontras(garis, navy),
+              greaterThanOrEqualTo(3),
+              reason: 'garis terhadap navy dock',
+            );
+          } else {
+            expect(dekor.border, isNull);
+            expect(tepiAtas, navy.toARGB32(), reason: 'navy sampai ke tepi');
+          }
+        },
+      );
+    }
+
     testWidgets('melayang 16 dp di atas tepi sistem dan di tengah', (
       tester,
     ) async {
@@ -193,6 +345,7 @@ void main() {
             tester.getSemantics(find.bySemanticsLabel(_nama[i])),
             matchesSemantics(
               label: _nama[i],
+              hint: _petunjuk(i),
               isButton: true,
               hasEnabledState: true,
               isEnabled: true,
@@ -260,10 +413,12 @@ void main() {
 
       final berlabel = <String>[];
       final bertooltip = <String>[];
+      final berpetunjuk = <String>[];
       void kunjungi(SemanticsNode simpul) {
         final data = simpul.getSemanticsData();
         if (data.label.isNotEmpty) berlabel.add(data.label);
         if (data.tooltip.isNotEmpty) bertooltip.add(data.tooltip);
+        if (data.hint.isNotEmpty) berpetunjuk.add(data.hint);
         simpul.visitChildren((anak) {
           kunjungi(anak);
           return true;
@@ -279,6 +434,29 @@ void main() {
         'Akun',
       ]);
       expect(bertooltip, isEmpty);
+      // Petunjuk posisi menempel di simpul butir yang sama: lima, berurutan,
+      // tanpa simpul tambahan (lencana tidak membacakan angkanya lagi).
+      expect(berpetunjuk, [
+        for (var i = 0; i < _nama.length; i++) _petunjuk(i),
+      ]);
+      semantik.dispose();
+    });
+
+    testWidgets('petunjuk posisi memakai bahasa aplikasi: "Tab 2 dari 5"', (
+      tester,
+    ) async {
+      final semantik = tester.ensureSemantics();
+      layarHp(tester, lebar: 390, tinggi: 800);
+      await tester.pumpWidget(_app(bahasaId: true));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Alat')).hint,
+        'Tab 2 dari 5',
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Akun')).hint,
+        'Tab 5 dari 5',
+      );
       semantik.dispose();
     });
 
@@ -378,6 +556,111 @@ void main() {
     }
   });
 
+  group('lencana "99+" tidak terpotong', () {
+    // 99+ menjorok keluar dari kotak butir 48 dp (ikon berlencana ditaruh di
+    // tengah kotak). Dulu isi butir dipotong ke kotak itu (ClipRect dan klip
+    // Material milik KontrolKetuk), jadi ujung kanan lencana menjadi navy.
+    for (final lebar in [390.0, 360.0, 320.0]) {
+      for (final aktif in [false, true]) {
+        testWidgets('${lebar.toInt()} dp, tab Notifikasi '
+            '${aktif ? 'aktif' : 'tidak aktif'}: lencana utuh', (tester) async {
+          layarHp(tester, lebar: lebar, tinggi: 640);
+          await tester.pumpWidget(
+            _potret(_app(indeks: aktif ? 3 : 0, skala: 1.3, lencana: 120)),
+          );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(find.text('99+'), findsOneWidget);
+
+          final lencana = tester.getRect(_pilLencana);
+          final butir = tester.getRect(_butir('Notifikasi, 120 belum dibaca'));
+          final dock = tester.getRect(_dock);
+          expect(
+            lencana.width,
+            greaterThan(lencana.height),
+            reason: 'tiga isi',
+          );
+          // Lencana menempel di sudut kanan atas ikon Notifikasi (ikut ikon,
+          // bukan terlempar ke sudut butir).
+          final ikon = tester.getRect(
+            find.descendant(
+              of: _dock,
+              matching: find.byIcon(
+                aktif ? Icons.notifications : Icons.notifications_none,
+              ),
+            ),
+          );
+          expect(lencana.right, greaterThan(ikon.right), reason: 'kanan');
+          expect(lencana.left, greaterThan(ikon.left), reason: 'mulai di ikon');
+          expect(lencana.left, lessThan(ikon.right), reason: 'menumpang ikon');
+          expect(lencana.center.dy, lessThan(ikon.center.dy), reason: 'atas');
+          expect(lencana.bottom, greaterThan(ikon.top), reason: 'menumpang');
+          // Syarat uji: di kasus ini lencana memang melewati kotak butir.
+          if (!aktif || lebar == 320) {
+            expect(
+              lencana.right,
+              greaterThan(butir.right),
+              reason: 'lencana menjorok keluar butir',
+            );
+          }
+          expect(_memuat(dock, lencana), isTrue, reason: '$lencana di $dock');
+          expect(
+            _memuat(Offset.zero & Size(lebar, 640), lencana),
+            isTrue,
+            reason: 'lencana di dalam layar',
+          );
+          // Tidak ada pembungkus pemotong (klip) yang lebih kecil dari lencana.
+          expect(_pemotong(tester, _pilLencana), isEmpty);
+          // Piksel di ujung kanan lencana (2 dp dari tepi, di tengah) koral,
+          // bukan navy dock.
+          expect(
+            await _piksel(tester, lencana.right - 2, lencana.center.dy),
+            WarnaSidik.terang.ubinGagal.toARGB32(),
+            reason: 'ujung kanan lencana terpotong',
+          );
+        });
+      }
+    }
+
+    testWidgets('lencana ikut ikon saat pil meluncur (tidak tertinggal)', (
+      tester,
+    ) async {
+      layarHp(tester, lebar: 390, tinggi: 800);
+      final ikonNotifikasi = find.descendant(
+        of: _dock,
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is Icon &&
+              (w.icon == Icons.notifications ||
+                  w.icon == Icons.notifications_none),
+        ),
+      );
+      // Letak sudut kiri atas lencana terhadap sudut kanan atas ikon.
+      Offset tambat() {
+        final ikon = tester.getRect(ikonNotifikasi);
+        final lencana = tester.getRect(_pilLencana);
+        return Offset(lencana.left - ikon.right, lencana.top - ikon.top);
+      }
+
+      await tester.pumpWidget(_app(indeks: 0, lencana: 120));
+      await tester.pumpAndSettle();
+      final diam = tambat();
+      final ikonAwal = tester.getRect(ikonNotifikasi);
+
+      await tester.pumpWidget(_app(indeks: 3, lencana: 120));
+      await tester.pump(); // bingkai pertama = t 0
+      await tester.pump(AppMotion.sedang ~/ 2);
+      expect(
+        tester.getRect(ikonNotifikasi).left,
+        isNot(ikonAwal.left),
+        reason: 'ikon sedang bergeser',
+      );
+      expect(tambat(), diam, reason: 'lencana ikut ikon di tengah gerak');
+      await tester.pumpAndSettle();
+      expect(tambat(), diam, reason: 'dan setelah selesai');
+    });
+  });
+
   group('lebar dan huruf', () {
     // Lebar layar -> jarak antar-butir yang diharapkan, dan apakah label tampil.
     // 390: spesifikasi (padding 16, ikon-label 8, jarak 4). 360: rapat (12, 4, 0).
@@ -391,6 +674,11 @@ void main() {
           await tester.pumpWidget(_app(indeks: aktif, skala: 1.3, lencana: 12));
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
+          expect(
+            find.byType(NavigationBar),
+            findsNothing,
+            reason: 'HP memakai dock, bukan NavigationBar',
+          );
 
           final dock = tester.getRect(_dock);
           expect(dock.left, greaterThanOrEqualTo(Spasi.sm));
