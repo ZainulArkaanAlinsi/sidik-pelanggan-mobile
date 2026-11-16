@@ -64,8 +64,10 @@ Text('12', style: TipografiSidik.angkaSorot(teks: s.onSurface));
 | keterangan | 13/18 | 400 | merk, tanggal, nomor seri, bantuan (bodySmall) |
 | lencana | 12/16 | 600 | lencana status, label bilah navigasi (labelMedium/Small) |
 
-Bold (700) tidak dipakai (Inter-Bold masih dibundel; boleh dibuang di PR bersih-
-bersih). `tema_sidik_test.dart` menjaga agar tak ada berat yang tak punya
+Bold (700) tidak dipakai di kode (dipindai `tema_sidik_test.dart`: tak ada
+`FontWeight.bold/w700/w800` di layar dan widget). `Inter-Bold.ttf` MASIH
+dibundel (dideklarasikan di `pubspec.yaml` dan dimuat helper tes); membuangnya =
+PR bersih-bersih tersendiri. `tema_sidik_test.dart` menjaga agar tak ada berat yang tak punya
 berkasnya. Daftar izin ukuran `{32, 28, 24, 20, 18, 16, 14, 13, 12}`; minimum 12
 sp. IBM Plex Mono dibundel di `assets/fonts` (SIL OFL, lisensi di
 `LICENSE-IBMPlexMono.txt`), tidak diunduh saat jalan.
@@ -78,6 +80,13 @@ sp. IBM Plex Mono dibundel di `assets/fonts` (SIL OFL, lisensi di
   gelap (hijau gelap, amber gelap, merah gelap, biru tua) di atas warna muda
   status; tinta berjenjang terangnya (selisih > 0,02) supaya tetap terbaca di
   cetakan hitam-putih. Tema gelap: tinta pastel di atas latar gelap.
+- Warna muda status hanya untuk MAKNANYA. Krem (awas) = "perlu diperiksa" / peringatan
+  nyata (segera jatuh tempo, perlu diulang, digantikan, offline, sesi berakhir): bukan
+  warna bawaan ubin ringkasan atau keadaan kosong (netral/putih). Nama lama
+  `PaletSidik.kuning` menyesatkan: artinya krem peringatan.
+- Ikon dialog (`AlertDialog.icon`) memakai `dialogTheme.iconColor` = `primary`; bawaan
+  Material 3 (`secondary`) putih di tema ini dan tak terlihat (dijaga
+  `test/tema/ikon_dialog_test.dart`).
 - Merah KAN (`WarnaSidik.kanMerah`) HANYA untuk `LencanaKan`; bukan warna galat.
   Galat isian dan tombol bahaya: `ColorScheme.error` (`PaletSidik.galat`).
 - `garis` bukan tepi kontrol (1,3:1): pakai `garisTegas` (`ColorScheme.outline`).

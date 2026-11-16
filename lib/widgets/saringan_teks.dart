@@ -180,7 +180,9 @@ class _SaringanTeksState extends State<SaringanTeks> {
                       maxLines: 1,
                       softWrap: false,
                       style: t.bodyLarge?.copyWith(
-                        fontWeight: dipilih ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: dipilih
+                            ? TipografiSidik.beratTebal
+                            : TipografiSidik.beratLabel,
                         color: dipilih ? s.onSurface : s.onSurfaceVariant,
                       ),
                     ),

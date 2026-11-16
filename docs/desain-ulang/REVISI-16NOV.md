@@ -50,6 +50,21 @@ ini tidak menyentuh puluhan pemakai. Pembersihan nama menyusul.
 - **Kepala layar masuk** (sambutan, masuk, undangan, lupa sandi): biru muda, lebih
   rendah (240), plat logo 80. Penyusunan ulang layar auth ada di PR berikutnya.
 
+## Putaran perbaikan 1 (tinjauan independen)
+
+- Ikon dialog: `dialogTheme.iconColor = primary` (bawaan = `secondary` = putih).
+- Label bilah: uji anti-potong memakai lebar alami paragraf (`getMaxIntrinsicWidth`).
+- Krem hanya untuk "perlu diperiksa": ubin Sertifikat terbaru (Beranda), keadaan kosong
+  Beranda, dan keadaan kosong Alat saya kini netral. Pemakai krem yang tersisa semuanya
+  bermakna peringatan: segera jatuh tempo (<= 30 hari), perlu diulang, digantikan,
+  paket melewati target, banner offline dan notifikasi mati, sesi berakhir, kartu galat
+  darurat, saringan "Dalam 30 hari".
+- Papan ketik terbuka menyembunyikan bilah dan banner (HP); bobot 700 diganti semibold
+  di kode (Inter-Bold tetap dibundel).
+- Tidak dikerjakan: `ChipStatus` masih pil 999 (lencana detail; delegasikan ke `Stempel`);
+  tinta status "berjenjang" bukan bukti aksesibilitas (hanya pelengkap ikon + kata); tema
+  gelap dengan ubin pastel terang terasa silau (PR tema gelap).
+
 ## Belum dikerjakan (PR berikutnya)
 
 Poles layar: Beranda ("Kalibrasi Anda", ringkasan permintaan aktif), Alat saya (kartu

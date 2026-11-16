@@ -77,6 +77,22 @@ void main() {
       expect(pelanggar, isEmpty, reason: 'pakai Spasi, Bentuk, TipografiSidik');
     });
 
+    test('bobot huruf: tak ada FontWeight bold/w700/w800 di layar dan widget '
+        '(judul = semibold lewat TipografiSidik)', () {
+      // Tes tema hanya mengukur slot TextTheme; gaya yang ditulis langsung di
+      // widget lolos darinya, jadi dipindai di sini.
+      final pelanggar = <String>[];
+      final pola = RegExp(r'FontWeight\.(bold|w700|w800|w900)\b');
+      for (final f in berkasLayar) {
+        if (pola.hasMatch(f.readAsStringSync())) pelanggar.add(_nama(f));
+      }
+      expect(
+        pelanggar,
+        isEmpty,
+        reason: 'pakai TipografiSidik.beratTebal/Label',
+      );
+    });
+
     test('tema lama (skeuomorf) sudah tidak ada', () {
       expect(Directory('lib/core/theme').existsSync(), isFalse);
       expect(Directory('lib/widgets/sidik').existsSync(), isFalse);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/tema/bentuk.dart';
 import '../core/tema/spasi.dart';
+import '../core/tema/tipografi.dart';
 import '../core/tema/ukuran.dart';
 import '../core/tema/warna_sidik.dart';
 
@@ -51,7 +52,7 @@ class LencanaKan extends StatelessWidget {
                       text: 'KAN',
                       style: TextStyle(
                         color: s.primary,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: TipografiSidik.beratTebal,
                       ),
                     ),
                     TextSpan(

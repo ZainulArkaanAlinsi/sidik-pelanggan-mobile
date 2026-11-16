@@ -153,7 +153,7 @@ class _Langkah extends StatelessWidget {
             child: Text(
               langkah.label,
               style: t.bodyMedium?.copyWith(
-                fontWeight: langkah.sekarang ? FontWeight.w700 : null,
+                fontWeight: langkah.sekarang ? TipografiSidik.beratTebal : null,
               ),
             ),
           ),
