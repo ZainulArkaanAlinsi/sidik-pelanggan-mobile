@@ -6,22 +6,22 @@ import '../core/tema/ukuran.dart';
 import '../core/tema/warna_sidik.dart';
 import 'status_tampil.dart';
 
-/// Stempel status Bento Lab: pil setinggi 30 (radius 15), ikon 14 + kata 12/700
-/// pada latar warna status dengan tinta navy. Pengganti `ChipStatus`.
+/// Lencana status kecil (REVISI 16 Nov 2026): setinggi 24 (radius 6), ikon 14 +
+/// kata 12/600, tinta GELAP di atas warna MUDA statusnya (hijau gelap di hijau
+/// muda, amber gelap di krem, merah gelap di merah muda, biru tua di biru
+/// kelabu muda). Pengganti `ChipStatus`.
 ///
-/// Normal diam di baris daftar padat: stempel berlatar hanya untuk pengecualian
+/// Normal diam di baris daftar padat: lencana berlatar hanya untuk pengecualian
 /// ("Lewat jadwal", "Tidak memenuhi toleransi"); keadaan normal memakai
 /// [tenang] (tanpa latar, ikon + kata tetap ada) atau tidak ditampilkan. Di
-/// ubin alat stempel selalu tampil (ubinnya sudah berwarna) dengan
-/// [diAtasUbin]: navy + putih untuk gagal, putih + navy untuk lainnya
-/// (KOMPONEN.md §Status).
+/// atas ubin berwarna muda, lencana memakai [diAtasUbin]: navy di atas putih.
 ///
 /// Status SELALU ikon + kata, tidak pernah warna saja (buta warna, cetakan
 /// hitam-putih). Pasangan warna dari [StatusTampil], hasil SATU pemetaan
-/// (`pemetaan_status.dart`). Pil berlatar memakai warna UBIN (pastel bertinta
-/// navy, sama di terang dan gelap); [tenang] memakai tinta halaman (pastel di
-/// tema gelap). Kata panjang membungkus dan pil tumbuh ke bawah (tinggi 30
-/// adalah minimum); pembaca layar menerima "Status: kata". Stempel bukan tombol.
+/// (`pemetaan_status.dart`), mengikuti tema (tema gelap: tinta pastel di atas
+/// latar gelap). Kata panjang membungkus dan lencana tumbuh ke bawah (tinggi 24
+/// adalah minimum); pembaca layar menerima "Status: kata". Lencana bukan
+/// tombol.
 class Stempel extends StatelessWidget {
   const Stempel(
     this.status, {
@@ -35,15 +35,15 @@ class Stempel extends StatelessWidget {
   /// Tanpa latar dan tanpa bantalan: untuk keadaan normal.
   final bool tenang;
 
-  /// Stempel ditaruh di atas ubin berwarna: navy + putih (gagal) atau putih +
-  /// navy (lainnya). Diabaikan bila [tenang].
+  /// Lencana ditaruh di atas ubin berwarna muda: navy di atas putih.
+  /// Diabaikan bila [tenang].
   final bool diAtasUbin;
 
   @override
   Widget build(BuildContext context) {
-    final (tinta, latar) = tenang
-        ? status.warna(context)
-        : (diAtasUbin ? status.diAtasUbin(context) : status.ubin(context));
+    final (tinta, latar) = !tenang && diAtasUbin
+        ? status.diAtasUbin(context)
+        : status.warna(context);
     final isi = Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: tenang
@@ -76,7 +76,7 @@ class Stempel extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: Spasi.md,
+                    horizontal: Spasi.sm,
                     vertical: Spasi.xs,
                   ),
                   child: isi,

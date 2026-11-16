@@ -382,13 +382,17 @@ List<StatusTampil> statusUbinSertifikat(
   ];
 }
 
-/// Nada ubin sertifikat: kuning (awas) menurut desain, koral (gagal) bila ada
-/// pengecualian bernada gagal (FAIL, dibatalkan). Tidak pernah hijau: sertifikat
+/// Nada ubin sertifikat. Krem (awas) berarti "perlu diperiksa" (REVISI-1), jadi
+/// HANYA dipakai bila ada pengecualian bernada awas (masa berlaku berakhir,
+/// digantikan); merah muda (gagal) bila ada pengecualian bernada gagal (FAIL,
+/// dibatalkan); selain itu NETRAL (putih). Tidak pernah hijau: sertifikat
 /// terbaru tidak membuktikan apa pun tentang alat lain.
 NadaStatus nadaUbinSertifikat(List<StatusTampil> status) =>
     status.any((s) => s.nada == NadaStatus.gagal)
     ? NadaStatus.gagal
-    : NadaStatus.awas;
+    : status.any((s) => s.nada == NadaStatus.awas)
+    ? NadaStatus.awas
+    : NadaStatus.netral;
 
 /// Paket yang terlambat: istilah dan ikon yang sama dengan kartu paket dan
 /// detail paket.

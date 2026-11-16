@@ -307,7 +307,7 @@ Future<HasilAlur> jalankanAlurDasar(
   }
 
   // 3. Masuk ke Rangka (Beranda).
-  expect(find.byType(DockNavigasi), findsOneWidget);
+  expect(find.byType(BilahNavigasi), findsOneWidget);
   // Beranda terbuka (kalimat utama; nama PT hanya tampil untuk akun
   // multi-perusahaan, jadi bukan penandanya).
   expect(find.text('Tidak ada alat yang lewat jadwal.'), findsOneWidget);
@@ -315,7 +315,7 @@ Future<HasilAlur> jalankanAlurDasar(
   // 4. Daftar sertifikat.
   await tester.tap(
     find.descendant(
-      of: find.byType(DockNavigasi),
+      of: find.byType(BilahNavigasi),
       matching: find.byTooltip('Sertifikat'),
     ),
   );
@@ -343,7 +343,7 @@ Future<HasilAlur> jalankanAlurDasar(
   await tester.pumpAndSettle();
   await tester.tap(
     find.descendant(
-      of: find.byType(DockNavigasi),
+      of: find.byType(BilahNavigasi),
       matching: find.byTooltip('Akun'),
     ),
   );

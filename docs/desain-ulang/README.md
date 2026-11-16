@@ -1,3 +1,10 @@
+> **DIGANTI 16 Nov 2026.** Arah "Bento Lab" di paket ini (bidang kuning/koral
+> besar, sudut ekstrem, dock navy melayang) digantikan arah tenang, formal, dan
+> ringkas. Yang berlaku: `REVISI-16NOV.md` (penerapan di kode) dan `tokens.json`
+> (sudah diselaraskan). `DESIGN.md`, `KOMPONEN.md`, `LAYAR.md`, `UKURAN.md`,
+> `ELEMEN.md`, dan `VISUAL.md` di bawah adalah ARSIP: bila bertentangan,
+> `REVISI-16NOV.md` menang.
+
 # SIDIK — arah desain "Bento Lab" (paket handoff)
 
 Paket ini untuk dikerjakan Claude Code di `sidik-pelanggan-mobile` (utama) dan

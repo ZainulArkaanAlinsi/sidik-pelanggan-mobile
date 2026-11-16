@@ -46,9 +46,9 @@ class StatusTampil {
     };
   }
 
-  /// Pasangan (tinta, latar) UBIN untuk [nada]: pastel bertinta navy yang sama
-  /// di terang dan gelap (ubin Bento tetap terang di mode gelap). Netral
-  /// (tanpa jadwal) = permukaan putih tema, bukan pastel.
+  /// Pasangan (tinta, latar) UBIN untuk [nada]: warna muda bertinta navy yang
+  /// sama di terang dan gelap, untuk ubin ringkasan yang membawa status.
+  /// Netral (tanpa jadwal) = permukaan putih tema, bukan warna muda.
   static (Color, Color) ubinDari(BuildContext context, NadaStatus nada) {
     final w = context.warna;
     final s = context.skema;
@@ -64,14 +64,13 @@ class StatusTampil {
   /// [ubinDari] untuk nada status ini.
   (Color, Color) ubin(BuildContext context) => ubinDari(context, nada);
 
-  /// Pasangan (tinta, latar) stempel yang ditaruh DI ATAS ubin berwarna:
-  /// gagal (koral) = tinta putih di latar navy; awas, lulus, tunggu = tinta
-  /// navy di latar putih. Netral (ubin putih tema) memakai pasangan [warna]
-  /// netral: tinta kedua di atas latar halaman.
+  /// Pasangan (tinta, latar) lencana yang ditaruh DI ATAS ubin berwarna muda:
+  /// tinta navy di latar putih (statusnya sudah ada di warna ubin dan di ikon
+  /// serta katanya). Netral (ubin putih tema) memakai pasangan [warna] netral:
+  /// tinta kedua di atas latar netral.
   (Color, Color) diAtasUbin(BuildContext context) {
     final w = context.warna;
     return switch (nada) {
-      NadaStatus.gagal => (w.kertasUbin, w.tintaUbin),
       NadaStatus.netral => warna(context),
       _ => (w.tintaUbin, w.kertasUbin),
     };

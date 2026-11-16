@@ -11,25 +11,24 @@ import 'dasar/dasar_ubin.dart';
 import 'status_tampil.dart';
 import 'stempel.dart';
 
-/// Ubin alat Bento Lab: satu alat, satu ubin berwarna menurut statusnya (gagal
-/// koral, awas kuning, lulus hijau, tunggu langit, tanpa jadwal putih).
-/// Pengganti `BarisAlat`/`KartuAlat` di Beranda dan daftar alat.
+/// Ubin alat: satu alat, satu kartu NETRAL (permukaan putih, garis halus;
+/// REVISI-2 butir 2: warna hanya pada status dan tindakan). Pengganti
+/// `BarisAlat`/`KartuAlat` di Beranda dan daftar alat.
 ///
-/// Isi dari atas: [Stempel] di atas ubin (SELALU tampil: ubinnya sudah berwarna
-/// dan stempel menyebut katanya; istilah dari `pemetaan_status.dart`) → [nama]
-/// 22/28 (paling banyak dua baris) → [merkTipe] 14 → [serial] 14 `.nomor` di
-/// baris sendiri → [lokasi] 14 (paling banyak dua baris; pembeda dua alat
+/// Isi dari atas: [Stempel] status (SELALU tampil; istilah dari
+/// `pemetaan_status.dart`; satu-satunya warna di kartu) → [nama] 20/26 (paling
+/// banyak dua baris) → [merkTipe] 13 → [serial] 13 `.nomor` (IBM Plex Mono) di
+/// baris sendiri → [lokasi] 13 (paling banyak dua baris; pembeda dua alat
 /// sejenis tanpa nomor seri, hanya bila terisi) → (didorong ke bawah) angka sisa
-/// hari 44 (Beranda: 64) + kata "hari lewat" / "hari lagi" 12/700 + [tanggal]
-/// 12/500. Kata dan angka dari `AngkaHari` (satu sumber istilah dengan seluruh
+/// hari 28 mono (Beranda: 32) + kata "hari lewat" / "hari lagi" 12 + [tanggal]
+/// 12. Kata dan angka dari `AngkaHari` (satu sumber istilah dengan seluruh
 /// app).
 ///
-/// Tinggi 196 (Beranda 232) adalah MINIMUM: ubin tumbuh bersama huruf. Teks
-/// SELALU navy di atas pastel (kontras > 7:1), tidak pernah `teksKedua` (3,3:1
-/// di atas koral). [visual] (gambar alat, 160; Beranda 176; 120 di lebar < 340)
-/// duduk di kanan bawah, keluar 10 dari kanan dan 20 dari bawah, dipotong
-/// sudut ubin, di BAWAH teks; teks di bawah stempel diberi ruang agar tidak
-/// bertumpuk dengannya. Tanpa [visual] ubin polos.
+/// Tinggi 144 (Beranda 160) adalah MINIMUM: kartu tumbuh bersama huruf. Nama
+/// dan angka `onSurface` (navy); keterangan `onSurfaceVariant` (6:1 di atas
+/// putih). [visual] (gambar alat; belum dipakai layar mana pun) duduk di kanan
+/// bawah, dipotong sudut kartu, di BAWAH teks; teks diberi ruang agar tidak
+/// bertumpuk dengannya. Tanpa [visual] kartu polos.
 ///
 /// Seluruh ubin satu tombol bila [onTap] ada. Pembaca layar menerima [semantik]
 /// atau, bila kosong, kalimat susunan dari isi ubin.
@@ -105,7 +104,9 @@ class UbinAlat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (tinta, latar) = status.ubin(context);
+    final s = context.skema;
+    final tinta = s.onSurface;
+    final latar = s.surface;
     final t = context.teks;
     final kompak = MediaQuery.sizeOf(context).width < Spasi.batasKompak;
     final ukuranVisual = kompak
@@ -124,12 +125,12 @@ class UbinAlat extends StatelessWidget {
     final gayaTanggal = gayaKata?.copyWith(
       fontWeight: TipografiSidik.beratKeterangan,
     );
-    final gayaKet = t.bodySmall?.copyWith(color: tinta);
+    final gayaKet = t.bodySmall?.copyWith(color: s.onSurfaceVariant);
 
     final atas = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Stempel(status, diAtasUbin: true),
+        Stempel(status),
         const SizedBox(height: Spasi.md),
         Padding(
           padding: EdgeInsets.only(right: ruangVisual),

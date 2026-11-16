@@ -10,13 +10,14 @@ import '../../widgets/logo_sidik.dart';
 import '../../widgets/tombol_bulat.dart';
 
 /// Kerangka bersama keempat layar auth (Sambutan, Masuk, Lupa sandi, Terima
-/// undangan): susunan E0 Masuk (ELEMEN.md) dengan palet Bento Lab.
+/// undangan): susunan E0 Masuk.
 ///
-/// - Hero kuning ([WarnaSidik.ubinAwas]) dari tepi atas layar: plat logo putih
-///   dan nama aplikasi bertinta navy. Ubin Bento tetap terang di tema gelap,
-///   jadi hero, plat, dan tintanya sama di dua tema.
-/// - [kartu]: kartu putih sudut 32 yang menumpang [UkuranAuth.kartuTumpang]
-///   ke bawah tepi hero. Isinya formulir/tombol milik layar.
+/// - Kepala biru muda ([WarnaSidik.ubinBiru]) dari tepi atas layar: plat logo
+///   putih dan nama aplikasi bertinta navy. Tetap terang di tema gelap, jadi
+///   kepala, plat, dan tintanya sama di dua tema. Penyusunan ulang layar auth
+///   (kepala lebih kecil, label di atas kolom) menyusul di PR berikutnya.
+/// - [kartu]: kartu putih sudut 16 yang menumpang [UkuranAuth.kartuTumpang]
+///   ke bawah tepi kepala. Isinya formulir/tombol milik layar.
 /// - [bawah]: di luar kartu, di atas latar halaman (panel undangan, lencana
 ///   akreditasi, nama PT).
 /// - [ringkas]: layar anak (Lupa sandi, Terima undangan). Hero pendek dengan
@@ -40,8 +41,9 @@ class KerangkaAuth extends StatelessWidget {
   final List<Widget> bawah;
   final bool ringkas;
 
-  /// Kunci untuk tes tata letak: hero (kuning, dari tepi atas layar sampai
-  /// tepi atas kartu), kuning di belakang tepi atas kartu, plat logo, kartu.
+  /// Kunci untuk tes tata letak: kepala (biru muda, dari tepi atas layar
+  /// sampai tepi atas kartu), biru muda di belakang tepi atas kartu, plat logo,
+  /// kartu.
   static const kunciHero = ValueKey<String>('auth-hero');
   static const kunciTumpang = ValueKey<String>('auth-hero-tumpang');
   static const kunciPlat = ValueKey<String>('auth-plat-logo');
@@ -58,8 +60,8 @@ class KerangkaAuth extends StatelessWidget {
           _Hero(ringkas: ringkas),
           Stack(
             children: [
-              // Kuning di belakang tepi atas kartu: kartu tampak menumpang
-              // di dalam hero, bukan tergantung di bawahnya.
+              // Biru muda di belakang tepi atas kartu: kartu tampak menumpang
+              // di dalam kepala, bukan tergantung di bawahnya.
               Positioned(
                 left: 0,
                 right: 0,
@@ -67,7 +69,7 @@ class KerangkaAuth extends StatelessWidget {
                 height: UkuranAuth.kartuTumpang,
                 child: ColoredBox(
                   key: kunciTumpang,
-                  color: context.warna.ubinAwas,
+                  color: context.warna.ubinBiru,
                 ),
               ),
               _Lebar(child: _Kartu(anak: kartu)),
@@ -93,7 +95,7 @@ class KerangkaAuth extends StatelessWidget {
   }
 }
 
-/// Judul kartu (22/28): penanda judul untuk pembaca layar. Layar anak tidak
+/// Judul kartu (20/26): penanda judul untuk pembaca layar. Layar anak tidak
 /// punya app bar lagi, jadi judulnya yang menamai layar. `container: true`
 /// wajib: tanpa itu simpul judul melebur ke teks di sebelahnya dan seluruh
 /// paragraf terbaca sebagai judul.
@@ -164,7 +166,7 @@ class _Lebar extends StatelessWidget {
   );
 }
 
-/// Kartu putih sudut 32. `Material` (bukan `DecoratedBox`) supaya riak
+/// Kartu putih sudut 16. `Material` (bukan `DecoratedBox`) supaya riak
 /// `ListTile` dan kawan-kawannya tidak tertutup warna kartu.
 class _Kartu extends StatelessWidget {
   const _Kartu({required this.anak});
@@ -241,12 +243,12 @@ class _Hero extends StatelessWidget {
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      // Ikon status bar gelap di atas kuning (juga di tema gelap). Hanya
+      // Ikon status bar gelap di atas biru muda (juga di tema gelap). Hanya
       // selama hero ada di puncak layar; sesudah tergulir, bawaan sistem.
       value: SystemUiOverlayStyle.dark,
       child: ColoredBox(
         key: KerangkaAuth.kunciHero,
-        color: w.ubinAwas,
+        color: w.ubinBiru,
         child: ConstrainedBox(
           constraints: BoxConstraints(
             minHeight: ringkas ? 0 : UkuranAuth.hero - UkuranAuth.kartuTumpang,

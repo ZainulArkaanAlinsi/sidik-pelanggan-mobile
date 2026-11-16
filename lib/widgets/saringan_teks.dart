@@ -173,14 +173,16 @@ class _SaringanTeksState extends State<SaringanTeks> {
                           if (p.jumlah != null)
                             TextSpan(
                               text: '  ${p.jumlah}',
-                              style: t.bodyMedium?.tabular,
+                              style: t.bodyLarge?.tabular,
                             ),
                         ],
                       ),
                       maxLines: 1,
                       softWrap: false,
                       style: t.bodyLarge?.copyWith(
-                        fontWeight: dipilih ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: dipilih
+                            ? TipografiSidik.beratTebal
+                            : TipografiSidik.beratLabel,
                         color: dipilih ? s.onSurface : s.onSurfaceVariant,
                       ),
                     ),

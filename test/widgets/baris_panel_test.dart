@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/core/tema/bentuk.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
+import 'package:sidik_pelanggan/core/tema/ukuran.dart';
 import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
 import 'package:sidik_pelanggan/widgets/angka_hari.dart';
 import 'package:sidik_pelanggan/widgets/baris_alat.dart';
@@ -119,7 +120,7 @@ void main() {
   });
 
   group('BarisSidik', () {
-    testWidgets('tinggi minimum 72 dp, sentuh seluruh baris, label baca', (
+    testWidgets('tinggi minimum 64 dp, sentuh seluruh baris, label baca', (
       tester,
     ) async {
       final semantik = tester.ensureSemantics();
@@ -138,7 +139,8 @@ void main() {
         ),
       );
       final ukuran = tester.getSize(find.byType(BarisSidik));
-      expect(ukuran.height, greaterThanOrEqualTo(72));
+      expect(ukuran.height, greaterThanOrEqualTo(UkuranBaris.minimum));
+      expect(UkuranBaris.minimum, 64);
       await tester.tap(find.byType(BarisSidik));
       expect(diketuk, 1);
       expect(
@@ -376,12 +378,15 @@ void main() {
         testWidgets('320 dp x huruf 1,3: nomor order satu baris, tidak putus '
             '(${gelap ? 'gelap' : 'terang'})', (tester) async {
           layarHp(tester, lebar: 320, tinggi: 640);
+          // IBM Plex Mono lebih lebar dari Inter: nomor sepanjang ini harus
+          // mengecil (tidak putus) di 320 dp x 1,3.
+          const nomorPanjang = 'ORD/ALFA-LAB/2026/11/000021';
           await tester.pumpWidget(
             aplikasiUji(
               PanelSidik(
                 anak: [
                   BarisSidik(
-                    judul: nomorOrderUji,
+                    judul: nomorPanjang,
                     gayaNomor: true,
                     baris: const [Text('Target selesai 16 Nov 2026')],
                     onTap: () {},
@@ -394,12 +399,12 @@ void main() {
           );
           expect(tester.takeException(), isNull);
           final p = tester.renderObject<RenderParagraph>(
-            find.text(nomorOrderUji),
+            find.text(nomorPanjang),
           );
-          expect(barisTeks(p), [nomorOrderUji]);
+          expect(barisTeks(p), [nomorPanjang]);
           // Mengecil, tidak turun di bawah 12 sp efektif.
           final dalam = tester.getSize(find.byType(FittedBox)).width;
-          final aslinya = tester.getSize(find.text(nomorOrderUji)).width;
+          final aslinya = tester.getSize(find.text(nomorPanjang)).width;
           final gaya = (p.text as TextSpan).style!;
           expect(
             gaya.fontSize! * 1.3 * (dalam / aslinya),

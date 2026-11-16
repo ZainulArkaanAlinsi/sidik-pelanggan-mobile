@@ -225,7 +225,8 @@ class _KepalaBeranda extends StatelessWidget {
   }
 }
 
-/// Avatar inisial 48: navy, inisial kuning. Hiasan: nama ada di sebelahnya.
+/// Avatar inisial 48: navy, inisial putih (sama di dua tema). Hiasan: nama ada
+/// di sebelahnya.
 class _Avatar extends StatelessWidget {
   const _Avatar({required this.inisial});
 
@@ -233,7 +234,7 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final s = context.skema;
+    final w = context.warna;
     return ExcludeSemantics(
       child: SizedBox.square(
         dimension: UkuranUbin.avatar,
@@ -247,12 +248,12 @@ class _Avatar extends StatelessWidget {
                 ? Icon(
                     Icons.person_outline,
                     size: UkuranIkon.sedang,
-                    color: s.secondary,
+                    color: w.kertasUbin,
                   )
                 : Text(
                     inisial,
                     style: context.teks.titleSmall?.copyWith(
-                      color: s.secondary,
+                      color: w.kertasUbin,
                     ),
                   ),
           ),
@@ -262,7 +263,7 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-/// Pil perusahaan (T 40 putih; ikon 14 + nama 12/700) yang membuka pilihan
+/// Chip perusahaan (T 40 putih, sudut 12; ikon 14 + nama 12/600) yang membuka pilihan
 /// perusahaan. Area sentuh 48 dp ([KontrolKetuk]); nama panjang satu baris.
 class _PilPerusahaan extends StatelessWidget {
   const _PilPerusahaan({required this.nama, required this.onTap});
@@ -279,7 +280,7 @@ class _PilPerusahaan extends StatelessWidget {
         onTap: onTap,
         semantik: 'Ganti perusahaan, sekarang $nama',
         warna: s.surface,
-        sudut: Bentuk.sudutPil,
+        sudut: Bentuk.sudutKapsul,
         sisi: BorderSide(color: s.outlineVariant, width: Elevasi.garis),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
@@ -697,7 +698,7 @@ class _IsiState extends ConsumerState<_Isi> {
         return UbinRingkas(
           judul: 'Belum ada alat terdaftar',
           kalimat: 'Alat yang pernah dikalibrasi di PT Sidik muncul di sini.',
-          nada: NadaStatus.awas,
+          // Keadaan kosong bukan peringatan: netral (krem = "perlu diperiksa").
         );
       case JenisUbinAlat.alatMendesak || JenisUbinAlat.jadwalTerdekat:
         return UbinAlat(
@@ -881,7 +882,7 @@ class _BarisBantuan extends StatelessWidget {
         onTap: onTap,
         semantik: 'Hubungi lab: tanya jadwal, sertifikat, atau paket',
         warna: latar,
-        sudut: Bentuk.sudutPil,
+        sudut: Bentuk.sudutPanel,
         child: SizedBox(
           width: double.infinity,
           child: ConstrainedBox(

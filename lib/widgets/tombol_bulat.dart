@@ -24,13 +24,14 @@ enum UkuranTombolBulat {
   final double ikon;
 }
 
-/// Warna tombol bulat: [navy] (cari), [putih] (kembali), [kuning] (aksi ubin).
-/// [navy] mengikuti `ColorScheme.primary`, jadi di tema gelap menjadi biru muda
-/// (terbaca di atas halaman gelap). [navyUbin] tetap navy dengan ikon putih di
-/// dua tema: untuk tombol yang duduk di atas UBIN pastel (ubin tidak ikut gelap).
-enum NadaTombolBulat { navy, putih, kuning, navyUbin }
+/// Warna tombol bulat: [biru] (cari), [putih] (kembali), [aksen] (aksi ubin:
+/// biru muda bertepi biru). [biru] mengikuti `ColorScheme.primary`, jadi di
+/// tema gelap menjadi biru terang (terbaca di atas halaman gelap). [navyUbin]
+/// tetap navy dengan ikon putih di dua tema: untuk tombol yang duduk di atas
+/// UBIN berwarna muda (ubin tidak ikut gelap).
+enum NadaTombolBulat { biru, putih, aksen, navyUbin }
 
-/// Tombol bulat Bento Lab: ikon di lingkaran, tanpa teks. Karena tanpa teks,
+/// Tombol bulat: ikon di lingkaran, tanpa teks. Karena tanpa teks,
 /// [semantik] (label baca) WAJIB: pembaca layar menerima "Cari, tombol".
 ///
 /// Area sentuh selalu >= 48 dp walau lingkarannya 44 ([KontrolKetuk]): ketukan
@@ -39,8 +40,8 @@ enum NadaTombolBulat { navy, putih, kuning, navyUbin }
 /// ada aksi ketuk. Papan ketik: Enter/Spasi mengaktifkan dan cincin fokus
 /// muncul di luar lingkaran.
 ///
-/// Nama bentuk: [TombolBulat.cari] (44 navy), [TombolBulat.kembali] (48 putih),
-/// [TombolBulat.aksi] (52 kuning atau navy), [TombolBulat.hiasan] (penanda
+/// Nama bentuk: [TombolBulat.cari] (36 biru), [TombolBulat.kembali] (48 putih),
+/// [TombolBulat.aksi] (52 biru muda atau navy), [TombolBulat.hiasan] (penanda
 /// tanpa aksi di dalam ubin yang seluruhnya bisa diketuk).
 class TombolBulat extends StatelessWidget {
   const TombolBulat({
@@ -52,14 +53,14 @@ class TombolBulat extends StatelessWidget {
     this.nada = NadaTombolBulat.putih,
   }) : _hiasan = false;
 
-  /// 44 navy: tombol cari di dalam kolom cari.
+  /// 36 biru: tombol cari di dalam kolom cari.
   const TombolBulat.cari({
     super.key,
     this.ikon = Icons.search,
     this.semantik = 'Cari',
     required this.onTap,
   }) : ukuran = UkuranTombolBulat.kecil,
-       nada = NadaTombolBulat.navy,
+       nada = NadaTombolBulat.biru,
        _hiasan = false;
 
   /// 48 putih bergaris halus: kembali di kepala layar anak.
@@ -72,13 +73,13 @@ class TombolBulat extends StatelessWidget {
        nada = NadaTombolBulat.putih,
        _hiasan = false;
 
-  /// 52: aksi di ubin, kuning (bawaan), [NadaTombolBulat.navyUbin], atau navy.
+  /// 52: aksi di ubin, biru muda (bawaan), [NadaTombolBulat.navyUbin], atau biru.
   const TombolBulat.aksi({
     super.key,
     this.ikon = Icons.north_east,
     required this.semantik,
     required this.onTap,
-    this.nada = NadaTombolBulat.kuning,
+    this.nada = NadaTombolBulat.aksen,
   }) : ukuran = UkuranTombolBulat.besar,
        _hiasan = false;
 
@@ -115,13 +116,17 @@ class TombolBulat extends StatelessWidget {
       );
     }
     return switch (nada) {
-      NadaTombolBulat.navy => (s.primary, s.onPrimary, BorderSide.none),
+      NadaTombolBulat.biru => (s.primary, s.onPrimary, BorderSide.none),
       NadaTombolBulat.putih => (
         s.surface,
         s.onSurface,
         BorderSide(color: s.outlineVariant, width: Elevasi.garis),
       ),
-      NadaTombolBulat.kuning => (s.secondary, s.onSecondary, BorderSide.none),
+      NadaTombolBulat.aksen => (
+        s.primaryContainer,
+        s.onPrimaryContainer,
+        BorderSide(color: s.primary, width: Elevasi.garis),
+      ),
       NadaTombolBulat.navyUbin => (
         context.warna.tintaUbin,
         context.warna.kertasUbin,
@@ -141,7 +146,9 @@ class TombolBulat extends StatelessWidget {
     final (isi, tintaIkon, garis) = warnaDari(context, nada, aktif: aktif);
     final gambar = SizedBox.square(
       dimension: ukuran.sisi,
-      child: Center(child: Icon(ikon, size: ukuran.ikon, color: tintaIkon)),
+      child: Center(
+        child: Icon(ikon, size: ukuran.ikon, color: tintaIkon),
+      ),
     );
     if (_hiasan) {
       return ExcludeSemantics(

@@ -5,79 +5,95 @@ ditentukan. Layar dan widget **tidak** menulis `Color(0x...)`, `Colors.*`,
 `SizedBox(height: 12)`, atau `fontSize: 14`; semuanya lewat token di bawah.
 Gerbang desain menjaga aturan ini: `test/tema/token_only_test.dart` (ratchet),
 `kontras_tema_test.dart`, `token_tema_test.dart`, `tema_sidik_test.dart`,
-`token_bento_test.dart`, `anti_slop_test.dart`. Standar lengkap:
-`docs/standar-kualitas-desain.md`.
+`token_bento_test.dart` (mencocokkan kode ke `docs/desain-ulang/tokens.json`),
+`anti_slop_test.dart`. Standar lengkap: `docs/standar-kualitas-desain.md`.
 
-Arah desain "Bento Lab" (menggantikan "Jejak", paket di `docs/desain-ulang/`):
-navy korporat `#0B1F4B` sebagai warna utama, empat ubin pastel yang masing-masing
-terikat ke satu makna status (koral gagal, kuning awas, hijau lulus, langit
-tunggu), Material 3 datar, tombol pil, panel 28 dan ubin 32, status selalu ikon
-+ kata. Kobalt `#043EA1` (warna logo PT Sidik) hanya untuk aset merek. Mode
-terang dan gelap (gelap: titik awal, belum final).
+Arah desain: **tenang, formal, ringkas** (REVISI 16 Nov 2026; catatan
+penerapan di `docs/desain-ulang/REVISI-16NOV.md`; menggantikan "Bento Lab").
+Latar abu kebiruan sangat muda `#F4F7FB`, permukaan putih, navy `#102A43` untuk
+judul dan teks, biru `#1769C2` untuk tombol utama dan tindakan, biru muda
+`#EAF3FF` untuk pilihan aktif (selalu dengan tepi biru atau indikator), empat
+status bertinta GELAP di atas warna MUDA (hijau, krem/amber, merah muda, biru
+kelabu), selalu ikon + kata. Warna hanya untuk status dan tindakan; kartu
+netral. Kartu 16, tombol 10, isian dan saringan 12, lencana 6; lingkaran
+sungguhan saja yang pil. Material 3 datar tanpa bayangan. Kobalt `#043EA1`
+(warna logo PT Sidik) hanya untuk aset merek. Mode terang dan gelap (gelap:
+titik awal, belum ikut ditinjau di revisi).
 
 | Berkas | Isi |
 |---|---|
-| `palet_sidik.dart` | Warna mentah. SATU-SATUNYA berkas boleh `Color(0x...)`. Navy, ubin status, netral terang/gelap, `garisTegas` (tepi kontrol 3:1), `galat` (merah tua), `kobaltLogo`. |
-| `warna_sidik.dart` | `WarnaSidik` (ThemeExtension): warna status (lulus/awas/gagal/tunggu) + merah KAN; pintasan `context.warna`, `context.skema`, `context.teks`. Terang: tinta keempat status navy di atas ubin pastel. Gelap: tinta pastel di atas latar gelap. Sejak P2 tinta UBIN dipisah dari tinta HALAMAN: `ubinLulus/Awas/Gagal/Tunggu` (pastel), `tintaUbin` (navy), `kertasUbin` (putih) sama di dua tema (ubin Bento tetap terang di mode gelap); teks di atas ubin memakai `tintaUbin`, teks di halaman memakai `lulus` dan kawan-kawannya. Pasangannya: `StatusTampil.ubin`, `ubinDari`, `diAtasUbin`. |
-| `spasi.dart` | `Spasi.xs/sm/md/lg/xl/xxl` (4/8/12/16/24/32), `Spasi.sisi` (margin halaman 16), `Spasi.antarUbin` (12), `Spasi.bagian` (32), `Spasi.batasKompak` (340 dp), `Spasi.daftar(context)`, batas tablet (600 dp), lebar isi (720 dp), dan `lebarLebar` (1040 dp, layar dua kolom: Beranda). |
-| `bentuk.dart` | `Bentuk.ikon/kapsul/panel/ubin/dock/pil` (16/22/28/32/36/999) dan `stempel` (15). Nama lama dipertahankan: `kontrol` = ikon, `kartu` = panel, `utama` = pil, `lembar` = panel; `kecil` tetap 4 (tik, tooltip). |
-| `elevasi.dart` | `Elevasi.datar/rendah/lembar/garis`. Kedalaman dari garis halus, bukan bayangan tebal. Bayangan dock (satu-satunya, tokens.json `bayanganDock`): `Elevasi.dockGeser/dockBlur/dockOpasitas` (16/32/0,28), dipakai `DockNavigasi`. |
-| `ukuran.dart` | `UkuranIkon` (16/24/32/48), `AreaSentuh.minimum` (48 dp), `UkuranBaris` (baris 72, tombol utama 56, kolom angka 56), `UkuranTik` (motif jejak), `SkalaHuruf` (teks besar dijepit 1,15x; nomor tidak di bawah 12 sp efektif). Bento Lab: `UkuranKontrol` (tombol bulat, saringan, segmen, kolom cari, sakelar, stempel), `UkuranUbin` (baris menu, ubin alat/pasangan/menu, kapsul, avatar), `UkuranDock` (64, butir 48, melayang 16, ikon 22/20), `UkuranVisual`; P2 menambah ikon (`UkuranIkon.stempel/tombol/tombolBesar`), padding komponen, keluar visual, dan `UkuranFokus` (cincin fokus papan ketik: celah 2 + tebal 2, di luar isi). P3a: `UkuranAuth` (layar auth: hero 330, kartu menumpang 36, plat logo 104/80; dipakai `lib/screens/auth/kerangka_auth.dart`). |
-| `tipografi.dart` | Skala Inter sepuluh ukuran (sembilan di `TextTheme`, 64 di `TipografiSidik.angkaSorot`), `.tabular` untuk angka selebar tetap, `.nomor` untuk nomor (selebar tetap + nol bergaris). `beratTebal` = 700 (utang: desain meminta 800). |
+| `palet_sidik.dart` | Warna mentah. SATU-SATUNYA berkas boleh `Color(0x...)`. Teks dan aksi (`navy`, `biru`, `biruMuda`), status muda (`hijau`, `kuning`, `koral`, `langit`) + tintanya (`hijauTinta`, `kuningTinta`, `langitTinta`, `galat`), netral terang (`latar`, `kartu`, `latarTinggi`, `teksKedua`, `garis`, `garisTegas`), tema gelap, `kobaltLogo`. Nama lama (`kuning`, `koral`, ...) dipertahankan tetapi nilainya sekarang warna MUDA status. |
+| `warna_sidik.dart` | `WarnaSidik` (ThemeExtension): status halaman (`lulus`/`awas`/`gagal`/`tunggu` = tinta, `...Latar` = latar muda), warna ubin ringkasan (`ubinLulus`... sama di dua tema; `tintaUbin` navy; `kertasUbin` putih; `ubinBiru` kepala layar masuk), merah KAN; pintasan `context.warna`, `context.skema`, `context.teks`. Pasangannya: `StatusTampil.warna` (halaman), `ubinDari`, `diAtasUbin`. |
+| `spasi.dart` | `Spasi.xs/sm/md/lg/xl/xxl` (4/8/12/16/24/32), `Spasi.sisi` (margin halaman 16), `Spasi.antarUbin` (12), `Spasi.bagian`, `Spasi.batasKompak` (340 dp), `Spasi.daftar(context)`, batas tablet (600 dp), lebar isi (720 dp), dan `lebarLebar` (1040 dp, layar dua kolom: Beranda). |
+| `bentuk.dart` | `Bentuk.stempel/tombol/ikon/kapsul/panel/ubin/penanda/pil` (6/10/12/12/16/16/8/999). `pil` HANYA untuk lingkaran sungguhan. Nama lama dipertahankan: `kontrol` = ikon, `kartu` = panel, `utama` = tombol, `lembar` = panel; `kecil` tetap 4 (tik, tooltip). |
+| `elevasi.dart` | `Elevasi.datar/rendah/lembar/garis`. Kedalaman dari garis halus, tidak ada bayangan (bilah navigasi = garis atas 1 dp). |
+| `ukuran.dart` | `UkuranIkon`, `AreaSentuh.minimum` (48 dp), `UkuranBaris` (baris 64, tombol utama 48, kolom angka 48), `UkuranTik`, `SkalaHuruf`, `UkuranKontrol` (tombol bulat, saringan 40, segmen 48, kolom cari 48, lencana 24), `UkuranUbin` (baris menu 56, ubin alat 144/160, ubin pasangan 132, ubin menu 124, kapsul), `UkuranBilah` (bilah navigasi bawah: tinggi 64, ikon 24, indikator 56 x 32, label sampai 1,3x), `UkuranFokus` (cincin fokus papan ketik), `UkuranVisual`, `UkuranAuth` (kepala layar masuk 240). |
+| `tipografi.dart` | Inter 400/500/600 untuk teks dan IBM Plex Mono untuk angka dan kode. `.tabular` untuk angka selebar tetap, `.nomor` untuk nomor (IBM Plex Mono + nol bergaris). `beratTebal` = 600. |
 | `tema_sidik.dart` | `TemaSidik.terang` / `TemaSidik.gelap`: `ThemeData` yang menema semua komponen Material. |
 
 ## Cara pakai
 
 ```dart
 final t = context.teks;      // TextTheme
-final s = context.skema;     // ColorScheme (primary = navy)
+final s = context.skema;     // ColorScheme (primary = biru aksi)
 final w = context.warna;     // WarnaSidik (status, merah KAN)
 
 Padding(
   padding: Spasi.kartu,
-  child: Text('Nomor', style: t.titleSmall?.tabular),
+  child: Text('Nomor', style: t.titleSmall?.nomor),
 );
 
-// Angka sorot (64/60): bukan slot TextTheme.
+// Angka sorot (32/36 mono): bukan slot TextTheme.
 Text('12', style: TipografiSidik.angkaSorot(teks: s.onSurface));
 ```
 
 ## Skala tipografi
 
-| Tingkat | Ukuran/baris | Berat desain | Untuk |
+| Tingkat | Ukuran/baris | Berat | Untuk |
 |---|---|---|---|
-| angka sorot | 64/60 | 800, selebar tetap | sisa hari di ubin alat Beranda (`angkaSorot`) |
-| angka kartu | 44/48 | 800, selebar tetap | sisa hari di ubin alat dan detail alat (displayLarge) |
-| kalimat utama | 32/38 | 800 | kalimat utama Beranda dan paket (displayMedium) |
-| judul layar | 28/34 | 800 | judul layar tab, angka KPI, sambutan (displaySmall) |
-| nama | 22/28 | 800 | nama alat/akun, nomor order (headline*) |
-| judul app bar | 20/26 | 800 | judul app bar dan dialog (titleLarge) |
-| judul bagian | 17/24 | 800 | judul bagian dan ubin (titleMedium) |
-| label | 16/24 | 700 | label tombol dan baris (titleSmall, labelLarge) |
-| isi bacaan | 16/24 | 400 | teks bacaan (body*) |
-| keterangan | 14/20 | 500 | merk, tanggal, nomor seri, bantuan (bodySmall) |
-| stempel | 12/16 | 700 | stempel status, label navigasi (labelMedium/Small) |
+| angka sorot | 32/36 mono | 600 | sisa hari di kartu alat Beranda (`angkaSorot`) |
+| angka kartu | 28/32 mono | 600 | sisa hari di kartu alat dan detail alat (displayLarge) |
+| kalimat utama | 24/30 | 600 | kalimat utama Beranda dan paket (displayMedium) |
+| judul layar | 24/30 | 600 | judul layar tab, angka KPI, sambutan (displaySmall) |
+| nama | 20/26 | 600 | nama alat/akun, nomor order (headline*) |
+| judul app bar | 18/24 | 600 | judul app bar dan dialog (titleLarge) |
+| judul bagian | 16/22 | 600 | judul bagian dan ubin (titleMedium) |
+| label | 14/20 | 500 | label tombol dan baris (titleSmall, labelLarge) |
+| isi bacaan | 16/24 | 400 | teks bacaan (bodyLarge) |
+| isi | 14/20 | 400 | teks isi (bodyMedium) |
+| keterangan | 13/18 | 400 | merk, tanggal, nomor seri, bantuan (bodySmall) |
+| lencana | 12/16 | 600 | lencana status, label bilah navigasi (labelMedium/Small) |
 
-Berat 800 TIDAK tampil: Inter yang dibundel hanya punya 400/500/600/700 dan font
-baru dilarang, jadi `TipografiSidik.beratTebal` = 700 (utang desain; naikkan ke
-`FontWeight.w800` saat `Inter-ExtraBold.ttf` ditambahkan). Daftar izin ukuran
-`{64, 44, 32, 28, 22, 20, 17, 16, 14, 12}` ada di `tema_sidik_test.dart`;
-minimum 12 sp.
+Bold (700) tidak dipakai di kode (dipindai `tema_sidik_test.dart`: tak ada
+`FontWeight.bold/w700/w800` di layar dan widget). `Inter-Bold.ttf` MASIH
+dibundel (dideklarasikan di `pubspec.yaml` dan dimuat helper tes); membuangnya =
+PR bersih-bersih tersendiri. `tema_sidik_test.dart` menjaga agar tak ada berat yang tak punya
+berkasnya. Daftar izin ukuran `{32, 28, 24, 20, 18, 16, 14, 13, 12}`; minimum 12
+sp. IBM Plex Mono dibundel di `assets/fonts` (SIL OFL, lisensi di
+`LICENSE-IBMPlexMono.txt`), tidak diunduh saat jalan.
 
 ## Aturan warna
 
 - Status: `lulus` (berlaku, selesai), `awas` (segera jatuh tempo), `gagal`
   (lewat jadwal, dibatalkan, tidak memenuhi toleransi), `tunggu` (diproses),
-  netral (tidak aktif, riwayat). Selalu dengan ikon dan teks: di tema terang
-  tinta keempatnya sama (navy), pembedanya latar + ikon + kata.
+  netral (tidak aktif, riwayat). Selalu dengan ikon dan teks. Tema terang: tinta
+  gelap (hijau gelap, amber gelap, merah gelap, biru tua) di atas warna muda
+  status; tinta berjenjang terangnya (selisih > 0,02) supaya tetap terbaca di
+  cetakan hitam-putih. Tema gelap: tinta pastel di atas latar gelap.
+- Warna muda status hanya untuk MAKNANYA. Krem (awas) = "perlu diperiksa" / peringatan
+  nyata (segera jatuh tempo, perlu diulang, digantikan, offline, sesi berakhir): bukan
+  warna bawaan ubin ringkasan atau keadaan kosong (netral/putih). Nama lama
+  `PaletSidik.kuning` menyesatkan: artinya krem peringatan.
+- Ikon dialog (`AlertDialog.icon`) memakai `dialogTheme.iconColor` = `primary`; bawaan
+  Material 3 (`secondary`) putih di tema ini dan tak terlihat (dijaga
+  `test/tema/ikon_dialog_test.dart`).
 - Merah KAN (`WarnaSidik.kanMerah`) HANYA untuk `LencanaKan`; bukan warna galat.
   Galat isian dan tombol bahaya: `ColorScheme.error` (`PaletSidik.galat`).
-- `teksKedua` tidak di atas koral (3,3:1): pakai navy. `garis` bukan tepi kontrol
-  (1,4:1): pakai `garisTegas` (`ColorScheme.outline`).
-- Lulus, awas, gagal, dan tunggu harus beda terangnya (luminans > 0,02), bukan
-  cuma rona; diukur pada ubin (terang) atau tinta (gelap).
-- Mengubah satu nilai di `palet_sidik.dart`: jalankan
-  `flutter test test/tema`. `token_bento_test.dart` mencocokkan nilai dengan
+- `garis` bukan tepi kontrol (1,3:1): pakai `garisTegas` (`ColorScheme.outline`).
+  `biruMuda` bukan satu-satunya penanda pilihan aktif (1,1:1): selalu dengan tepi
+  biru, ikon terisi, atau indikator.
+- Mengubah satu nilai di `palet_sidik.dart`: jalankan `flutter test test/tema`.
+  `token_bento_test.dart` mencocokkan nilai dengan
   `docs/desain-ulang/tokens.json`; ubah keduanya bersama.
 
 Aset terkait di luar Dart: `android/app/src/main/res` (ikon adaptif, splash)

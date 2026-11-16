@@ -445,10 +445,20 @@ class _VisualUji extends StatelessWidget {
   final IconData ikon;
 
   @override
-  Widget build(BuildContext context) => FittedBox(
-    // Ubin tetap pastel di dua tema: gambar alat memakai tinta ubin (navy).
-    child: Icon(ikon, color: context.warna.tintaUbin),
-  );
+  Widget build(BuildContext context) {
+    // Ubin ringkasan berwarna muda di dua tema (tinta navy); kartu alat netral
+    // mengikuti permukaan tema (gelap di tema gelap, tinta terang).
+    final latar = Material.maybeOf(context)?.color;
+    final gelap =
+        latar != null &&
+        ThemeData.estimateBrightnessForColor(latar) == Brightness.dark;
+    return FittedBox(
+      child: Icon(
+        ikon,
+        color: gelap ? context.skema.onSurface : context.warna.tintaUbin,
+      ),
+    );
+  }
 }
 
 /// Dua ubin berdampingan; satu kolom di lebar < [Spasi.batasKompak] (aturan
@@ -463,7 +473,11 @@ class _Pasangan extends StatelessWidget {
     if (MediaQuery.sizeOf(context).width < Spasi.batasKompak) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [a, const SizedBox(height: Spasi.antarUbin), b],
+        children: [
+          a,
+          const SizedBox(height: Spasi.antarUbin),
+          b,
+        ],
       );
     }
     return Row(
@@ -501,7 +515,7 @@ Widget galeriBento() {
       ),
       // Keadaan mati TIDAK masuk galeri kontras: warna mati sengaja redup
       // (pengecualian WCAG untuk kontrol nonaktif); diuji di widget test.
-      const _Catatan('TombolBulat: cari 44, kembali 48, aksi 52'),
+      const _Catatan('TombolBulat: cari 36, kembali 48, aksi 52'),
       Wrap(
         spacing: Spasi.md,
         runSpacing: Spasi.md,
@@ -511,7 +525,7 @@ Widget galeriBento() {
           TombolBulat.aksi(semantik: 'Buka alat', onTap: () {}),
           TombolBulat.aksi(
             semantik: 'Buka paket',
-            nada: NadaTombolBulat.navy,
+            nada: NadaTombolBulat.biru,
             onTap: () {},
           ),
         ],
@@ -536,7 +550,7 @@ Widget galeriBento() {
         terpilih: 1,
         onPilih: (_) {},
       ),
-      const _Catatan('Stempel pil: pengecualian, normal, diproses, netral'),
+      const _Catatan('Lencana status: pengecualian, normal, diproses, netral'),
       Wrap(
         spacing: Spasi.sm,
         runSpacing: Spasi.sm,
@@ -548,7 +562,9 @@ Widget galeriBento() {
           Stempel(statusBerlaku(StatusBerlaku.tidakAktif)),
         ],
       ),
-      const _Catatan('UbinAlat: gagal, awas, lulus, tunggu, tanpa jadwal'),
+      const _Catatan(
+        'UbinAlat (kartu netral): gagal, awas, lulus, tunggu, tanpa jadwal',
+      ),
       UbinAlat(
         nama: 'Oven Memmert',
         status: statusAlat(StatusKalibrasi.lewat),
@@ -602,7 +618,7 @@ Widget galeriBento() {
         // contoh, supaya ikon contoh bertinta navy tidak dinilai di atas gelap.
         onTap: () {},
       ),
-      const _Catatan('UbinAlat varian Beranda (232, angka 64)'),
+      const _Catatan('UbinAlat varian Beranda (160, angka 32)'),
       UbinAlat(
         nama: 'Oven Memmert',
         status: statusAlat(StatusKalibrasi.lewat),
@@ -648,7 +664,7 @@ Widget galeriBento() {
           onTap: () {},
         ),
       ),
-      const _Catatan('PanelSidik: padding 6 (baris) dan 18 (isi)'),
+      const _Catatan('PanelSidik: padding 4 (baris) dan 16 (isi)'),
       PanelSidik(
         padding: PanelSidik.paddingBaris,
         anak: [

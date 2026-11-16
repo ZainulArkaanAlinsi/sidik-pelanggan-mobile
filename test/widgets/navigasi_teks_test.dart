@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/core/tema/bentuk.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
+import 'package:sidik_pelanggan/core/tema/tipografi.dart';
 import 'package:sidik_pelanggan/core/tema/ukuran.dart';
 import 'package:sidik_pelanggan/widgets/bagian.dart';
 import 'package:sidik_pelanggan/widgets/keadaan_teks.dart';
@@ -82,7 +83,7 @@ void main() {
             )
             .text
             .style!;
-        expect(gayaTerpilih.fontWeight, FontWeight.w700);
+        expect(gayaTerpilih.fontWeight, TipografiSidik.beratTebal);
         final gayaLain = tester
             .widget<RichText>(find.textContaining('Semua', findRichText: true))
             .text

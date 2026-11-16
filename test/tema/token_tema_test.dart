@@ -13,34 +13,36 @@ import 'package:sidik_pelanggan/widgets/status_tampil.dart';
 
 /// Gerbang desain Pelanggan, pelengkap: aturan token yang bukan kontras.
 ///
-/// - Huruf: minimum 12 sp di semua slot `TextTheme`, keluarga Inter. Daftar izin
-///   ukuran huruf ada di `tema_sidik_test.dart` (satu tempat).
-/// - Ukuran sentuh: aksi utama (FilledButton) 56 dp, semua aksi lain 48 dp.
-/// - Bentuk: radius tema hanya dari set `Bentuk` Bento Lab (16, 22, 28, 32,
-///   36, 999, plus 15 stempel dan 4 tik/tooltip).
+/// - Huruf: minimum 12 sp di semua slot `TextTheme`, keluarga Inter (angka
+///   kartu: IBM Plex Mono). Daftar izin ukuran huruf ada di
+///   `tema_sidik_test.dart` (satu tempat).
+/// - Ukuran sentuh: semua aksi (utama dan lain) 48 dp (REVISI: tombol 44-48).
+/// - Bentuk: radius tema hanya dari set `Bentuk` (6, 10, 12, 16, 999, plus 4
+///   tik/tooltip).
 /// - Datar: kartu, app bar, dan navigasi tanpa elevasi.
 /// - Status: tiap stempel membawa ikon DAN kata, tidak hanya warna; istilah
 ///   "Lewat jadwal"/"Masa berlaku berakhir", bukan "kedaluwarsa".
 void main() {
   // Nilai yang HARUS dipegang token. Mengubahnya = keputusan desain, bukan
   // penyesuaian tes: jelaskan di PR.
-  const tinggiAksiUtama = 56.0;
+  const tinggiAksiUtama = 48.0;
   const tinggiAksi = 48.0;
   const nilaiBentuk = <String, double>{
-    // Bento Lab (tokens.json `sudut`).
-    'ikon': 16,
-    'kapsul': 22,
-    'panel': 28,
-    'ubin': 32,
-    'dock': 36,
+    // REVISI 16 Nov (tokens.json `sudut`).
+    'stempel': 6,
+    'tombol': 10,
+    'ikon': 12,
+    'kapsul': 12,
+    'panel': 16,
+    'ubin': 16,
+    'penanda': 8,
     'pil': 999,
-    'stempel': 15,
-    // Nama lama (Jejak), dipertahankan sebagai alias atau nilai sendiri.
+    // Nama lama, dipertahankan sebagai alias atau nilai sendiri.
     'kecil': 4,
-    'kontrol': 16,
-    'kartu': 28,
-    'utama': 999,
-    'lembar': 28,
+    'kontrol': 12,
+    'kartu': 16,
+    'utama': 10,
+    'lembar': 16,
   };
 
   final tema = <(String, ThemeData Function())>[
@@ -48,7 +50,7 @@ void main() {
     ('gelap', () => TemaSidik.gelap),
   ];
 
-  group('huruf: minimum 12 sp, keluarga Inter', () {
+  group('huruf: minimum 12 sp, keluarga Inter (angka: IBM Plex Mono)', () {
     for (final (nama, bangun) in tema) {
       test('tema $nama', () {
         final t = bangun().textTheme;
@@ -76,7 +78,12 @@ void main() {
             greaterThanOrEqualTo(12),
             reason: '${e.key} di bawah 12 sp',
           );
-          expect(e.value!.fontFamily, TipografiSidik.keluarga);
+          expect(
+            e.value!.fontFamily,
+            e.key == 'displayLarge'
+                ? TipografiSidik.keluargaAngka
+                : TipografiSidik.keluarga,
+          );
         }
       });
     }
@@ -108,7 +115,7 @@ void main() {
     });
   });
 
-  group('ukuran sentuh: aksi utama 56, sisanya 48', () {
+  group('ukuran sentuh: semua aksi 48', () {
     for (final (nama, bangun) in tema) {
       test('tema $nama', () {
         final t = bangun();
@@ -130,13 +137,14 @@ void main() {
   group('bentuk: radius hanya dari set Bentuk', () {
     test('nilai token Bentuk', () {
       expect(<String, double>{
+        'stempel': Bentuk.stempel,
+        'tombol': Bentuk.tombol,
         'ikon': Bentuk.ikon,
         'kapsul': Bentuk.kapsul,
         'panel': Bentuk.panel,
         'ubin': Bentuk.ubin,
-        'dock': Bentuk.dock,
+        'penanda': Bentuk.penanda,
         'pil': Bentuk.pil,
-        'stempel': Bentuk.stempel,
         'kecil': Bentuk.kecil,
         'kontrol': Bentuk.kontrol,
         'kartu': Bentuk.kartu,
@@ -145,15 +153,16 @@ void main() {
       }, nilaiBentuk);
     });
 
-    test('nama lama menunjuk token Bento Lab yang sepadan', () {
+    test('nama lama menunjuk token yang sepadan', () {
       expect(Bentuk.kontrol, Bentuk.ikon);
       expect(Bentuk.kartu, Bentuk.panel);
-      expect(Bentuk.utama, Bentuk.pil);
+      expect(Bentuk.utama, Bentuk.tombol);
       expect(Bentuk.lembar, Bentuk.panel);
-      // `kecil` sengaja BUKAN alias: tik jejak dan tooltip tetap persegi 4;
-      // stempel pindah ke `Bentuk.stempel` di paket komponen (P2).
+      // `kecil` sengaja BUKAN alias: tik jejak dan tooltip tetap persegi 4.
       expect(Bentuk.kecil, 4);
-      expect(Bentuk.stempel, UkuranKontrol.stempel / 2);
+      // Lencana status: sudut 6 pada tinggi 24 (bukan pil).
+      expect(Bentuk.stempel, 6);
+      expect(UkuranKontrol.stempel, 24);
     });
 
     // Set radius yang boleh dipakai tema = nilai di tabel `nilaiBentuk` (yang
@@ -215,15 +224,15 @@ void main() {
             reason: '${e.key} memakai radius ${e.value}, di luar set Bentuk',
           );
         }
-        // Bento Lab: tombol pil, panel 28, dialog 28, lembar bawah 32 (sudut
-        // atas), toast/snack 22, isian 16.
-        expect(dipakai['FilledButton'], Bentuk.pil);
-        expect(dipakai['OutlinedButton'], Bentuk.pil);
-        expect(dipakai['TextButton'], Bentuk.pil);
+        // Tombol 10, kartu 16, dialog 16, lembar bawah 16 (sudut atas),
+        // saringan dan toast/snack 12, isian 12.
+        expect(dipakai['FilledButton'], Bentuk.tombol);
+        expect(dipakai['OutlinedButton'], Bentuk.tombol);
+        expect(dipakai['TextButton'], Bentuk.tombol);
         expect(dipakai['Card'], Bentuk.panel);
         expect(dipakai['Dialog'], Bentuk.panel);
         expect(dipakai['BottomSheet'], Bentuk.ubin);
-        expect(dipakai['Chip'], Bentuk.pil);
+        expect(dipakai['Chip'], Bentuk.kapsul);
         expect(dipakai['SnackBar'], Bentuk.kapsul);
         expect(dipakai['Input'], Bentuk.ikon);
         expect(dipakai['Input fokus'], Bentuk.ikon);

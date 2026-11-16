@@ -616,11 +616,10 @@ void main() {
         }
         expect(tester.takeException(), isNull);
       }
-      // Badge yang sama-sama turun = tinggi sama (360: kedua badge turun).
-      // Di 390 dan 412 "Memenuhi toleransi" (169 dp) masih muat di samping
-      // tanggal terbit sedangkan "Tidak memenuhi toleransi" (207 dp) turun:
-      // tingginya mengikuti isi, FAIL tidak pernah lebih pendek.
-      expect(tinggi[360]![0], tinggi[360]![1]);
+      // Lencana status kini lebih kecil (24 dp, 12/600): "Memenuhi toleransi"
+      // masih muat di samping tanggal terbit sedangkan "Tidak memenuhi
+      // toleransi" lebih lebar dan turun: tinggi baris mengikuti isi, FAIL
+      // tidak pernah lebih pendek dari PASS.
       for (final h in tinggi.values) {
         expect(h[1], greaterThanOrEqualTo(h[0]));
       }
@@ -1593,14 +1592,16 @@ void main() {
     });
 
     testWidgets('tema gelap: baris dan panel memakai permukaan tema, badge '
-        'tetap pastel terang, tanpa luapan', (tester) async {
+        'mengikuti tema (latar gelap bernada status), tanpa luapan', (
+      tester,
+    ) async {
       await _buka(tester, _Layanan(_semua()), gelap: true);
       expect(tester.takeException(), isNull);
-      final w = WarnaSidik.terang;
+      final w = WarnaSidik.gelap;
       final gelap = TemaSidik.gelap.colorScheme;
       expect(_latarBaris(tester, _baris('CAL/2026/09/0001')), gelap.surface);
-      expect(_latarStempel(tester, _baris('CAL/2026/09/0001')), w.ubinLulus);
-      expect(_latarStempel(tester, _baris('CAL/2026/09/0002')), w.ubinGagal);
+      expect(_latarStempel(tester, _baris('CAL/2026/09/0001')), w.lulusLatar);
+      expect(_latarStempel(tester, _baris('CAL/2026/09/0002')), w.gagalLatar);
 
       await _buka(tester, _Layanan(const []), gelap: true);
       expect(

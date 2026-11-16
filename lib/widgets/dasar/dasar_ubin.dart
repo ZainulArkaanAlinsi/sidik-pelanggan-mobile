@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../../core/motion/app_motion.dart';
 import '../../core/motion/gerak_bento.dart';
+import '../../core/tema/elevasi.dart';
 import '../../core/tema/ukuran.dart';
+import '../../core/tema/warna_sidik.dart';
 import 'cincin_fokus.dart';
 
-/// Kerangka bersama ubin Bento ([UbinAlat], [UbinRingkas], [UbinMenu]): latar
-/// berwarna, sudut besar, tinggi MINIMUM (tumbuh bersama huruf; jangan dikunci),
-/// visual di sudut kanan bawah yang keluar dari tepi dan dipotong sudut ubin,
-/// satu simpul tombol untuk pembaca layar, umpan balik tekan, dan cincin fokus.
+/// Kerangka bersama ubin ([UbinAlat], [UbinRingkas], [UbinMenu]): latar
+/// (putih netral, atau warna muda status untuk ubin ringkasan), garis halus 1 dp,
+/// sudut 16, tinggi MINIMUM (tumbuh bersama huruf; jangan dikunci), visual di
+/// sudut kanan bawah yang keluar dari tepi dan dipotong sudut ubin, satu simpul
+/// tombol untuk pembaca layar, umpan balik tekan, dan cincin fokus.
 ///
 /// - [visual] digambar DI BAWAH teks dan tanpa semantik: murni hiasan, tidak
 ///   pernah menutupi teks. Ukurannya [ukuranVisual]; keluar dari tepi kanan
@@ -54,7 +57,13 @@ class DasarUbin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bentuk = RoundedRectangleBorder(borderRadius: sudut);
+    final bentuk = RoundedRectangleBorder(
+      borderRadius: sudut,
+      side: BorderSide(
+        color: context.skema.outlineVariant,
+        width: Elevasi.garis,
+      ),
+    );
     final isi = ConstrainedBox(
       constraints: BoxConstraints(minHeight: tinggiMin),
       child: Stack(
@@ -102,8 +111,6 @@ class DasarUbin extends StatelessWidget {
         child: TekanSkala(child: ubin),
       );
     }
-    return urutan == null
-        ? ubin
-        : MasukBerurutan(indeks: urutan!, child: ubin);
+    return urutan == null ? ubin : MasukBerurutan(indeks: urutan!, child: ubin);
   }
 }

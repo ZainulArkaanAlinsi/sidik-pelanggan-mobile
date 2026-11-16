@@ -10,19 +10,19 @@ import '../core/tema/ukuran.dart';
 import '../core/tema/warna_sidik.dart';
 import 'dasar/cincin_fokus.dart';
 
-/// Segmen pil Bento Lab untuk 2 sampai beberapa pilihan setara (mis. "Daftar |
-/// Arsip"): wadah putih setinggi 56 (padding 6, bentuk pil) berisi pil navy
-/// setinggi 44 (radius 22) yang BERGESER ke pilihan baru dalam 240 ms
+/// Segmen untuk 2 sampai beberapa pilihan setara (mis. "Daftar | Arsip"):
+/// wadah putih setinggi 48 (padding 4, sudut 12) berisi penanda biru muda
+/// bertepi biru setinggi 40 yang BERGESER ke pilihan baru dalam 240 ms
 /// (`AppMotion.sedang`; langsung bila "kurangi gerak" menyala).
 ///
-/// Tinggi 56 dan 44 adalah minimum: pada huruf besar segmen tumbuh. Kata 14/700,
-/// membungkus bila perlu, tidak dipotong. Seluruh wadah dapat diketuk: tiap
-/// pilihan mendengar ketukan di bagiannya dari tepi ke tepi (tinggi 56, >= 48).
+/// Tinggi 48 dan 40 adalah minimum: pada huruf besar segmen tumbuh. Kata
+/// 13/500, membungkus bila perlu, tidak dipotong. Seluruh wadah dapat diketuk:
+/// tiap pilihan mendengar ketukan di bagiannya dari tepi ke tepi (tinggi 48).
 /// Pembaca layar menerima tiap pilihan sebagai tombol dengan `selected`; warna
 /// bukan satu-satunya penanda. [onPilih] null = semua mati.
 ///
-/// Lapisan: kata tak terpilih di dasar, pil navy bergeser di atasnya membawa
-/// salinan kata putih (dipotong oleh pil), lalu lapisan ketuk transparan. Salinan
+/// Lapisan: kata tak terpilih di dasar, penanda bergeser di atasnya membawa
+/// salinan kata navy (dipotong oleh penanda), lalu lapisan ketuk transparan. Salinan
 /// kata digambar dengan `RichText` (bukan `Text`) dan keluar dari pembaca layar,
 /// jadi `find.text` dan semantik hanya melihat satu kata per pilihan.
 class SegmenPil extends StatelessWidget {
@@ -49,9 +49,9 @@ class SegmenPil extends StatelessWidget {
         ? s.onSurface
         : s.onSurface.withValues(alpha: _alfaMati);
     final isiGeser = aktif
-        ? s.primary
+        ? s.primaryContainer
         : s.onSurface.withValues(alpha: _alfaIsiMati);
-    final tintaGeser = aktif ? s.onPrimary : tintaDasar;
+    final tintaGeser = aktif ? s.onPrimaryContainer : tintaDasar;
     final skalaHuruf = MediaQuery.textScalerOf(context);
 
     Widget kata(int i, {required bool salinan}) {
@@ -81,7 +81,9 @@ class SegmenPil extends StatelessWidget {
       );
       return Expanded(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: UkuranKontrol.segmenDalam),
+          constraints: const BoxConstraints(
+            minHeight: UkuranKontrol.segmenDalam,
+          ),
           child: c,
         ),
       );
@@ -106,9 +108,15 @@ class SegmenPil extends StatelessWidget {
               widthFactor: 1 / n,
               heightFactor: 1,
               child: ClipRRect(
-                borderRadius: Bentuk.sudutKapsul,
-                child: ColoredBox(
-                  color: isiGeser,
+                borderRadius: _sudutDalam,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: isiGeser,
+                    borderRadius: _sudutDalam,
+                    border: aktif
+                        ? Border.all(color: s.primary, width: Elevasi.garis)
+                        : null,
+                  ),
                   child: OverflowBox(
                     alignment: a,
                     minWidth: b.maxWidth,
@@ -157,7 +165,7 @@ class SegmenPil extends StatelessWidget {
     return Material(
       color: s.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: Bentuk.sudutPil,
+        borderRadius: Bentuk.sudutKapsul,
         side: BorderSide(color: s.outline, width: Elevasi.garis),
       ),
       child: ConstrainedBox(
@@ -168,7 +176,10 @@ class SegmenPil extends StatelessWidget {
               padding: const EdgeInsets.all(UkuranKontrol.segmenPadding),
               child: Stack(
                 fit: StackFit.passthrough,
-                children: [dasar, Positioned.fill(child: geser)],
+                children: [
+                  dasar,
+                  Positioned.fill(child: geser),
+                ],
               ),
             ),
             Positioned.fill(child: lapisKetuk),
@@ -179,6 +190,9 @@ class SegmenPil extends StatelessWidget {
   }
 
   static double _tidakNegatif(double v) => v < 0 ? 0 : v;
+
+  /// Sudut penanda: konsentris dengan wadah (sudut wadah dikurangi padding).
+  static final BorderRadius _sudutDalam = Bentuk.sudutPenanda;
 
   /// Opasitas kata dan pil saat mati (pola Material 3: 38 % dan 12 %).
   static const double _alfaMati = 0.38;
@@ -228,11 +242,11 @@ class _Sel extends StatelessWidget {
                 UkuranKontrol.segmenPadding,
               ),
               child: CincinFokus(
-                sudut: Bentuk.sudutKapsul,
+                sudut: SegmenPil._sudutDalam,
                 child: InkWell(
                   onTap: onTap,
                   customBorder: RoundedRectangleBorder(
-                    borderRadius: Bentuk.sudutKapsul,
+                    borderRadius: SegmenPil._sudutDalam,
                   ),
                   splashFactory: NoSplash.splashFactory,
                   highlightColor: Colors.transparent,
