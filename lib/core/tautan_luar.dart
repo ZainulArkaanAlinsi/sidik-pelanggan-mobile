@@ -26,8 +26,11 @@ abstract final class TautanLuar {
   /// Nomor internasional: 8 sampai 15 angka (E.164).
   static final RegExp _nomorWa = RegExp(r'^\d{8,15}$');
 
+  /// Bagian lokal tanpa `?`, `&`, dan `#`: alamat disambung langsung ke
+  /// `mailto:<alamat>?subject=...`, jadi tiga karakter itu bisa menyelipkan
+  /// header (`sidik?bcc=evil@x.com`). Selebihnya tetap seperti sebelumnya.
   static final RegExp _emailValid = RegExp(
-    r'^[A-Za-z0-9.!#$%&*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?'
+    r'^[A-Za-z0-9.!$%*+/=^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?'
     r'(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$',
   );
 

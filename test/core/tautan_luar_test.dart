@@ -240,6 +240,43 @@ void main() {
       }
     });
 
+    test('bagian lokal tidak boleh memuat ? & # (tidak bisa menyelipkan '
+        'header mailto), email sah tetap lolos', () {
+      for (final a in <String>[
+        'sidik?bcc=evil@x.com',
+        'sidik&bcc=evil@x.com',
+        'sidik#frag@x.com',
+        '?@x.com',
+        'a@x.com?bcc=evil@y.com',
+      ]) {
+        expect(TautanLuar.alamatEmail(a), isNull, reason: a);
+        expect(
+          TautanLuar.email(a, subjek: 'S', isi: 'I'),
+          isNull,
+          reason: a,
+        );
+      }
+      for (final a in <String>[
+        'sidikkalibrasi@pt-sidik.com',
+        'nama.belakang+tag@sub.example.co.id',
+        'a_b-c@x.io',
+        'o=bounce/srs@x.com',
+      ]) {
+        expect(TautanLuar.alamatEmail(a), a, reason: a);
+        expect(TautanLuar.email(a, subjek: 'S'), isNotNull, reason: a);
+      }
+      // Satu-satunya "?" di tautan adalah pembuka query yang dibangun sendiri.
+      final u = TautanLuar.email(
+        'nama.belakang+tag@sub.example.co.id',
+        subjek: 'S',
+        isi: 'I',
+      )!;
+      expect(
+        u.toString(),
+        'mailto:nama.belakang+tag@sub.example.co.id?subject=S&body=I',
+      );
+    });
+
     test('mailto dengan subjek dan isi ter-encode', () {
       final u = TautanLuar.email(
         'sidikkalibrasi@pt-sidik.com',
