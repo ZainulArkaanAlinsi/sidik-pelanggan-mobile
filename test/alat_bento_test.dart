@@ -562,13 +562,21 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.textContaining('pilih "Semua"'), findsOneWidget);
+        // Kalimat menyebut kata cari DAN saringan aktif (REVISI-1 butir 11).
+        expect(
+          find.textContaining(
+            'Tidak ada alat dengan kata "zzz" pada saringan '
+            '"Lewat jadwal"',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Hapus pencarian'), findsOneWidget);
       },
     );
 
     testWidgets(
       'saringan yang menyempitkan: satu tombol "Tampilkan semua alat" kembali '
-      'ke Semua; dengan kata cari atau tanpa saringan tidak ada tombol',
+      'ke Semua; dengan kata cari tombolnya "Hapus pencarian" (A3, R1b)',
       (tester) async {
         await _buka(tester, _server(), perusahaan: 5);
         // Belum ada alat sama sekali: tidak ada yang bisa dilonggarkan.
@@ -590,7 +598,8 @@ void main() {
         final semua = tester.widget<SaringanPil>(find.byType(SaringanPil));
         expect(semua.terpilih, 0);
 
-        // Dengan kata cari: kata itu milik kolom cari, tombol tidak ditawarkan.
+        // Dengan kata cari: tombolnya "Hapus pencarian" (bukan "Tampilkan semua
+        // alat"), dan saringan aktif disebut di kalimat.
         await _ketukPil(tester, 'Lewat jadwal');
         await tester.enterText(find.byType(TextField), 'zzz');
         await tester.pump(
@@ -599,6 +608,38 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Tidak ada yang cocok'), findsOneWidget);
         expect(find.text('Tampilkan semua alat'), findsNothing);
+        final hapus = find.widgetWithText(TombolSidik, 'Hapus pencarian');
+        expect(hapus, findsOneWidget);
+        expect(tester.getSize(hapus).height, greaterThanOrEqualTo(48));
+        expect(
+          find.textContaining('pada saringan "Lewat jadwal"'),
+          findsOneWidget,
+        );
+
+        // Ketuk: isian kosong, kata terhapus, saringan TETAP "Lewat jadwal".
+        await tester.tap(hapus);
+        await tester.pumpAndSettle();
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller!.text,
+          isEmpty,
+        );
+        expect(find.text('Hapus pencarian'), findsNothing);
+        expect(find.text('Tidak ada yang cocok'), findsNothing);
+        expect(
+          find.text('Tidak ada alat yang lewat jadwal'),
+          findsOneWidget,
+          reason: 'kembali ke keadaan kosong milik saringan, tanpa kata cari',
+        );
+        expect(
+          tester.widget<SaringanPil>(find.byType(SaringanPil)).terpilih,
+          FilterAlat.values.indexOf(FilterAlat.lewatJadwal),
+        );
+        // Mengetik kata yang sama lagi dan menekan cari tetap mencari (bukan
+        // dianggap "sudah dikirim").
+        await tester.enterText(find.byType(TextField), 'zzz');
+        await tester.testTextInput.receiveAction(TextInputAction.search);
+        await tester.pumpAndSettle();
+        expect(find.text('Tidak ada yang cocok'), findsOneWidget);
       },
     );
 
@@ -949,7 +990,7 @@ void main() {
     });
 
     testWidgets(
-      'alat nonaktif: TANPA hitung mundur, konteks "Alat nonaktif" dengan '
+      'alat nonaktif: TANPA hitung mundur, konteks "Alat tidak aktif" dengan '
       'jadwal tercatat, nama diredupkan',
       (tester) async {
         final semantik = tester.ensureSemantics();
@@ -959,7 +1000,7 @@ void main() {
         expect(
           find.descendant(
             of: u,
-            matching: find.text('Alat nonaktif, jadwal tercatat $tanggal'),
+            matching: find.text('Alat tidak aktif, jadwal tercatat $tanggal'),
           ),
           findsOneWidget,
         );
@@ -1003,13 +1044,13 @@ void main() {
             .getSemanticsData()
             .label;
         expect(kalimat, contains('Status: Tidak aktif'));
-        expect(kalimat, contains('Alat nonaktif, jadwal tercatat $tanggal'));
+        expect(kalimat, contains('Alat tidak aktif, jadwal tercatat $tanggal'));
         expect(kalimat, isNot(contains('hari')));
         semantik.dispose();
       },
     );
 
-    testWidgets('alat nonaktif tanpa jadwal: hanya "Alat nonaktif"', (
+    testWidgets('alat nonaktif tanpa jadwal: hanya "Alat tidak aktif"', (
       tester,
     ) async {
       layarHp(tester);
@@ -1029,7 +1070,9 @@ void main() {
           _server(),
         ),
       );
-      expect(find.text('Alat nonaktif'), findsOneWidget);
+      expect(find.text('Alat tidak aktif'), findsOneWidget);
+      // Satu istilah di UI: tidak ada kata "nonaktif" yang tampil.
+      expect(find.textContaining('nonaktif'), findsNothing);
       expect(find.textContaining('jadwal tercatat'), findsNothing);
       // Kartu statis (tanpa ketukan): tanpa "Lihat detail".
       expect(find.text('Lihat detail'), findsNothing);

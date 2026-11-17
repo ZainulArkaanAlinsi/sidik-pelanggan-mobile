@@ -4,6 +4,7 @@
 // tertutup papan ketik.
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:sidik_pelanggan/core/tema/spasi.dart';
@@ -193,6 +194,117 @@ void main() {
       // Kata "Email" hanya sekali di label simpul.
       expect('Email'.allMatches(d.label).length, 1);
       semantik.dispose();
+    });
+
+    // A1 (tinjauan R1b): `MergeSemantics` menyerap tombol di ujung kolom ke simpul
+    // kolom (kolom jadi tombol + tooltip ganda). Tombol tampil-sandi harus tetap
+    // simpul tombol SENDIRI yang bisa diaktifkan, dan kolom tetap bernama label.
+    group('ikonAkhir (tombol tampilkan sandi)', () {
+      Widget kolomSandi(VoidCallback onTekan, {String? galat}) => KolomIsian(
+        label: 'Sandi',
+        pengendali: TextEditingController(),
+        rahasia: true,
+        galat: galat,
+        ikonAkhir: IconButton(
+          tooltip: 'Tampilkan sandi',
+          icon: const Icon(Icons.visibility_outlined),
+          onPressed: onTekan,
+        ),
+      );
+
+      testWidgets('kolom = simpul kolom teks bernama label, BUKAN tombol dan '
+          'tanpa tooltip tombol; tombol = simpul tombol sendiri', (
+        tester,
+      ) async {
+        final semantik = tester.ensureSemantics();
+        await tester.pumpWidget(_app(kolomSandi(() {})));
+        final kolom = tester.getSemantics(_isian).getSemanticsData();
+        expect(kolom.flagsCollection.isTextField, isTrue);
+        expect(
+          kolom.flagsCollection.isButton,
+          isFalse,
+          reason: 'kolom tidak boleh menyerap tombol',
+        );
+        expect(kolom.tooltip, isEmpty, reason: 'tooltip milik tombol');
+        expect(kolom.label, contains('Sandi'));
+        expect(kolom.label, isNot(contains('Tampilkan sandi')));
+
+        final tombol = tester
+            .getSemantics(find.byType(IconButton))
+            .getSemanticsData();
+        expect(tombol.flagsCollection.isButton, isTrue);
+        expect(tombol.flagsCollection.isTextField, isFalse);
+        expect(tombol.tooltip, 'Tampilkan sandi');
+        expect(
+          tester.getSemantics(find.byType(IconButton)).id,
+          isNot(tester.getSemantics(_isian).id),
+          reason: 'dua simpul berbeda',
+        );
+        semantik.dispose();
+      });
+
+      testWidgets('nama tombol hanya sekali di seluruh pohon semantik', (
+        tester,
+      ) async {
+        final semantik = tester.ensureSemantics();
+        await tester.pumpWidget(_app(kolomSandi(() {})));
+        var jumlah = 0;
+        void telusuri(SemanticsNode n) {
+          final d = n.getSemanticsData();
+          if (d.tooltip == 'Tampilkan sandi' || d.label == 'Tampilkan sandi') {
+            jumlah++;
+          }
+          n.visitChildren((c) {
+            telusuri(c);
+            return true;
+          });
+        }
+
+        // Akar pohon semantik: naik dari simpul kolom sampai tak punya induk.
+        var akar = tester.getSemantics(_isian);
+        while (akar.parent != null) {
+          akar = akar.parent!;
+        }
+        telusuri(akar);
+        expect(jumlah, 1, reason: 'tombol terbaca dua kali = simpul ganda');
+        semantik.dispose();
+      });
+
+      testWidgets('tombol bisa diaktifkan lewat aksi ketuk pembaca layar', (
+        tester,
+      ) async {
+        final semantik = tester.ensureSemantics();
+        var ditekan = 0;
+        await tester.pumpWidget(_app(kolomSandi(() => ditekan++)));
+        // Aksi ketuk seperti yang dikirim TalkBack ke simpul tombol itu sendiri.
+        tester.semantics.performAction(
+          find.semantics.byPredicate(
+            (n) => n.getSemanticsData().tooltip == 'Tampilkan sandi',
+          ),
+          SemanticsAction.tap,
+        );
+        await tester.pump();
+        expect(ditekan, 1);
+        semantik.dispose();
+      });
+
+      testWidgets('galat tetap terbaca (simpul kolom atau anaknya) dan label '
+          'kolom utuh', (tester) async {
+        final semantik = tester.ensureSemantics();
+        await tester.pumpWidget(
+          _app(kolomSandi(() {}, galat: 'Sandi belum diisi.')),
+        );
+        expect(find.text('Sandi belum diisi.'), findsOneWidget);
+        expect(
+          find.bySemanticsLabel(RegExp('Sandi belum diisi')),
+          findsWidgets,
+        );
+        expect(
+          tester.getSemantics(_isian).getSemanticsData().label,
+          contains('Sandi'),
+        );
+        semantik.dispose();
+      });
     });
 
     testWidgets(

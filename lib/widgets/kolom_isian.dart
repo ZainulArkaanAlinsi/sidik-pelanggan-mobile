@@ -12,7 +12,9 @@ import '../core/tema/warna_sidik.dart';
 ///
 /// Tinggi kolom 48 dp ([UkuranKontrol.kolomCari]). Pembaca layar menerima
 /// SATU simpul: label + isi + bantuan atau galat (label di atas digabung ke
-/// kolomnya lewat [MergeSemantics], bukan dibaca dua kali). [petunjuk] hanya
+/// kolomnya lewat [MergeSemantics], bukan dibaca dua kali). Kecuali bila ada
+/// [ikonAkhir]: tombol itu tetap simpul tombol sendiri (label kolom lewat
+/// `Semantics(label:)`, bantuan dan galat jadi simpul anak kolom). [petunjuk] hanya
 /// contoh isi ("nama@perusahaan.com"), bukan pengganti label. Bila kolom di
 /// bawah layar dan papan ketik terbuka, kolom diberi ruang tambahan
 /// ([ruangTombol]) supaya tombol utama di bawahnya tetap terlihat di atas
@@ -72,44 +74,62 @@ class KolomIsian extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.teks;
     final s = context.skema;
+    final teksLabel = Text(
+      label,
+      style: t.labelLarge?.copyWith(
+        color: aktif ? s.onSurface : s.onSurfaceVariant,
+      ),
+    );
+    final isian = TextField(
+      controller: pengendali,
+      enabled: aktif,
+      obscureText: rahasia,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      autofillHints: autofillHints,
+      textCapitalization: textCapitalization,
+      onSubmitted: onSubmitted,
+      scrollPadding: const EdgeInsets.fromLTRB(
+        Spasi.xl,
+        Spasi.xl,
+        Spasi.xl,
+        ruangTombol,
+      ),
+      decoration: InputDecoration(
+        hintText: petunjuk,
+        helperText: bantuan,
+        helperMaxLines: 3,
+        errorText: galat,
+        errorMaxLines: 3,
+        suffixIcon: ikonAkhir,
+        constraints: const BoxConstraints(minHeight: UkuranKontrol.kolomCari),
+      ),
+    );
+
+    // Dengan [ikonAkhir], `MergeSemantics` akan menyerap tombolnya ke simpul
+    // kolom (kolom jadi "tombol" dan membawa tooltip tombol, sementara simpul
+    // tombol aslinya tetap ada: nama tombol terbaca dua kali). Maka di sini
+    // label dibaca lewat `Semantics(label:)` pada kolom, tanpa penggabungan:
+    // kolom tetap simpul kolom teks bernama label, dan tombol tetap simpul
+    // tombol sendiri yang bisa diaktifkan pembaca layar. Tanpa [ikonAkhir]
+    // label, isi, bantuan, dan galat tetap SATU simpul (digabung).
+    if (ikonAkhir != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ExcludeSemantics(child: teksLabel),
+          const SizedBox(height: jarakLabel),
+          Semantics(label: label, child: isian),
+        ],
+      );
+    }
     return MergeSemantics(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: t.labelLarge?.copyWith(
-              color: aktif ? s.onSurface : s.onSurfaceVariant,
-            ),
-          ),
+          teksLabel,
           const SizedBox(height: jarakLabel),
-          TextField(
-            controller: pengendali,
-            enabled: aktif,
-            obscureText: rahasia,
-            keyboardType: keyboardType,
-            textInputAction: textInputAction,
-            autofillHints: autofillHints,
-            textCapitalization: textCapitalization,
-            onSubmitted: onSubmitted,
-            scrollPadding: const EdgeInsets.fromLTRB(
-              Spasi.xl,
-              Spasi.xl,
-              Spasi.xl,
-              ruangTombol,
-            ),
-            decoration: InputDecoration(
-              hintText: petunjuk,
-              helperText: bantuan,
-              helperMaxLines: 3,
-              errorText: galat,
-              errorMaxLines: 3,
-              suffixIcon: ikonAkhir,
-              constraints: const BoxConstraints(
-                minHeight: UkuranKontrol.kolomCari,
-              ),
-            ),
-          ),
+          isian,
         ],
       ),
     );

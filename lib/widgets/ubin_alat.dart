@@ -29,8 +29,8 @@ import 'stempel.dart';
 ///
 /// ALAT NONAKTIF ([nonaktif]): tanpa hitung mundur sama sekali. Lencana tetap
 /// "Tidak aktif" (netral), namanya diredupkan ke teks kedua, dan tanggal
-/// jadwal, bila ada, tampil sebagai konteks "Alat nonaktif, jadwal tercatat 22
-/// Nov 2026" supaya tidak dibaca sebagai tindakan yang harus segera dilakukan.
+/// jadwal, bila ada, tampil sebagai konteks "Alat tidak aktif, jadwal tercatat
+/// 22 Nov 2026" (satu istilah dengan lencananya: "Tidak aktif") supaya tidak dibaca sebagai tindakan yang harus segera dilakukan.
 ///
 /// Tinggi [UkuranUbin.alatRingkas] adalah MINIMUM: kartu tumbuh bersama isi dan
 /// huruf. Status tidak hanya warna: lencana selalu ikon + kata. Seluruh kartu
@@ -81,7 +81,7 @@ class UbinAlat extends StatelessWidget {
   /// sendiri di samping status. Null = alat tidak sedang di lab.
   final StatusTampil? tahap;
 
-  /// Alat dinonaktifkan: tanpa hitung mundur, dengan konteks "Alat nonaktif".
+  /// Alat tidak aktif: tanpa hitung mundur, dengan konteks "Alat tidak aktif".
   final bool nonaktif;
 
   final VoidCallback? onTap;
@@ -127,8 +127,8 @@ class UbinAlat extends StatelessWidget {
     if (!nonaktif) return null;
     final t = tanggal;
     return t == null || t.isEmpty
-        ? 'Alat nonaktif'
-        : 'Alat nonaktif, jadwal tercatat $t';
+        ? 'Alat tidak aktif'
+        : 'Alat tidak aktif, jadwal tercatat $t';
   }
 
   /// Tanggal jadwal di dasar kartu: "sejak ..." bila sudah lewat, "jatuh tempo
@@ -141,6 +141,13 @@ class UbinAlat extends StatelessWidget {
     return h < 0 ? 'sejak $t' : 'jatuh tempo $t';
   }
 
+  /// Jadwal untuk pembaca layar: tanggalnya diberi kata benda ("Jadwal sejak 9
+  /// Nov 2026"), supaya tidak terdengar sebagai serpihan tanggal yatim.
+  String? get _jadwalBaca {
+    final k = keteranganJadwal;
+    return k == null ? null : 'Jadwal $k';
+  }
+
   /// Kalimat bawaan untuk pembaca layar, dari isi kartu.
   String get kalimat => [
     nama,
@@ -149,7 +156,7 @@ class UbinAlat extends StatelessWidget {
     if (merkTipe != null && merkTipe!.isNotEmpty) merkTipe!,
     if (serial != null && serial!.isNotEmpty) 'Nomor seri $serial',
     if (_lokasiTampil != null) 'Lokasi $_lokasiTampil',
-    ?(konteksNonaktif ?? keteranganJadwal),
+    ?(konteksNonaktif ?? _jadwalBaca),
   ].join('. ');
 
   @override
