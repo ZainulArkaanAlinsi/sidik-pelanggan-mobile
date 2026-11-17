@@ -14,6 +14,9 @@ import '../../widgets/status_tampil.dart';
 /// perhatian, paket mana yang di lab. Dipisah dari layar supaya bisa diuji
 /// tanpa membangun widget.
 
+/// Judul halaman Beranda (REVISI-1 §6).
+const String judulBeranda = 'Kalibrasi Anda';
+
 /// Banyak butir "Perlu perhatian" yang digambar.
 const int maksPerhatian = 3;
 
@@ -336,17 +339,13 @@ String? merkTipeAlat(Alat a) {
   return s.isEmpty ? null : s;
 }
 
-/// Teks tanggal di bawah angka ubin alat. Alat yang sedang di lab menyebut
-/// tahapnya (kata dari server); selain itu "sejak 18 Agu 2026" (lewat jadwal)
-/// atau "jatuh tempo 12 Des 2026". Tanpa jadwal = null.
+/// Tanggal jadwal alat untuk kartu alat ("8 Nov 2026"); null bila alat tidak
+/// punya jadwal. Kata depannya ("sejak" bila sudah lewat, "jatuh tempo" bila
+/// belum) ditambahkan kartu alat sendiri dari sisa harinya, dan tahap alat yang
+/// sedang di lab menjadi lencana tersendiri di kartu.
 String? tanggalUbinAlat(Alat a) {
-  final sd = a.sedangDikerjakan;
-  if (sd != null) return 'Di lab: ${sd.tahapLabel}';
   final tempo = a.jatuhTempo;
-  if (tempo == null) return null;
-  final hari = a.hariKeJatuhTempo;
-  final tanggal = Format.tanggal(tempo);
-  return hari != null && hari < 0 ? 'sejak $tanggal' : 'jatuh tempo $tanggal';
+  return tempo == null ? null : Format.tanggal(tempo);
 }
 
 /// Kalimat kosong ubin sertifikat dan paket.
@@ -445,8 +444,14 @@ List<StatusTampil> statusUbinPaket(List<Paket> berjalan) => [
     statusLewatTarget,
 ];
 
-/// Nada ubin paket: hijau (lulus) menurut desain; bila ada pengecualian ubin
-/// mengikuti nadanya (terlambat = kuning): ubin yang membawa kata "Melewati
-/// target selesai" tidak boleh hijau.
-NadaStatus nadaUbinPaket(List<StatusTampil> status) =>
-    status.isEmpty ? NadaStatus.lulus : status.first.nada;
+/// Nada ubin paket (R1b): NETRAL bila tenang. Hijau (lulus) hanya bila ada
+/// paket siap diambil ([siap] > 0: kabar baik yang menunggu tindakan
+/// pelanggan); bila ada pengecualian ubin mengikuti nadanya (terlambat = krem):
+/// ubin yang membawa kata "Melewati target selesai" tidak boleh hijau. Dulu
+/// hijau juga saat tidak ada paket sama sekali, arti palsu: hijau = selesai.
+NadaStatus nadaUbinPaket(List<StatusTampil> status, {int siap = 0}) =>
+    status.isNotEmpty
+    ? status.first.nada
+    : siap > 0
+    ? NadaStatus.lulus
+    : NadaStatus.netral;

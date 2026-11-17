@@ -15,6 +15,7 @@ const daftarKomponenJejak = <String, List<String>>{
   'kalimat_utama': ['KalimatUtama', 'PotonganKalimat'],
   'keadaan_teks': ['KeadaanTeks', 'BannerDataTerakhir'],
   'kolom_cari_utuh': ['KolomCariUtuh'],
+  'kolom_isian': ['KolomIsian'],
   'nomor_sidik': ['NomorSidik'],
   'panel_sidik': ['PanelSidik'],
   'peta_jatuh_tempo': ['PetaJatuhTempo', 'ZonaTempo'],

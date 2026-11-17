@@ -20,12 +20,12 @@ import '../../providers/sesi_provider.dart';
 import '../../widgets/banner.dart';
 import '../../widgets/dasar/kontrol_ketuk.dart';
 import '../../widgets/halaman_sidik.dart';
+import '../../widgets/kartu_alat.dart';
 import '../../widgets/kalimat_utama.dart';
 import '../../widgets/keadaan_teks.dart';
 import '../../widgets/panel_sidik.dart';
 import '../../widgets/pemetaan_status.dart';
 import '../../widgets/status_tampil.dart';
-import '../../widgets/tombol_bulat.dart';
 import '../../widgets/tombol_sidik.dart';
 import '../../widgets/ubin_alat.dart';
 import '../../widgets/ubin_ringkas.dart';
@@ -39,24 +39,26 @@ import 'beranda_kapsul.dart';
 import 'beranda_kerangka.dart';
 import 'beranda_ringkas.dart';
 
-/// Beranda Bento Lab (`docs/desain-ulang/LAYAR.md` 01): jawaban "apa yang
-/// perlu saya perhatikan hari ini", lalu ringkasan dalam ubin.
+/// Beranda: jawaban "apa yang perlu saya perhatikan hari ini", lalu ringkasan
+/// berurutan dari yang paling perlu tindakan.
 ///
 /// Dari atas: kepala (avatar inisial, sapaan, nama; pil perusahaan HANYA untuk
-/// akun anggota lebih dari satu perusahaan), kalimat utama dengan frasa status
-/// ("1 alat lewat jadwal. 1 paket siap diambil."), ubin alat paling mendesak
-/// (232; berwarna menurut statusnya), tombol "Lihat semua alat" berlencana
-/// jumlah, panel "Jatuh tempo kalibrasi" (kapsul 90 hari), dua ubin pasangan
-/// (sertifikat terbaru, paket dikerjakan), dan baris bantuan. Di tablet dua
-/// kolom: ubin alat + tombol di kiri, panel + pasangan di kanan.
+/// akun anggota lebih dari satu perusahaan), judul "Kalibrasi Anda", kalimat
+/// ringkasan dengan frasa status ("1 alat lewat jadwal. 1 paket siap
+/// diambil."), kartu alat paling mendesak (kartu ringkas yang sama dengan
+/// "Alat saya"), tombol "Lihat semua alat" berlencana jumlah, panel "Jatuh
+/// tempo kalibrasi" (kapsul 90 hari), dua ubin pasangan (sertifikat terbaru,
+/// paket dikerjakan), dan baris bantuan. Warna hanya pada status dan tindakan:
+/// kartu, ubin tenang, dan baris bantuan netral. Di tablet dua kolom: kartu
+/// alat + tombol di kiri, panel + pasangan di kanan.
 ///
 /// Empat keadaan: memuat ([KerangkaBeranda], statis), kosong (belum ada alat),
-/// galat (`KeadaanTeks` dengan langkah berikutnya), dan tanpa koneksi (pil
-/// "Offline. Data per ..." di atas data terakhir yang tetap terbaca).
+/// galat (`KeadaanTeks` dengan langkah berikutnya), dan tanpa koneksi (catatan
+/// tenang "Offline. Data per ..." di atas data terakhir yang tetap terbaca).
 ///
 /// Klaim di layar hanya dari data yang terbaca: "Semua alat berlaku" hanya
 /// bila server menjaminnya, dan bagian yang masih dimuat atau gagal TIDAK
-/// dibaca sebagai nol (kolom kapsul yang tak terbaca tidak digambar; ubin alat
+/// dibaca sebagai nol (kolom kapsul yang tak terbaca tidak digambar; kartu alat
 /// menjadi kerangka atau catatan gagal).
 ///
 /// Data: `GET /beranda` (angka, sertifikat terbaru, paket berjalan) dan
@@ -316,8 +318,11 @@ class _PilPerusahaan extends StatelessWidget {
   }
 }
 
-/// Keadaan tanpa koneksi: pil navy dengan ikon wifi coret dan kata. Data
-/// terakhir tetap terbaca di bawahnya. Tumbuh ke bawah bila teks membungkus.
+/// Keadaan tanpa koneksi: catatan tenang (kotak abu muda sudut 12, ikon wifi
+/// coret + kata) yang menyebut data berasal dari pembaruan terakhir; data
+/// terakhir tetap terbaca di bawahnya. Bukan blok biru: peringatan offline
+/// sudah dibawa bingkai aplikasi (`BingkaiAplikasi`, krem), jadi catatan ini
+/// cukup menandai umur datanya. Tumbuh ke bawah bila teks membungkus.
 class _BannerTanpaKoneksi extends StatelessWidget {
   const _BannerTanpaKoneksi({required this.teks});
 
@@ -333,35 +338,32 @@ class _BannerTanpaKoneksi extends StatelessWidget {
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: s.primary,
+          color: s.surfaceContainerHigh,
           borderRadius: Bentuk.sudutKapsul,
         ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: AreaSentuh.minimum),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: Spasi.lg,
-              vertical: Spasi.sm,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.wifi_off,
-                  size: UkuranIkon.sedang,
-                  color: s.onPrimary,
-                ),
-                const SizedBox(width: Spasi.md),
-                Expanded(
-                  child: Text(
-                    teks,
-                    style: context.teks.bodySmall?.copyWith(
-                      color: s.onPrimary,
-                      fontWeight: TipografiSidik.beratLabel,
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spasi.md,
+            vertical: Spasi.sm,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.wifi_off,
+                size: UkuranIkon.sedang,
+                color: s.onSurfaceVariant,
+              ),
+              const SizedBox(width: Spasi.md),
+              Expanded(
+                child: Text(
+                  teks,
+                  style: context.teks.bodySmall?.copyWith(
+                    color: s.onSurface,
+                    fontWeight: TipografiSidik.beratLabel,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -512,6 +514,13 @@ class _IsiState extends ConsumerState<_Isi> {
       onGanti: () => buka(const PilihPerusahaanScreen(bisaKembali: true)),
     );
 
+    final judul = Semantics(
+      header: true,
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: SkalaHuruf.batasBesar,
+        child: Text(judulBeranda, style: context.teks.displaySmall),
+      ),
+    );
     final kalimatUtama = KalimatUtama(
       dateline: '',
       kalimat: kalimat,
@@ -593,7 +602,7 @@ class _IsiState extends ConsumerState<_Isi> {
           kalimat: _kalimatUbin(barisPaket, teksPaketKosong),
           stempel: stempelPaket,
           aksi: 'Lihat semua',
-          nada: nadaUbinPaket(stempelPaket),
+          nada: nadaUbinPaket(stempelPaket, siap: siapJumlah),
           onTap: () => buka(const PaketScreen()),
           semantik: _semantikUbin(
             'Paket dikerjakan',
@@ -626,6 +635,8 @@ class _IsiState extends ConsumerState<_Isi> {
           ...banner,
           kepala,
           const SizedBox(height: jarakKalimatBeranda),
+          judul,
+          const SizedBox(height: Spasi.sm),
           kalimatUtama,
           const SizedBox(height: jarakKalimatBeranda),
         ];
@@ -701,19 +712,13 @@ class _IsiState extends ConsumerState<_Isi> {
           // Keadaan kosong bukan peringatan: netral (krem = "perlu diperiksa").
         );
       case JenisUbinAlat.alatMendesak || JenisUbinAlat.jadwalTerdekat:
-        return UbinAlat(
-          beranda: true,
-          nama: a!.nama,
-          status: statusAlat(a.status),
-          merkTipe: merkTipeAlat(a),
-          serial: a.serial,
-          hari: a.hariKeJatuhTempo,
-          tanggal: tanggalUbinAlat(a),
+        // Kartu yang sama dengan daftar "Alat saya": satu bentuk di dua tempat.
+        return KartuAlat(
+          alat: a!,
           onTap: () => buka(AlatDetailScreen(id: a.id)),
         );
       case JenisUbinAlat.semuaBerlakuTerdekat:
         return UbinAlat(
-          beranda: true,
           nama: 'Semua alat berlaku',
           status: statusBerlaku(StatusBerlaku.berlaku),
           merkTipe: 'Berikutnya: ${a!.nama}',
@@ -865,8 +870,9 @@ class _CatatanGagal extends StatelessWidget {
   );
 }
 
-/// Baris bantuan (T 76, pil, langit): judul, keterangan, dan penanda bulat 52
-/// navy di kanan. Seluruh baris satu tombol; tumbuh bila teks membungkus.
+/// Baris bantuan: kartu netral (putih, garis halus, sudut 16) berisi ikon biru
+/// muda, judul, keterangan, dan penunjuk di kanan. Seluruh baris satu tombol;
+/// tumbuh bila teks membungkus. Tanpa warna status: bantuan bukan status.
 class _BarisBantuan extends StatelessWidget {
   const _BarisBantuan({required this.onTap});
 
@@ -874,52 +880,60 @@ class _BarisBantuan extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (tinta, latar) = StatusTampil.ubinDari(context, NadaStatus.tunggu);
+    final s = context.skema;
     final t = context.teks;
     return Semantics(
       container: true,
       child: KontrolKetuk(
         onTap: onTap,
         semantik: 'Hubungi lab: tanya jadwal, sertifikat, atau paket',
-        warna: latar,
+        warna: s.surface,
         sudut: Bentuk.sudutPanel,
+        sisi: BorderSide(color: s.outlineVariant, width: Elevasi.garis),
         child: SizedBox(
           width: double.infinity,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              minHeight: UkuranKontrol.tombolBulatBesar + 2 * Spasi.md,
-            ),
+            constraints: const BoxConstraints(minHeight: AreaSentuh.minimum),
             child: Padding(
-              padding: const EdgeInsetsDirectional.only(
-                start: Spasi.lg + Spasi.xs,
-                end: Spasi.md,
-                top: Spasi.sm,
-                bottom: Spasi.sm,
-              ),
+              padding: const EdgeInsets.all(Spasi.lg),
               child: Row(
                 children: [
+                  ExcludeSemantics(
+                    child: SizedBox.square(
+                      dimension: UkuranUbin.ubinIkon,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: s.primaryContainer,
+                          borderRadius: Bentuk.sudutIkon,
+                        ),
+                        child: Icon(
+                          Icons.headset_mic_outlined,
+                          size: UkuranIkon.sedang,
+                          color: s.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: Spasi.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Butuh bantuan? Hubungi lab',
-                          style: t.titleSmall?.copyWith(color: tinta),
-                        ),
+                        Text('Butuh bantuan? Hubungi lab', style: t.titleSmall),
                         Text(
                           'Tanya jadwal, sertifikat, atau paket',
-                          style: t.labelMedium?.copyWith(
-                            color: tinta,
-                            fontWeight: TipografiSidik.beratKeterangan,
-                          ),
+                          style: t.bodySmall,
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: Spasi.md),
-                  const TombolBulat.hiasan(
-                    ikon: Icons.headset_mic_outlined,
-                    ukuran: UkuranTombolBulat.besar,
+                  ExcludeSemantics(
+                    child: Icon(
+                      Icons.chevron_right,
+                      size: UkuranIkon.sedang,
+                      color: s.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),

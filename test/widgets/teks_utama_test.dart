@@ -56,8 +56,9 @@ void main() {
       expect(potongan['siap diambil']!.warna, w.lulus);
       expect(potongan['1 alat ']!.warna, s.onSurface);
       expect(potongan['.']!.warna, s.onSurface);
-      // Kalimat 24 sp (kalimat utama), dateline 13 sp (keterangan).
-      expect(potongan['lewat jadwal']!.ukuran, 24);
+      // Kalimat 18 sp (ringkasan; R1b, judul halaman 24 yang terbesar),
+      // dateline 13 sp (keterangan).
+      expect(potongan['lewat jadwal']!.ukuran, 18);
       expect(potongan['Jumat, 13 November 2026']!.ukuran, 13);
     });
 

@@ -524,20 +524,27 @@ void main() {
       // Tanggal tidak lagi di atas kalimat (sapaan di kepala menggantikannya).
       expect(find.text('Kamis, 12 November 2026'), findsNothing);
       expect(find.text('1 alat lewat jadwal.'), findsOneWidget);
-      // Satu ubin untuk alat paling mendesak; ubin tidak punya slot untuk jejak
-      // tahap (tik). Tahap alat di lab kini hanya terlihat sebagai kata "Di lab:
-      // <tahap>" pada ubin itu, dan per alat di detail paket. Detail alat
-      // (`AlatDetailScreen`) tidak menampilkan tahap: isinya identitas, status dan
-      // jadwal, serta riwayat sertifikat. `JejakTahap` dan `TikPaket` kini tidak
-      // dipakai layar Beranda.
+      // Satu kartu untuk alat paling mendesak; kartu tidak punya slot untuk
+      // jejak tahap (tik). Tahap alat di lab (R1b) adalah LENCANA sendiri di
+      // samping status ("Sedang dikalibrasi"), dan per alat di detail paket.
+      // Detail alat (`AlatDetailScreen`) tidak menampilkan tahap: isinya
+      // identitas, status dan jadwal, serta riwayat sertifikat. `JejakTahap`
+      // dan `TikPaket` kini tidak dipakai layar Beranda.
       expect(find.byType(UbinAlat), findsOneWidget);
       expect(find.byType(JejakTahap), findsNothing);
-      expect(find.text('Di lab: Sedang dikalibrasi'), findsOneWidget);
-      expect(find.textContaining('Di lab'), findsOneWidget);
-      // Identitas: nama, merk + model, nomor seri di baris sendiri.
+      expect(
+        find.widgetWithText(Stempel, 'Sedang dikalibrasi'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(Stempel, 'Lewat jadwal 4 hari'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Di lab'), findsNothing);
+      // Identitas: nama; "merk model · SN seri" satu baris (nomor seri mono).
       expect(find.text('Jangka Sorong Digital'), findsOneWidget);
-      expect(find.text('Mitutoyo CD-15CPX'), findsOneWidget);
-      expect(find.text('2201-0457'), findsOneWidget);
+      expect(find.text('Mitutoyo CD-15CPX ·'), findsOneWidget);
+      expect(find.text('SN 2201-0457'), findsOneWidget);
       // Alat yang kurang mendesak tidak digambar sebagai ubin.
       expect(find.text('Timbangan Analitik'), findsNothing);
     });
@@ -561,7 +568,13 @@ void main() {
       await tester.pumpWidget(_app(_server(alat: aneh), sesi: _sesiSatu()));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text('Di lab: Sedang dikemas'), findsOneWidget);
+      // Kode tahap yang tidak dikenal: kata server tampil, netral dengan ikon.
+      final lencana = find.widgetWithText(Stempel, 'Sedang dikemas');
+      expect(lencana, findsOneWidget);
+      expect(
+        find.descendant(of: lencana, matching: find.byIcon(Icons.help_outline)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('dikerjakan ulang: kata dari server', (tester) async {
@@ -580,7 +593,12 @@ void main() {
       ];
       await tester.pumpWidget(_app(_server(alat: ulang), sesi: _sesiSatu()));
       await tester.pumpAndSettle();
-      expect(find.text('Di lab: Sedang dikerjakan ulang'), findsOneWidget);
+      final lencana = find.widgetWithText(Stempel, 'Sedang dikerjakan ulang');
+      expect(lencana, findsOneWidget);
+      expect(
+        find.descendant(of: lencana, matching: find.byIcon(Icons.replay)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('siap diambil di lab: kata, bukan hanya warna', (tester) async {
@@ -599,7 +617,15 @@ void main() {
       ];
       await tester.pumpWidget(_app(_server(alat: siap), sesi: _sesiSatu()));
       await tester.pumpAndSettle();
-      expect(find.text('Di lab: Siap diambil'), findsOneWidget);
+      final lencana = find.widgetWithText(Stempel, 'Siap diambil');
+      expect(lencana, findsOneWidget);
+      expect(
+        find.descendant(
+          of: lencana,
+          matching: find.byIcon(Icons.inventory_2_outlined),
+        ),
+        findsOneWidget,
+      );
     });
   });
 
@@ -722,7 +748,7 @@ void main() {
       // alat status selalu tampil (KOMPONEN.md); tidak ada chip lama.
       expect(find.byType(UbinAlat), findsOneWidget);
       expect(find.byType(Stempel), findsOneWidget);
-      expect(find.text('Berlaku'), findsOneWidget);
+      expect(find.text('Berlaku 45 hari lagi'), findsOneWidget);
       expect(find.byType(PetaJatuhTempo), findsNothing);
       expect(find.byType(ChipStatus), findsNothing);
       expect(find.byType(JejakTahap), findsNothing);
@@ -1250,7 +1276,10 @@ void main() {
       // hanya kata tahapnya.
       expect(tester.takeException(), isNull);
       expect(find.byType(JejakTahap), findsNothing);
-      expect(find.text('Di lab: Sedang dikalibrasi'), findsOneWidget);
+      expect(
+        find.widgetWithText(Stempel, 'Sedang dikalibrasi'),
+        findsOneWidget,
+      );
     });
   });
 

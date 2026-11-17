@@ -10,7 +10,6 @@ import '../../core/tema/warna_sidik.dart';
 import '../../models/data_pelanggan.dart';
 import '../../providers/paginasi.dart';
 import '../../widgets/kartu_alat.dart';
-import '../../widgets/status_tampil.dart';
 import '../../widgets/tombol_sidik.dart';
 
 // Bagian layar "Alat saya" (daftar_alat_screen.dart) yang hanya dipakai di sana:
@@ -32,12 +31,12 @@ int? jumlahTerbaca(DataBerhalaman<Alat> d) {
   return d.total > d.isi.length ? d.total : null;
 }
 
-/// Kerangka memuat STATIS: ubin putih setinggi ubin alat dengan balok abu
-/// sebesar isinya. Tanpa denyut dan tanpa animasi apa pun, jadi tidak ada gerak
-/// berulang dan "kurangi gerak" tidak punya yang perlu dimatikan. Pembaca layar
-/// menerima satu pengumuman "Memuat".
+/// Kerangka memuat STATIS: kartu putih setinggi kartu alat ringkas dengan balok
+/// abu sebesar isinya. Tanpa denyut dan tanpa animasi apa pun, jadi tidak ada
+/// gerak berulang dan "kurangi gerak" tidak punya yang perlu dimatikan. Pembaca
+/// layar menerima satu pengumuman "Memuat".
 class KerangkaAlat extends StatelessWidget {
-  const KerangkaAlat({super.key, this.jumlah = 3, this.padding});
+  const KerangkaAlat({super.key, this.jumlah = 4, this.padding});
 
   final int jumlah;
   final EdgeInsetsGeometry? padding;
@@ -57,9 +56,9 @@ class KerangkaAlat extends StatelessWidget {
   );
 }
 
-/// Satu ubin kerangka: bentuk ubin alat (stempel, nama, merk, angka), tanpa
-/// teks dan tanpa gerak. Dihitung dari token ubin supaya tidak melompat saat
-/// data tiba.
+/// Satu kartu kerangka: bentuk kartu alat ringkas (nama, merk dan seri, lencana
+/// status, "Lihat detail"), tanpa teks dan tanpa gerak. Dihitung dari token
+/// kartu supaya tidak melompat saat data tiba.
 class UbinKerangkaAlat extends StatelessWidget {
   const UbinKerangkaAlat({super.key});
 
@@ -75,19 +74,23 @@ class UbinKerangkaAlat extends StatelessWidget {
           side: BorderSide(color: s.outlineVariant, width: Elevasi.garis),
         ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: UkuranUbin.alat),
+          constraints: const BoxConstraints(minHeight: UkuranUbin.alatRingkas),
           child: const Padding(
             padding: EdgeInsets.all(UkuranUbin.paddingAlat),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Balok(lebar: 0.35, tinggi: UkuranKontrol.stempel, pil: true),
-                SizedBox(height: Spasi.md),
                 _Balok(lebar: 0.6, tinggi: Spasi.xl),
                 SizedBox(height: Spasi.sm),
-                _Balok(lebar: 0.4, tinggi: Spasi.lg),
-                SizedBox(height: Spasi.xxl),
-                _Balok(lebar: 0.25, tinggi: UkuranKontrol.saringan),
+                _Balok(lebar: 0.75, tinggi: Spasi.md),
+                SizedBox(height: Spasi.md),
+                _Balok(
+                  lebar: 0.4,
+                  tinggi: UkuranKontrol.stempel,
+                  sudutStempel: true,
+                ),
+                SizedBox(height: Spasi.md),
+                _Balok(lebar: 0.25, tinggi: Spasi.lg),
               ],
             ),
           ),
@@ -97,13 +100,18 @@ class UbinKerangkaAlat extends StatelessWidget {
   }
 }
 
-/// Balok abu statis; [lebar] = bagian dari lebar ubin (0 sampai 1).
+/// Balok abu statis; [lebar] = bagian dari lebar kartu (0 sampai 1).
+/// [sudutStempel] = sudut lencana (6), selain itu sudut kecil (4).
 class _Balok extends StatelessWidget {
-  const _Balok({required this.lebar, required this.tinggi, this.pil = false});
+  const _Balok({
+    required this.lebar,
+    required this.tinggi,
+    this.sudutStempel = false,
+  });
 
   final double lebar;
   final double tinggi;
-  final bool pil;
+  final bool sudutStempel;
 
   @override
   Widget build(BuildContext context) => FractionallySizedBox(
@@ -113,103 +121,94 @@ class _Balok extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: context.skema.surfaceContainerHigh,
-          borderRadius: pil ? Bentuk.sudutPil : Bentuk.sudutKecil,
+          borderRadius: sudutStempel ? Bentuk.sudutStempel : Bentuk.sudutKecil,
         ),
       ),
     ),
   );
 }
 
-/// Ubin kosong (netral/putih, sudut 16, padding 20, tinggi paling sedikit 304):
-/// judul 24, satu kalimat, dan ikon besar sebagai pengganti visual alat di
-/// kanan bawah (visual alat belum ada; ikon hanya hiasan, tanpa semantik).
+/// Keadaan kosong daftar alat (R1b): kartu putih bergaris halus, ikon dalam
+/// kotak biru muda, judul 18, satu kalimat, dan (bila ada) SATU tindakan
+/// sekunder. Netral: keadaan kosong bukan peringatan (krem = "perlu diperiksa").
 /// Dipakai untuk "belum ada alat" dan hasil cari/saring yang kosong; pembedanya
-/// kata dan [ikon], keduanya dari pemanggil.
+/// kata dan [ikon], keduanya dari pemanggil. [aksi] dan [onAksi] diisi bersama
+/// (mis. "Tampilkan semua alat" bila saringan yang menyempitkan daftar).
 class UbinKosongAlat extends StatelessWidget {
   const UbinKosongAlat({
     super.key,
     required this.ikon,
     required this.judul,
     required this.keterangan,
-  });
+    this.aksi,
+    this.onAksi,
+  }) : assert(
+         (aksi == null) == (onAksi == null),
+         'aksi dan onAksi harus diisi bersama',
+       );
 
   final IconData ikon;
   final String judul;
   final String keterangan;
-
-  /// Spesifikasi: tinggi >= 420. Dari token yang ada: 232 + 196 = 428.
-  static const double tinggiMin = UkuranUbin.alatBeranda + UkuranUbin.alat;
-
-  /// Ikon hiasan memudar supaya teks di atasnya tetap terbaca (kontras teks
-  /// dihitung terhadap permukaan polos, ikon di bawah teks).
-  static const double _alfaIkon = 0.18;
+  final String? aksi;
+  final VoidCallback? onAksi;
 
   @override
   Widget build(BuildContext context) {
-    // Netral: keadaan kosong bukan peringatan (krem = "perlu diperiksa").
-    final (tinta, latar) = StatusTampil.ubinDari(context, NadaStatus.netral);
+    final s = context.skema;
     final t = context.teks;
     return Material(
-      color: latar,
+      color: s.surface,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: Bentuk.sudutUbin,
-        side: BorderSide(
-          color: context.skema.outlineVariant,
-          width: Elevasi.garis,
-        ),
+        side: BorderSide(color: s.outlineVariant, width: Elevasi.garis),
       ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: tinggiMin),
-        child: Stack(
-          fit: StackFit.passthrough,
-          children: [
-            Positioned(
-              right: -UkuranVisual.keluarSamping,
-              bottom: -UkuranVisual.keluarBawah,
-              child: ExcludeSemantics(
-                child: Icon(
-                  ikon,
-                  size: UkuranVisual.alat,
-                  color: tinta.withValues(alpha: _alfaIkon),
+      child: Padding(
+        padding: const EdgeInsets.all(Spasi.xl),
+        child: Semantics(
+          container: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ExcludeSemantics(
+                child: SizedBox.square(
+                  dimension: UkuranUbin.avatar,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: s.primaryContainer,
+                      borderRadius: Bentuk.sudutIkon,
+                    ),
+                    child: Icon(
+                      ikon,
+                      size: UkuranIkon.sedang,
+                      color: s.primary,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(UkuranUbin.paddingAlat + Spasi.xs),
-              child: Semantics(
-                container: true,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Semantics(
-                      header: true,
-                      child: MediaQuery.withClampedTextScaling(
-                        maxScaleFactor: SkalaHuruf.batasBesar,
-                        child: Text(
-                          judul,
-                          style: t.displaySmall?.copyWith(color: tinta),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: Spasi.md),
-                    Text(
-                      keterangan,
-                      style: t.bodySmall?.copyWith(color: tinta),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: Spasi.lg),
+              Semantics(header: true, child: Text(judul, style: t.titleLarge)),
+              const SizedBox(height: Spasi.sm),
+              Text(
+                keterangan,
+                style: t.bodyMedium?.copyWith(color: s.onSurfaceVariant),
               ),
-            ),
-          ],
+              if (aksi != null) ...[
+                const SizedBox(height: Spasi.lg),
+                TombolSidik(label: aksi!, onPressed: onAksi),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Pil putih di kepala layar: "N alat". Hanya digambar bila [jumlah] benar-benar
-/// terbaca; memuat atau gagal = tidak ada pil, bukan "0 alat".
+/// Lencana jumlah di kepala layar: "N alat" (putih bergaris halus, sudut 12).
+/// Hanya digambar bila [jumlah] benar-benar terbaca; memuat atau gagal = tidak
+/// ada lencana, bukan "0 alat".
 class PilJumlahAlat extends StatelessWidget {
   const PilJumlahAlat({super.key, required this.jumlah});
 
@@ -225,7 +224,10 @@ class PilJumlahAlat extends StatelessWidget {
       padding: const EdgeInsetsDirectional.only(end: Spasi.sisi),
       child: Material(
         color: s.surface,
-        shape: RoundedRectangleBorder(borderRadius: Bentuk.sudutPil),
+        shape: RoundedRectangleBorder(
+          borderRadius: Bentuk.sudutKapsul,
+          side: BorderSide(color: s.outlineVariant, width: Elevasi.garis),
+        ),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: tinggi),
           child: Padding(
@@ -248,7 +250,8 @@ class PilJumlahAlat extends StatelessWidget {
   }
 }
 
-/// Catatan tanpa koneksi di atas daftar: pil putih berikon awan coret. Daftar
+/// Catatan tanpa koneksi di atas daftar: kotak putih (sudut 12) berikon awan
+/// coret. Daftar
 /// di bawahnya tetap data terakhir yang tersimpan; teks dari pemanggil.
 class CatatanLuring extends StatelessWidget {
   const CatatanLuring({super.key, required this.teks});
@@ -269,7 +272,7 @@ class CatatanLuring extends StatelessWidget {
           child: Material(
             color: s.surface,
             shape: RoundedRectangleBorder(
-              borderRadius: Bentuk.sudutPil,
+              borderRadius: Bentuk.sudutKapsul,
               side: BorderSide(color: s.outline, width: Elevasi.garis),
             ),
             child: Padding(

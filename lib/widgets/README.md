@@ -34,7 +34,7 @@ ulang di sini. Lihat `lib/core/tema/README.md`.
 |---|---|
 | `status_tampil.dart` | `StatusTampil` (label, nada, ikon) dan `NadaStatus`. |
 | `pemetaan_status.dart` | SATU pemetaan kode/status → `StatusTampil` (`statusAlat`, `statusSertifikat`, `statusPaket`, ...). Istilah dari `StatusBerlaku.label`: "Lewat jadwal", "Masa berlaku berakhir", bukan "kedaluwarsa". |
-| `chip_status.dart` | `ChipStatus`: ikon + teks pada latar tipis. |
+| `chip_status.dart` | `ChipStatus`: nama lama `Stempel` di layar detail (R1b): satu bentuk lencana (24, sudut 6) di daftar dan detail; kata panjang membungkus, tidak dipotong. Kode baru memakai `Stempel` langsung. |
 
 ## Komponen "Jejak" (Paket 2; dipakai Beranda sejak Paket 3a)
 
@@ -63,6 +63,7 @@ dari token, tanpa paket atau font baru; tiap komponen punya tes widget di
 | `fakta.dart` | `Fakta`: "label  nilai" yang membungkus di 320 dp. | `BarisInfo` |
 | `nomor_sidik.dart` | `NomorSidik`: nomor tidak putus di tengah (1 baris, mengecil sampai 12 sp, lalu membungkus di "/"). | nomor order yang putus |
 | `saringan_teks.dart` | `SaringanTeks` + `PilihanSaringan`: kata + jumlah, garis bawah terpilih, tepi memudar hanya bila bisa digeser. | `ChoiceChip` x5, `SegmentedButton` |
+| `kolom_isian.dart` | `KolomIsian` (R1b): isian formulir dengan LABEL PERMANEN di atas kolom (bukan `labelText` yang mengambang), kolom 48, `bantuan` dan `galat` tepat di bawahnya (galat menggantikan bantuan, garis merah), satu simpul semantik (`MergeSemantics`), ruang ekstra (`ruangTombol`) agar tombol di bawah kolom tidak tertutup papan ketik. Dipakai layar auth. | `TextField` + `labelText` |
 | `kolom_cari_utuh.dart` | `KolomCariUtuh`: kotak 48 bersudut 10 dengan tombol bulat "Cari" 36 (area ketuk 48), petunjuk membungkus (tidak terpotong "Cari nama, merk, at..."), `aktif` mematikan isian. | `KolomCari` |
 | `bagian.dart` | `Bagian`: judul 17/24, jumlah redup, tautan teks 48 dp. | `BagianSidik` |
 | `tautan_baris.dart` | `TautanBaris`: tautan teks + panah, 48 dp. | tombol outline lebar |
@@ -84,7 +85,7 @@ galeri halaman `bento` di `test/dukungan/galeri_komponen.dart`.
 | `tombol_bulat.dart` | `TombolBulat`: `.cari` 36 biru, `.kembali` 48 putih, `.aksi` 52 biru muda/navy, `.hiasan` (tanpa ketukan, untuk di dalam ubin). Label baca wajib, area sentuh 48. | `IconButton`, ikon di app bar |
 | `saringan_pil.dart` | `SaringanPil` + `PilihanPil`: saringan 40 bersudut 12, terpilih = biru muda + tepi biru, bulatan jumlah 24 (biru saat terpilih, warna status saat tidak), baris bergulir mendatar. | `SaringanTeks`, `ChoiceChip` |
 | `segmen_pil.dart` | `SegmenPil`: wadah 48, penanda biru muda bertepi biru 40 bergeser 240 ms, dua sampai beberapa pilihan. Dipakai tab Sertifikat (Daftar \| Arsip). | `SegmentedButton`, `SaringanTeks` sebagai "Daftar / Arsip" |
-| `ubin_alat.dart` | `UbinAlat`: kartu NETRAL 144 (Beranda 160), status hanya di lencana: lencana, nama, merk, nomor seri (IBM Plex Mono), lokasi (hanya bila terisi), angka sisa hari (mono), visual di kanan bawah. `KartuAlat` (`kartu_alat.dart`) tinggal pembungkus tipis `Alat` ke `UbinAlat` untuk daftar "Alat saya". | `BarisAlat`, kartu alat lama |
+| `ubin_alat.dart` | `UbinAlat` (R1b): kartu alat RINGKAS netral, lima baris (REVISI-2 butir 2): nama 20 menonjol, "merk model · SN seri" (seri IBM Plex Mono), lokasi (hanya bila terisi), lencana status (waktunya ikut di kata: "Lewat jadwal 4 hari", "Segera jatuh tempo 12 hari lagi", "Berlaku 120 hari lagi") + lencana tahap bila alat di lab, "Lihat detail →" dengan tanggal jadwal di kanan. ALAT NONAKTIF: tanpa hitung mundur, konteks "Alat nonaktif, jadwal tercatat ...", nama diredupkan. Tinggi minimum 120 (`UkuranUbin.alatRingkas`), nama tidak dibatasi baris. `KartuAlat` (`kartu_alat.dart`) pembungkus tipis `Alat` ke `UbinAlat` untuk "Alat saya" dan Beranda. | `BarisAlat`, kartu alat Bento (144/160, angka hari besar, visual) |
 | `ubin_ringkas.dart` | `UbinRingkas`: ubin pasangan 132 (putih atau warna muda status), judul, kalimat, "Lihat semua". | kartu ringkasan |
 | `ubin_menu.dart` | `UbinMenu`: ubin menu 124, judul, penanda bulat 40, visual atau tumpukan avatar. | `BarisMenu` besar |
 

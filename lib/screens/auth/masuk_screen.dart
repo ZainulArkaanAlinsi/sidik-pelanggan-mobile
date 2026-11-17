@@ -5,6 +5,7 @@ import '../../core/api_pelanggan.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/warna_sidik.dart';
 import '../../providers/sesi_provider.dart';
+import '../../widgets/kolom_isian.dart';
 import '../../widgets/lencana_kan.dart';
 import '../../widgets/panel_pemberitahuan.dart';
 import '../../widgets/panel_sidik.dart';
@@ -17,6 +18,11 @@ import 'terima_undangan_screen.dart';
 /// Layar masuk. Dua pintu saja: MASUK (sudah punya akun) dan PAKAI KODE
 /// UNDANGAN (baru diundang). Tidak ada "Daftar": akun pelanggan hanya lahir
 /// dari undangan (keputusan 18 Sep 2026).
+///
+/// Susunan (R1b): judul "Masuk ke SIDIK", penjelasan, dua isian berlabel
+/// permanen di atas kolom ([KolomIsian]), pesan galat tepat di bawah isian,
+/// SATU tombol utama "Masuk", lalu "Lupa sandi?" (tombol teks). Logika dan
+/// validasi tidak berubah.
 class MasukScreen extends ConsumerStatefulWidget {
   const MasukScreen({super.key});
 
@@ -63,7 +69,7 @@ class _MasukScreenState extends ConsumerState<MasukScreen> {
 
     return KerangkaAuth(
       kartu: [
-        const JudulAuth('Masuk'),
+        const JudulAuth('Masuk ke SIDIK'),
         const SizedBox(height: Spasi.xs),
         Text(
           'Lihat status kalibrasi alat, unduh sertifikat, dan lihat riwayat kalibrasi alat Anda di PT Sidik.',
@@ -78,30 +84,28 @@ class _MasukScreenState extends ConsumerState<MasukScreen> {
           ),
         ],
         const SizedBox(height: Spasi.xl),
-        TextField(
-          controller: _email,
+        KolomIsian(
+          label: 'Email',
+          pengendali: _email,
           keyboardType: TextInputType.emailAddress,
           autofillHints: const [AutofillHints.email],
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(labelText: 'Email'),
         ),
         const SizedBox(height: Spasi.lg),
-        TextField(
-          controller: _sandi,
-          obscureText: !_lihatSandi,
+        KolomIsian(
+          label: 'Sandi',
+          pengendali: _sandi,
+          rahasia: !_lihatSandi,
           autofillHints: const [AutofillHints.password],
           onSubmitted: (_) => _masuk(),
-          decoration: InputDecoration(
-            labelText: 'Sandi',
-            suffixIcon: IconButton(
-              tooltip: _lihatSandi ? 'Sembunyikan sandi' : 'Tampilkan sandi',
-              icon: Icon(
-                _lihatSandi
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-              ),
-              onPressed: () => setState(() => _lihatSandi = !_lihatSandi),
+          ikonAkhir: IconButton(
+            tooltip: _lihatSandi ? 'Sembunyikan sandi' : 'Tampilkan sandi',
+            icon: Icon(
+              _lihatSandi
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
             ),
+            onPressed: () => setState(() => _lihatSandi = !_lihatSandi),
           ),
         ),
         if (_galat != null) ...[

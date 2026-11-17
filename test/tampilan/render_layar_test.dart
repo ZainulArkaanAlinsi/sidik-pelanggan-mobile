@@ -27,6 +27,10 @@
 //
 // Beberapa layar saja: `SIDIK_LAYAR=beranda,alat flutter test ...`.
 //
+// Skala huruf dipaksa ke satu nilai untuk SEMUA ukuran (mis. 1,3 atau 2,0 untuk
+// meninjau huruf sistem diperbesar; aplikasi sendiri menjepit di 1,3, jadi 2,0
+// adalah uji tekan tata letak): `SIDIK_SKALA=2.0 flutter test ...`.
+//
 // TIDAK ada golden baseline: gambar dari Windows tidak boleh dijadikan acuan
 // (baseline hanya lahir lewat CI macOS bila konvensinya ada; repo ini belum
 // punya golden maupun workflow `golden-baru`).
@@ -52,6 +56,7 @@ import 'package:sidik_pelanggan/screens/akun/anggota_screen.dart';
 import 'package:sidik_pelanggan/screens/akun/bantuan_screen.dart';
 import 'package:sidik_pelanggan/screens/akun/preferensi_notifikasi_screen.dart';
 import 'package:sidik_pelanggan/screens/alat/alat_detail_screen.dart';
+import 'package:sidik_pelanggan/screens/auth/lupa_sandi_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/masuk_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/sambutan_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/terima_undangan_screen.dart';
@@ -641,7 +646,14 @@ Future<void> _ketukSaklarTahap(WidgetTester tester) async {
 final _layarKunci = <_Layar>[
   _layar('sambutan', () => const SambutanScreen()),
   _layar('masuk', () => const MasukScreen(), kunci: true),
+  // Isian kosong lalu ketuk Masuk: pesan galat tampil tepat di bawah isian.
+  _layar(
+    'masuk_galat',
+    () => const MasukScreen(),
+    sesudah: (tester) => tester.tap(find.byType(FilledButton).first),
+  ),
   _layar('terima_undangan', () => const TerimaUndanganScreen()),
+  _layar('lupa_sandi', () => const LupaSandiScreen()),
   _layar(
     'pemeliharaan',
     () => const LayarPemeliharaan(
@@ -812,6 +824,8 @@ void main() {
   if (folder != null) Directory(folder).createSync(recursive: true);
   // `SIDIK_LAYAR=beranda,alat` membatasi ke layar bernama (untuk memotret ulang).
   final hanya = Platform.environment['SIDIK_LAYAR']?.split(',').toSet();
+  // `SIDIK_SKALA=2.0` memaksa skala huruf semua ukuran (tinjauan huruf besar).
+  final skalaPaksa = double.tryParse(Platform.environment['SIDIK_SKALA'] ?? '');
 
   // Layar kunci: selalu tiga ukuran gerbang x dua tema. Layar lain tanpa PNG
   // cukup dua ukuran paling berisiko (HP sempit 1,3× dan tablet) di tema
@@ -890,8 +904,8 @@ void main() {
                     builder: (context, child) => RepaintBoundary(
                       key: kunci,
                       child: MediaQuery.withClampedTextScaling(
-                        minScaleFactor: u.skala,
-                        maxScaleFactor: u.skala,
+                        minScaleFactor: skalaPaksa ?? u.skala,
+                        maxScaleFactor: skalaPaksa ?? u.skala,
                         child: child!,
                       ),
                     ),

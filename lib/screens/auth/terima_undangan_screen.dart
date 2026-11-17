@@ -5,6 +5,7 @@ import '../../core/api_pelanggan.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/warna_sidik.dart';
 import '../../providers/sesi_provider.dart';
+import '../../widgets/kolom_isian.dart';
 import '../../widgets/tombol_sidik.dart';
 import '../akun/bantuan_screen.dart';
 import 'kerangka_auth.dart';
@@ -38,8 +39,9 @@ class DialogAkunSudahAda extends StatelessWidget {
 }
 
 /// Tukar kode undangan jadi akun. Satu layar, urutan kolom sama dengan yang
-/// diminta server (`TerimaUndanganRequest`), galat ditampilkan DI BAWAH
-/// kolomnya masing-masing.
+/// diminta server (`TerimaUndanganRequest`); tiap kolom berlabel permanen di
+/// atasnya ([KolomIsian]) dan galatnya ditampilkan DI BAWAH kolomnya masing-
+/// masing.
 class TerimaUndanganScreen extends ConsumerStatefulWidget {
   const TerimaUndanganScreen({super.key});
 
@@ -124,18 +126,16 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
     String? bantuan,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: Spasi.lg),
-    child: TextField(
-      controller: c,
+    child: KolomIsian(
+      label: label,
+      pengendali: c,
       keyboardType: keyboard,
-      obscureText: rahasia,
+      rahasia: rahasia,
       textCapitalization: kunci == 'kode'
           ? TextCapitalization.characters
           : TextCapitalization.none,
-      decoration: InputDecoration(
-        labelText: label,
-        helperText: bantuan,
-        errorText: _galatIsian[kunci],
-      ),
+      bantuan: bantuan,
+      galat: _galatIsian[kunci],
     ),
   );
 

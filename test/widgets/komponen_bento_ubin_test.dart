@@ -97,8 +97,10 @@ Finder _bahan(Finder ubin) =>
 Widget _app(Widget anak, {bool gelap = false, double skala = 1}) =>
     aplikasiUji(anak, gelap: gelap, skala: skala);
 
-Widget _visualUji() =>
-    const SizedBox.expand(key: _visual, child: ColoredBox(color: Colors.transparent));
+Widget _visualUji() => const SizedBox.expand(
+  key: _visual,
+  child: ColoredBox(color: Colors.transparent),
+);
 
 void _periksaCincin(WidgetTester tester, Rect isi, {required bool gelap}) {
   final cincin = find.byKey(CincinFokus.kunciCincin);
@@ -118,23 +120,28 @@ UbinAlat _ubinAlat({
   String nama = 'Oven Memmert',
   NadaStatus nada = NadaStatus.gagal,
   int? hari = -4,
-  bool beranda = false,
-  bool adaVisual = true,
   VoidCallback? onTap,
   String? semantik,
   int? urutan,
   String? merkTipe = 'Memmert UF55',
-  String? serial = 'SN-0457-2201',
+  String? serial = '0457-2201',
   String? tanggal = '9 Nov 2026',
+  String? lokasi = 'Gudang 1',
+  StatusTampil? tahap,
+  bool nonaktif = false,
+  int? maksBarisNama,
 }) => UbinAlat(
   nama: nama,
   status: _status(nada),
   merkTipe: merkTipe,
   serial: serial,
+  awalanSerial: 'SN',
+  lokasi: lokasi,
   hari: hari,
   tanggal: tanggal,
-  beranda: beranda,
-  visual: adaVisual ? _visualUji() : null,
+  tahap: tahap,
+  nonaktif: nonaktif,
+  maksBarisNama: maksBarisNama,
   onTap: onTap ?? () {},
   semantik: semantik,
   urutan: urutan,
@@ -202,7 +209,10 @@ void main() {
 
     test('copyWith dan lerp membawa kolom ubin', () {
       final t = _w(false);
-      final w = t.copyWith(ubinGagal: PaletSidik.garis, tintaUbin: PaletSidik.teksKedua);
+      final w = t.copyWith(
+        ubinGagal: PaletSidik.garis,
+        tintaUbin: PaletSidik.teksKedua,
+      );
       expect(w.ubinGagal, PaletSidik.garis);
       expect(w.tintaUbin, PaletSidik.teksKedua);
       expect(w.ubinLulus, t.ubinLulus);
@@ -242,7 +252,10 @@ void main() {
             case NadaStatus.netral:
               expect(
                 (tintaStempel, latarStempel),
-                (_skema(gelap).onSurfaceVariant, _skema(gelap).surfaceContainerHigh),
+                (
+                  _skema(gelap).onSurfaceVariant,
+                  _skema(gelap).surfaceContainerHigh,
+                ),
               );
             default:
               expect((tintaStempel, latarStempel), (w.tintaUbin, w.kertasUbin));
@@ -261,21 +274,21 @@ void main() {
     testWidgets('tinggi 24, sudut 6, padding 8, ikon 14, jarak 4, 12/600', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        _app(Stempel(statusAlat(StatusKalibrasi.lewat))),
-      );
+      await tester.pumpWidget(_app(Stempel(statusAlat(StatusKalibrasi.lewat))));
       final kotak = tester.getRect(find.byType(Stempel));
       expect(kotak.height, UkuranKontrol.stempel);
       expect(UkuranKontrol.stempel, 24);
       expect(Bentuk.stempel, 6);
-      final dekor = tester
-          .widget<DecoratedBox>(
-            find.descendant(
-              of: find.byType(Stempel),
-              matching: find.byType(DecoratedBox),
-            ),
-          )
-          .decoration as BoxDecoration;
+      final dekor =
+          tester
+                  .widget<DecoratedBox>(
+                    find.descendant(
+                      of: find.byType(Stempel),
+                      matching: find.byType(DecoratedBox),
+                    ),
+                  )
+                  .decoration
+              as BoxDecoration;
       expect(dekor.borderRadius, BorderRadius.circular(6));
       final ikon = tester.getRect(find.byType(Icon));
       final kata = tester.getRect(find.text('Lewat jadwal'));
@@ -291,20 +304,20 @@ void main() {
     for (final gelap in [false, true]) {
       testWidgets('latar = warna muda status, tinta gelap (terang) atau pastel '
           '(gelap); tenang = tinta halaman tanpa latar '
-          '(${gelap ? 'gelap' : 'terang'})', (
-        tester,
-      ) async {
+          '(${gelap ? 'gelap' : 'terang'})', (tester) async {
         final w = _w(gelap);
         for (final n in _nadaSemua) {
           await tester.pumpWidget(_app(Stempel(_status(n)), gelap: gelap));
-          final dekor = tester
-              .widget<DecoratedBox>(
-                find.descendant(
-                  of: find.byType(Stempel),
-                  matching: find.byType(DecoratedBox),
-                ),
-              )
-              .decoration as BoxDecoration;
+          final dekor =
+              tester
+                      .widget<DecoratedBox>(
+                        find.descendant(
+                          of: find.byType(Stempel),
+                          matching: find.byType(DecoratedBox),
+                        ),
+                      )
+                      .decoration
+                  as BoxDecoration;
           final (tintaHalaman, latarHalaman) = _pasanganHalaman(n, gelap);
           // Semua nada memakai pasangan halaman tema aktif.
           expect(dekor.color, latarHalaman, reason: '$n');
@@ -322,14 +335,16 @@ void main() {
           await tester.pumpWidget(
             _app(Stempel(_status(n), tenang: true), gelap: gelap),
           );
-          final tenang = tester
-              .widget<DecoratedBox>(
-                find.descendant(
-                  of: find.byType(Stempel),
-                  matching: find.byType(DecoratedBox),
-                ),
-              )
-              .decoration as BoxDecoration;
+          final tenang =
+              tester
+                      .widget<DecoratedBox>(
+                        find.descendant(
+                          of: find.byType(Stempel),
+                          matching: find.byType(DecoratedBox),
+                        ),
+                      )
+                      .decoration
+                  as BoxDecoration;
           expect(tenang.color, isNull);
           if (n == NadaStatus.lulus) {
             expect(tester.widget<Icon>(find.byType(Icon)).color, w.lulus);
@@ -353,14 +368,16 @@ void main() {
           await tester.pumpWidget(
             _app(Stempel(_status(n), diAtasUbin: true), gelap: gelap),
           );
-          final dekor = tester
-              .widget<DecoratedBox>(
-                find.descendant(
-                  of: find.byType(Stempel),
-                  matching: find.byType(DecoratedBox),
-                ),
-              )
-              .decoration as BoxDecoration;
+          final dekor =
+              tester
+                      .widget<DecoratedBox>(
+                        find.descendant(
+                          of: find.byType(Stempel),
+                          matching: find.byType(DecoratedBox),
+                        ),
+                      )
+                      .decoration
+                  as BoxDecoration;
           expect(dekor.color, w.kertasUbin, reason: '$n');
           final ikon = tester.widget<Icon>(find.byType(Icon)).color;
           expect(ikon, w.tintaUbin, reason: '$n: ikon');
@@ -435,7 +452,6 @@ void main() {
             findsOneWidget,
             reason: '$n: status tetap tampil sebagai lencana',
           );
-          expect(bahan.clipBehavior, Clip.antiAlias, reason: 'visual dipotong');
           expect(
             pelanggaranKontrasTeks(tester, find.byType(UbinAlat)),
             isEmpty,
@@ -451,25 +467,41 @@ void main() {
       });
     }
 
-    testWidgets('tinggi minimum 144 / 160, padding 16, lencana di kiri atas, '
-        'isi tidak dikunci', (tester) async {
+    testWidgets('tinggi minimum 120, padding 16, nama di kiri atas, isi tidak '
+        'dikunci; RINGKAS dibanding kartu Bento (144 + angka besar)', (
+      tester,
+    ) async {
       layarHp(tester, lebar: 392, tinggi: 900);
       await tester.pumpWidget(_app(_ubinAlat()));
-      var tile = tester.getRect(find.byType(UbinAlat));
-      expect(UkuranUbin.alat, 144);
-      expect(UkuranUbin.alatBeranda, 160);
-      // Tinggi = isi bila isi lebih tinggi dari minimum (tidak dikunci).
-      expect(tile.height, greaterThanOrEqualTo(UkuranUbin.alat));
-      expect(tile.height, lessThan(UkuranUbin.alat + 40));
+      final tile = tester.getRect(find.byType(UbinAlat));
+      expect(UkuranUbin.alatRingkas, 120);
+      expect(tile.height, greaterThanOrEqualTo(UkuranUbin.alatRingkas));
+      expect(tile.height, lessThan(180));
       expect(tile.width, 392 - 32);
+      final nama = tester.getRect(find.text('Oven Memmert'));
+      expect(nama.left - tile.left, UkuranUbin.paddingAlat);
+      expect(nama.top - tile.top, UkuranUbin.paddingAlat);
       final stempel = tester.getRect(find.byType(Stempel));
       expect(stempel.left - tile.left, UkuranUbin.paddingAlat);
-      expect(stempel.top - tile.top, UkuranUbin.paddingAlat);
       expect(stempel.height, UkuranKontrol.stempel);
-      // Varian Beranda: minimum lebih tinggi.
-      await tester.pumpWidget(_app(_ubinAlat(beranda: true, nama: 'Oven')));
-      tile = tester.getRect(find.byType(UbinAlat));
-      expect(tile.height, greaterThanOrEqualTo(UkuranUbin.alatBeranda));
+      // Sedikit isi (nama + lencana): minimum 120 yang menahan.
+      await tester.pumpWidget(
+        _app(
+          _ubinAlat(
+            nama: 'Oven',
+            merkTipe: null,
+            serial: null,
+            lokasi: null,
+            hari: null,
+            tanggal: null,
+            nada: NadaStatus.netral,
+          ),
+        ),
+      );
+      expect(
+        tester.getSize(find.byType(UbinAlat)).height,
+        inInclusiveRange(UkuranUbin.alatRingkas, UkuranUbin.alatRingkas + 8),
+      );
       // Huruf 1,3 dan nama panjang: tumbuh melewati minimum.
       layarHp(tester, lebar: 320, tinggi: 900);
       await tester.pumpWidget(
@@ -485,122 +517,138 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(
         tester.getSize(find.byType(UbinAlat)).height,
-        greaterThan(UkuranUbin.alat),
+        greaterThan(UkuranUbin.alatRingkas + 60),
       );
     });
 
-    testWidgets('isi: nama 20 maks 2 baris, merk 13, seri 13 mono nomor '
-        'sendiri, angka 28 mono (Beranda 32), kata 12/600, tanggal 12/400', (
-      tester,
-    ) async {
+    testWidgets('isi: nama 20 semibold, "merk · SN seri" 13 dengan seri mono, '
+        'lokasi 13, lencana 24, aksi warna primer', (tester) async {
       layarHp(tester, lebar: 392, tinggi: 900);
       await tester.pumpWidget(_app(_ubinAlat()));
       final nama = tester.widget<Text>(find.text('Oven Memmert'));
       expect(nama.style!.fontSize, 20);
-      expect(nama.maxLines, 2);
-      expect(nama.overflow, TextOverflow.ellipsis);
-      expect(tester.widget<Text>(find.text('Memmert UF55')).style!.fontSize, 13);
-      final seri = tester.widget<Text>(find.text('SN-0457-2201')).style!;
+      expect(nama.style!.fontWeight, FontWeight.w600);
+      // Tanpa batas baris bawaan; ellipsis hanya bila ada batas (ellipsis tanpa
+      // batas memaksa satu baris).
+      expect(nama.maxLines, isNull);
+      expect(nama.overflow, TextOverflow.clip);
+      // Dua potongan: merk + titik pemisah di ujungnya (Inter), "SN seri" mono.
+      final merk = tester.widget<Text>(find.text('Memmert UF55 ·'));
+      expect(merk.style!.fontSize, 13);
+      expect(merk.style!.fontFamily, 'Inter', reason: 'merk = Inter');
+      final seri = tester.widget<Text>(find.text('SN 0457-2201')).style!;
       expect(seri.fontSize, 13);
-      expect(seri.fontFamily, 'IBMPlexMono', reason: 'nomor seri = IBM Plex Mono');
-      expect(seri.fontFeatures, contains(const FontFeature.tabularFigures()));
-      final merk = tester.getRect(find.text('Memmert UF55'));
-      final nomor = tester.getRect(find.text('SN-0457-2201'));
-      expect(nomor.top, greaterThanOrEqualTo(merk.bottom), reason: 'baris sendiri');
-      final angka = tester.widget<Text>(find.text('4')).style!;
-      expect(angka.fontSize, 28);
-      expect(angka.fontFamily, 'IBMPlexMono', reason: 'angka = IBM Plex Mono');
-      expect(find.text('hari lewat'), findsOneWidget);
-      final kata = tester.widget<Text>(find.text('hari lewat')).style!;
-      expect(kata.fontSize, 12);
-      expect(kata.fontWeight, FontWeight.w600);
-      final tgl = tester.widget<Text>(find.text('9 Nov 2026')).style!;
-      expect(tgl.fontSize, 12);
-      expect(tgl.fontWeight, FontWeight.w400);
-      await tester.pumpWidget(_app(_ubinAlat(beranda: true)));
-      expect(tester.widget<Text>(find.text('4')).style!.fontSize, 32);
-      // Tanpa jadwal dan tanpa data: tanda "–" dan kata tanpa angka palsu.
-      await tester.pumpWidget(
-        _app(
-          _ubinAlat(
-            nada: NadaStatus.netral,
-            hari: null,
-            merkTipe: null,
-            serial: null,
-            tanggal: null,
-          ),
-        ),
+      expect(
+        seri.fontFamily,
+        'IBMPlexMono',
+        reason: 'nomor seri = IBM Plex Mono',
       );
-      expect(find.text('–'), findsOneWidget);
-      expect(find.text('belum ada jadwal'), findsOneWidget);
-      expect(find.text('Memmert UF55'), findsNothing);
-      await tester.pumpWidget(_app(_ubinAlat(hari: 12)));
-      expect(find.text('12'), findsOneWidget);
-      expect(find.text('hari lagi'), findsOneWidget);
+      expect(seri.fontFeatures, contains(const FontFeature.tabularFigures()));
+      expect(tester.widget<Text>(find.text('Gudang 1')).style!.fontSize, 13);
+      final aksi = tester.widget<Text>(find.text('Lihat detail')).style!;
+      expect(aksi.color, _skema(false).primary);
+      expect(aksi.fontSize, 14);
+      // Tanpa merk: hanya seri (tanpa pemisah menggantung); tanpa seri: hanya
+      // merk; tanpa keduanya: tanpa baris identitas.
+      await tester.pumpWidget(_app(_ubinAlat(merkTipe: null)));
+      expect(find.text('SN 0457-2201'), findsOneWidget);
+      expect(find.textContaining('·'), findsNothing);
+      await tester.pumpWidget(_app(_ubinAlat(serial: null)));
+      expect(find.text('Memmert UF55'), findsOneWidget);
+      expect(find.textContaining('·'), findsNothing);
+      await tester.pumpWidget(_app(_ubinAlat(serial: null, merkTipe: null)));
+      expect(find.textContaining('SN'), findsNothing);
+      expect(find.textContaining('UF55'), findsNothing);
     });
 
-    testWidgets('nama panjang dipotong di dua baris, label baca membawa nama '
-        'utuh', (tester) async {
+    test('labelStatus: tiga status jadwal membawa waktunya, lainnya katanya '
+        'saja', () {
+      String label(NadaStatus nada, int? hari, {bool nonaktif = false}) =>
+          UbinAlat(
+            nama: 'x',
+            status: _status(nada),
+            hari: hari,
+            nonaktif: nonaktif,
+          ).labelStatus;
+      expect(label(NadaStatus.gagal, -4), 'Lewat jadwal 4 hari');
+      expect(label(NadaStatus.gagal, -1), 'Lewat jadwal 1 hari');
+      expect(label(NadaStatus.awas, 12), 'Segera jatuh tempo 12 hari lagi');
+      expect(label(NadaStatus.awas, 0), 'Segera jatuh tempo hari ini');
+      expect(label(NadaStatus.lulus, 120), 'Berlaku 120 hari lagi');
+      // Tanpa jadwal, atau waktu yang tidak cocok dengan statusnya: kata saja.
+      expect(label(NadaStatus.gagal, null), 'Lewat jadwal');
+      expect(label(NadaStatus.gagal, 3), 'Lewat jadwal');
+      expect(label(NadaStatus.lulus, -2), 'Berlaku');
+      // Status yang bukan jadwal tidak membawa hitung mundur.
+      expect(label(NadaStatus.tunggu, 5), 'Sedang diproses');
+      expect(label(NadaStatus.netral, 5), 'Tidak aktif');
+      // Nonaktif: tidak pernah berwaktu, apa pun nadanya.
+      expect(label(NadaStatus.netral, 10, nonaktif: true), 'Tidak aktif');
+      expect(label(NadaStatus.awas, 10, nonaktif: true), 'Segera jatuh tempo');
+    });
+
+    test('keteranganJadwal dan konteksNonaktif', () {
+      UbinAlat ubin({int? hari, String? tanggal, bool nonaktif = false}) =>
+          UbinAlat(
+            nama: 'x',
+            status: _status(NadaStatus.gagal),
+            hari: hari,
+            tanggal: tanggal,
+            nonaktif: nonaktif,
+          );
+      expect(
+        ubin(hari: -4, tanggal: '9 Nov 2026').keteranganJadwal,
+        'sejak 9 Nov 2026',
+      );
+      expect(
+        ubin(hari: 0, tanggal: '9 Nov 2026').keteranganJadwal,
+        'jatuh tempo 9 Nov 2026',
+      );
+      expect(
+        ubin(hari: 12, tanggal: '9 Nov 2026').keteranganJadwal,
+        'jatuh tempo 9 Nov 2026',
+      );
+      expect(ubin(hari: 12).keteranganJadwal, isNull);
+      expect(ubin(tanggal: '9 Nov 2026').keteranganJadwal, isNull);
+      expect(ubin(hari: 12, tanggal: '').keteranganJadwal, isNull);
+      // Nonaktif: konteks menggantikan keterangan jadwal.
+      final mati = ubin(hari: 10, tanggal: '9 Nov 2026', nonaktif: true);
+      expect(mati.keteranganJadwal, isNull);
+      expect(mati.konteksNonaktif, 'Alat nonaktif, jadwal tercatat 9 Nov 2026');
+      expect(ubin(nonaktif: true).konteksNonaktif, 'Alat nonaktif');
+      expect(ubin(hari: 5).konteksNonaktif, isNull);
+    });
+
+    testWidgets('batas baris nama hanya bila diminta: ellipsis + dipotong; '
+        'label baca membawa nama utuh', (tester) async {
       final semantik = tester.ensureSemantics();
       layarHp(tester, lebar: 320, tinggi: 900);
       const panjang =
           'Alat Ukur Tekanan Digital Presisi Tinggi Untuk Laboratorium Pusat '
           'Dan Cabang Seluruh Indonesia';
-      await tester.pumpWidget(_app(_ubinAlat(nama: panjang)));
-      final p = tester.renderObject<RenderParagraph>(find.text(panjang));
+      await tester.pumpWidget(_app(_ubinAlat(nama: panjang, maksBarisNama: 2)));
+      var p = tester.renderObject<RenderParagraph>(
+        find
+            .descendant(of: find.text(panjang), matching: find.byType(RichText))
+            .first,
+      );
       expect(p.maxLines, 2);
       expect(p.didExceedMaxLines, isTrue);
       expect(find.bySemanticsLabel(RegExp(panjang)), findsOneWidget);
+      // Bawaan: nama utuh, membungkus sebanyak perlu.
+      await tester.pumpWidget(_app(_ubinAlat(nama: panjang)));
+      p = tester.renderObject<RenderParagraph>(
+        find
+            .descendant(of: find.text(panjang), matching: find.byType(RichText))
+            .first,
+      );
+      expect(p.didExceedMaxLines, isFalse);
+      expect(p.size.height, greaterThan(2 * 26));
       semantik.dispose();
     });
 
-    for (final (lebar, skala, ukuran) in [
-      (392.0, 1.0, UkuranVisual.alat),
-      (320.0, 1.0, UkuranVisual.alatKompak),
-      (392.0, 1.0, UkuranVisual.alatBeranda),
-    ]) {
-      testWidgets('visual $ukuran di kanan bawah: keluar 10 dari kanan dan 20 '
-          'dari bawah, dipotong ubin, tidak menimpa teks (lebar $lebar)', (
-        tester,
-      ) async {
-        layarHp(tester, lebar: lebar, tinggi: 900);
-        final beranda = ukuran == UkuranVisual.alatBeranda;
-        // Nama dan merk PANJANG: tanpa ruang yang dicadangkan, barisnya akan
-        // membentang sampai ke kanan dan menabrak visual.
-        const nama = 'Timbangan Analitik Presisi Tinggi';
-        const merk = 'Mettler Toledo XPR205 Seri Lengkap';
-        await tester.pumpWidget(
-          _app(
-            _ubinAlat(nama: nama, merkTipe: merk, beranda: beranda),
-            skala: skala,
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 600));
-        final tile = tester.getRect(find.byType(UbinAlat));
-        final v = tester.getRect(find.byKey(_visual));
-        expect(v.size, Size.square(ukuran));
-        expect(v.right - tile.right, UkuranVisual.keluarSamping);
-        expect(v.bottom - tile.bottom, UkuranVisual.keluarBawah);
-        for (final teks in [
-          find.text(nama),
-          find.text(merk),
-          find.text('SN-0457-2201'),
-          find.text('4'),
-          find.text('hari lewat'),
-          find.text('9 Nov 2026'),
-          find.byType(Stempel),
-        ]) {
-          expect(
-            tester.getRect(teks).overlaps(v),
-            isFalse,
-            reason: 'visual tidak boleh menimpa teks',
-          );
-        }
-      });
-    }
-
-    testWidgets('seluruh ubin satu tombol: ketukan di sudut, tengah, visual, '
-        'dan stempel, tepat sekali', (tester) async {
+    testWidgets('seluruh kartu satu tombol: ketukan di sudut, tengah, lencana, '
+        'dan aksi, tepat sekali', (tester) async {
       layarHp(tester, lebar: 392, tinggi: 900);
       var n = 0;
       await tester.pumpWidget(_app(_ubinAlat(onTap: () => n++)));
@@ -611,9 +659,9 @@ void main() {
         r.bottomLeft + const Offset(14, -14),
         r.bottomRight + const Offset(-14, -14),
         r.center,
-        tester.getCenter(find.byKey(_visual)).translate(-20, -20),
         tester.getCenter(find.byType(Stempel)),
         tester.getCenter(find.text('Oven Memmert')),
+        tester.getCenter(find.text('Lihat detail')),
       ];
       for (final p in titik) {
         final sebelum = n;
@@ -624,16 +672,24 @@ void main() {
     });
 
     testWidgets('semantik: kalimat bawaan dari isi, bisa diganti; label tetap '
-        'ada pada ubin statis dan tombol berlabel bisa diaktifkan', (
+        'ada pada kartu statis dan tombol berlabel bisa diaktifkan', (
       tester,
     ) async {
       final semantik = tester.ensureSemantics();
       layarHp(tester, lebar: 392, tinggi: 900);
       var n = 0;
-      await tester.pumpWidget(_app(_ubinAlat(onTap: () => n++)));
+      await tester.pumpWidget(
+        _app(
+          _ubinAlat(
+            onTap: () => n++,
+            tahap: statusPaket('dikalibrasi', 'Sedang dikalibrasi'),
+          ),
+        ),
+      );
       const kalimat =
-          'Oven Memmert. Status: Lewat jadwal. Memmert UF55. Nomor seri '
-          'SN-0457-2201. Lewat 4 hari. 9 Nov 2026';
+          'Oven Memmert. Status: Lewat jadwal 4 hari. Di lab: Sedang '
+          'dikalibrasi. Memmert UF55. Nomor seri 0457-2201. Lokasi Gudang 1. '
+          'sejak 9 Nov 2026';
       expect(
         tester.getSemantics(find.bySemanticsLabel(kalimat)),
         matchesSemantics(label: kalimat, isButton: true, hasTapAction: true),
@@ -646,7 +702,8 @@ void main() {
       );
       expect(find.bySemanticsLabel('Buka Oven Memmert'), findsOneWidget);
       expect(find.bySemanticsLabel(RegExp('Status: ')), findsNothing);
-      // Statis (tanpa onTap) dengan semantik: berlabel, bukan tombol.
+      // Statis (tanpa onTap) dengan semantik: berlabel, bukan tombol, tanpa
+      // "Lihat detail" (tidak ada yang bisa dibuka).
       await tester.pumpWidget(
         _app(
           UbinAlat(
@@ -662,6 +719,7 @@ void main() {
         matchesSemantics(label: 'Ringkasan oven'),
       );
       expect(find.byType(InkWell), findsNothing);
+      expect(find.text('Lihat detail'), findsNothing);
       semantik.dispose();
     });
 
@@ -673,7 +731,9 @@ void main() {
         matching: find.byType(AnimatedScale),
       );
       expect(tester.widget<AnimatedScale>(skala).scale, 1);
-      final g = await tester.startGesture(tester.getCenter(find.byType(UbinAlat)));
+      final g = await tester.startGesture(
+        tester.getCenter(find.byType(UbinAlat)),
+      );
       await tester.pump();
       expect(tester.widget<AnimatedScale>(skala).scale, skalaTekan);
       await g.up();
@@ -696,11 +756,11 @@ void main() {
           )
           .opacity
           .value;
-      await tester.pumpWidget(_app(_ubinAlat(adaVisual: false, urutan: 2)));
+      await tester.pumpWidget(_app(_ubinAlat(urutan: 2)));
       expect(opasitas(), 0);
       await tester.pump(const Duration(milliseconds: 70 + 260));
       expect(opasitas(), 1);
-      await tester.pumpWidget(_app(_ubinAlat(adaVisual: false)));
+      await tester.pumpWidget(_app(_ubinAlat()));
       expect(
         find.descendant(
           of: find.byType(UbinAlat),
@@ -710,12 +770,12 @@ void main() {
         reason: 'tanpa urutan = tanpa animasi masuk',
       );
       _kurangiGerak(tester);
-      await tester.pumpWidget(_app(_ubinAlat(adaVisual: false, urutan: 4)));
+      await tester.pumpWidget(_app(_ubinAlat(urutan: 4)));
       expect(opasitas(), 1);
     });
 
     for (final gelap in [false, true]) {
-      testWidgets('cincin fokus di luar ubin, 3:1, Enter mengaktifkan '
+      testWidgets('cincin fokus di luar kartu, 3:1, Enter mengaktifkan '
           '(${gelap ? 'gelap' : 'terang'})', (tester) async {
         layarHp(tester, lebar: 392, tinggi: 900);
         var n = 0;
@@ -735,28 +795,36 @@ void main() {
     }
 
     for (final gelap in [false, true]) {
-      testWidgets('320 dp x huruf 1,3, semua nada: tanpa luapan, kontras '
-          'tetap (${gelap ? 'gelap' : 'terang'})', (tester) async {
-        layarHp(tester, lebar: 320, tinggi: 1400);
+      testWidgets('320 dp x huruf 1,3, semua nada, dengan tahap dan nonaktif: '
+          'tanpa luapan, kontras tetap (${gelap ? 'gelap' : 'terang'})', (
+        tester,
+      ) async {
+        layarHp(tester, lebar: 320, tinggi: 1600);
         for (final n in _nadaSemua) {
-          await tester.pumpWidget(
-            _app(
-              _ubinAlat(
-                nada: n,
-                nama: 'Timbangan Analitik Presisi Tinggi',
-                hari: 128,
-                beranda: true,
+          for (final mati in [false, true]) {
+            await tester.pumpWidget(
+              _app(
+                _ubinAlat(
+                  nada: n,
+                  nama: 'Timbangan Analitik Presisi Tinggi',
+                  hari: 128,
+                  nonaktif: mati,
+                  tahap: statusPaket(
+                    'menunggu_pemeriksaan',
+                    'Hasil sedang diperiksa',
+                  ),
+                ),
+                gelap: gelap,
+                skala: 1.3,
               ),
-              gelap: gelap,
-              skala: 1.3,
-            ),
-          );
-          expect(tester.takeException(), isNull, reason: '$n');
-          expect(
-            pelanggaranKontrasTeks(tester, find.byType(UbinAlat)),
-            isEmpty,
-            reason: '$n',
-          );
+            );
+            expect(tester.takeException(), isNull, reason: '$n mati=$mati');
+            expect(
+              pelanggaranKontrasTeks(tester, find.byType(UbinAlat)),
+              isEmpty,
+              reason: '$n mati=$mati',
+            );
+          }
         }
       });
     }
@@ -837,7 +905,10 @@ void main() {
         16,
       );
       expect(
-        tester.widget<Text>(find.text('Belum ada sertifikat yang terbit.')).style!.fontSize,
+        tester
+            .widget<Text>(find.text('Belum ada sertifikat yang terbit.'))
+            .style!
+            .fontSize,
         13,
       );
       final aksi = tester.widget<Text>(find.text('Lihat semua')).style!;
@@ -858,7 +929,14 @@ void main() {
       layarHp(tester, lebar: 392, tinggi: 900);
       var n = 0;
       await tester.pumpWidget(
-        _app(Row(children: [Expanded(child: ringkas(onTap: () => n++)), const Expanded(child: SizedBox())])),
+        _app(
+          Row(
+            children: [
+              Expanded(child: ringkas(onTap: () => n++)),
+              const Expanded(child: SizedBox()),
+            ],
+          ),
+        ),
       );
       expect(find.byType(InkWell), findsOneWidget);
       final r = tester.getRect(find.byType(UbinRingkas));
@@ -880,7 +958,11 @@ void main() {
       );
       expect(find.semantics.byFlag(SemanticsFlag.isButton), findsOneWidget);
       await _tab(tester);
-      _periksaCincin(tester, tester.getRect(_bahan(find.byType(UbinRingkas))), gelap: false);
+      _periksaCincin(
+        tester,
+        tester.getRect(_bahan(find.byType(UbinRingkas))),
+        gelap: false,
+      );
       semantik.dispose();
     });
 
@@ -959,8 +1041,14 @@ void main() {
                 )
                 .first,
           );
-          expect((bulat.decoration as BoxDecoration).color, _w(gelap).tintaUbin);
-          expect(tester.widget<Icon>(find.byType(Icon)).color, _w(gelap).kertasUbin);
+          expect(
+            (bulat.decoration as BoxDecoration).color,
+            _w(gelap).tintaUbin,
+          );
+          expect(
+            tester.widget<Icon>(find.byType(Icon)).color,
+            _w(gelap).kertasUbin,
+          );
         }
       });
     }
@@ -981,7 +1069,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
       final tile = tester.getRect(find.byType(UbinMenu));
       final judul = find.text('Pelacakan paket kalibrasi alat');
-      expect(tester.getSize(judul).width, lessThanOrEqualTo(UkuranUbin.judulMenuMaks));
+      expect(
+        tester.getSize(judul).width,
+        lessThanOrEqualTo(UkuranUbin.judulMenuMaks),
+      );
       expect(tester.widget<Text>(judul).style!.fontSize, 16);
       expect(tester.widget<Text>(judul).maxLines, 2);
       expect(tester.getRect(judul).left - tile.left, 16);
@@ -1041,7 +1132,9 @@ void main() {
         reason: 'avatar ke-1 dan ke-3 berjarak dua kali selisih tumpukan',
       );
       final tumpukan = tester.getRect(
-        find.ancestor(of: find.text('CD'), matching: find.byType(SizedBox)).first,
+        find
+            .ancestor(of: find.text('CD'), matching: find.byType(SizedBox))
+            .first,
       );
       expect(tumpukan.height, UkuranUbin.avatarUbin);
       expect(tile.right - tumpukan.right, 16);
@@ -1055,7 +1148,14 @@ void main() {
       layarHp(tester, lebar: 392, tinggi: 900);
       var n = 0;
       await tester.pumpWidget(
-        _app(Row(children: [Expanded(child: menu(onTap: () => n++)), const Expanded(child: SizedBox())])),
+        _app(
+          Row(
+            children: [
+              Expanded(child: menu(onTap: () => n++)),
+              const Expanded(child: SizedBox()),
+            ],
+          ),
+        ),
       );
       expect(find.byType(InkWell), findsOneWidget);
       expect(find.semantics.byFlag(SemanticsFlag.isButton), findsOneWidget);
@@ -1079,7 +1179,11 @@ void main() {
         expect(n, sebelum + 1, reason: '$p');
       }
       await _tab(tester);
-      _periksaCincin(tester, tester.getRect(_bahan(find.byType(UbinMenu))), gelap: false);
+      _periksaCincin(
+        tester,
+        tester.getRect(_bahan(find.byType(UbinMenu))),
+        gelap: false,
+      );
       semantik.dispose();
     });
 
@@ -1106,7 +1210,9 @@ void main() {
         await tester.pumpWidget(
           _app(
             padding == null
-                ? const PanelSidik(anak: [SizedBox(key: Key('anak'), height: 60)])
+                ? const PanelSidik(
+                    anak: [SizedBox(key: Key('anak'), height: 60)],
+                  )
                 : PanelSidik(
                     padding: padding,
                     anak: const [SizedBox(key: Key('anak'), height: 60)],
@@ -1124,14 +1230,18 @@ void main() {
         );
       }
 
-      Material bahan() => tester.widget<Material>(_bahan(find.byType(PanelSidik)));
+      Material bahan() =>
+          tester.widget<Material>(_bahan(find.byType(PanelSidik)));
       expect((await isi(null)).left, 0, reason: 'bawaan = tanpa padding');
       expect(
         (bahan().shape! as RoundedRectangleBorder).borderRadius,
         BorderRadius.circular(16),
       );
       expect(Bentuk.panel, 16);
-      expect((await isi(PanelSidik.paddingBaris)).left, UkuranKontrol.panelBaris);
+      expect(
+        (await isi(PanelSidik.paddingBaris)).left,
+        UkuranKontrol.panelBaris,
+      );
       expect(UkuranKontrol.panelBaris, 4);
       expect((await isi(PanelSidik.paddingIsi)).left, UkuranUbin.paddingAlat);
       expect(UkuranUbin.paddingAlat, 16);
@@ -1176,8 +1286,14 @@ void main() {
           reason: 'berkas baru tidak boleh punya pelanggaran token-only',
         );
         final c = PemindaiToken.buangKomentar(sumber);
-        expect(ukuranMentah.allMatches(c).map((m) => m.group(0)).toList(), isEmpty);
-        expect(jarakMentah.allMatches(c).map((m) => m.group(0)).toList(), isEmpty);
+        expect(
+          ukuranMentah.allMatches(c).map((m) => m.group(0)).toList(),
+          isEmpty,
+        );
+        expect(
+          jarakMentah.allMatches(c).map((m) => m.group(0)).toList(),
+          isEmpty,
+        );
         expect(RegExp(r'\bColors\.(?!transparent)\w+').hasMatch(c), isFalse);
         expect(c.contains(' · '), isFalse);
         expect(c.contains('KartuSidik('), isFalse);

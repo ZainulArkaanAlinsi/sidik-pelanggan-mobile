@@ -5,6 +5,7 @@ import '../../core/api_pelanggan.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/warna_sidik.dart';
 import '../../providers/sesi_provider.dart';
+import '../../widgets/kolom_isian.dart';
 import '../../widgets/tombol_sidik.dart';
 import 'kerangka_auth.dart';
 
@@ -75,34 +76,28 @@ class _LupaSandiScreenState extends ConsumerState<LupaSandiScreen> {
           style: t.bodyMedium?.copyWith(color: s.onSurfaceVariant),
         ),
         const SizedBox(height: Spasi.xl),
-        TextField(
-          controller: _email,
-          enabled: !_kodeTerkirim,
+        KolomIsian(
+          label: 'Email',
+          pengendali: _email,
+          aktif: !_kodeTerkirim,
           keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            labelText: 'Email',
-            errorText: _galatIsian['email'],
-          ),
+          galat: _galatIsian['email'],
         ),
         if (_kodeTerkirim) ...[
           const SizedBox(height: Spasi.lg),
-          TextField(
-            controller: _otp,
+          KolomIsian(
+            label: 'Kode dari email',
+            pengendali: _otp,
             keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'Kode dari email',
-              errorText: _galatIsian['otp'],
-            ),
+            galat: _galatIsian['otp'],
           ),
           const SizedBox(height: Spasi.lg),
-          TextField(
-            controller: _sandi,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: 'Sandi baru',
-              helperText: 'Minimal 10 karakter',
-              errorText: _galatIsian['sandi'],
-            ),
+          KolomIsian(
+            label: 'Sandi baru',
+            pengendali: _sandi,
+            rahasia: true,
+            bantuan: 'Minimal 10 karakter',
+            galat: _galatIsian['sandi'],
           ),
         ],
         if (_galat != null) ...[

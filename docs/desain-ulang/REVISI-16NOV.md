@@ -61,13 +61,56 @@ ini tidak menyentuh puluhan pemakai. Pembersihan nama menyusul.
   darurat, saringan "Dalam 30 hari".
 - Papan ketik terbuka menyembunyikan bilah dan banner (HP); bobot 700 diganti semibold
   di kode (Inter-Bold tetap dibundel).
-- Tidak dikerjakan: `ChipStatus` masih pil 999 (lencana detail; delegasikan ke `Stempel`);
+- Tidak dikerjakan di putaran itu: `ChipStatus` masih pil 999 (kini selesai, lihat R1b);
   tinta status "berjenjang" bukan bukti aksesibilitas (hanya pelengkap ikon + kata); tema
   gelap dengan ubin pastel terang terasa silau (PR tema gelap).
 
+## R1b: poles layar yang sudah rilis (Alat saya, Beranda, auth, lencana)
+
+Sumber: REVISI-1 butir 5/6/9/11, REVISI-2 butir 1/2/12. Logika, alur, API, peran, rute,
+data, dan aturan baca-saja tidak berubah.
+
+- **Kartu alat ringkas** (`UbinAlat`, dipakai Alat saya DAN Beranda): lima baris (nama
+  menonjol; "merk model · SN seri" dengan seri IBM Plex Mono; lokasi; lencana status;
+  "Lihat detail →" + tanggal jadwal). Waktunya ikut di kata lencana untuk tiga status
+  jadwal ("Lewat jadwal 4 hari", "Segera jatuh tempo 12 hari lagi", "Berlaku 120 hari
+  lagi"); alat di lab membawa tahapnya sebagai lencana kedua. Angka hari besar, visual
+  kanan bawah, dan varian Beranda 232/160 dibuang.
+- **Alat nonaktif (keputusan perlakuan)**: tanpa hitung mundur sama sekali (tidak di
+  lencana, tidak di keterangan, tidak di kalimat pembaca layar). Lencana tetap "Tidak
+  aktif" (netral), namanya diredupkan ke teks kedua, dan jadwal yang tercatat tampil
+  sebagai konteks "Alat nonaktif, jadwal tercatat 22 Nov 2026". Alasan: server tetap
+  mengirim jadwalnya, tetapi alat nonaktif tidak boleh terbaca sebagai tindakan yang harus
+  segera dilakukan. Dijaga `alat_bento_test` (kartu ringkas R1b) dan
+  `komponen_bento_ubin_test`.
+- **Keadaan Alat saya**: kosong = kartu netral ringkas (ikon biru muda, judul 18) dan, bila
+  saringan yang menyempitkan daftar, satu tombol "Tampilkan semua alat"; kerangka memuat
+  mengikuti bentuk kartu ringkas; lencana jumlah dan catatan luring bersudut 12 (bukan pil
+  999).
+- **Beranda**: judul "Kalibrasi Anda" (24) di atas ringkasan (18, bukan dua kalimat 24);
+  kartu alat ringkas yang sama dengan Alat saya; kapsul jatuh tempo rel 80 (dulu 100);
+  ubin Paket netral saat tenang/kosong (hijau hanya bila ada paket siap diambil, krem bila
+  terlambat); baris bantuan netral (permukaan + garis, ikon biru muda) bukan biru kelabu
+  status; catatan offline tenang (abu muda) karena bingkai aplikasi sudah memasang
+  peringatan krem.
+- **Auth** (Sambutan, Masuk, Undangan, Lupa sandi): kepala biru muda 240 dp dan plat logo
+  80 diganti kepala ringkas (logo 48 + nama aplikasi) di atas latar halaman, satu kartu
+  putih bergaris halus sudut 16; judul 24 ("Masuk ke SIDIK"); isian memakai `KolomIsian`
+  (label PERMANEN di atas kolom, bantuan dan galat tepat di bawahnya, kolom 48, satu
+  simpul semantik, ruang agar tombol tidak tertutup papan ketik).
+- **Lencana bersama**: `ChipStatus` mendelegasikan ke `Stempel` (24, sudut 6, ikon 14);
+  kata panjang membungkus, tidak dipotong.
+- **Pemisah "merk model · SN seri"**: REVISI-2 butir 2 menetapkan baris itu, sedangkan
+  penjaga desain lama (`anti_slop_test`, `komponen_jejak_test`, gerbang token, galeri
+  render) melarang string " · " di teks. Penjaganya TIDAK dilonggarkan: baris dibangun
+  dari dua potongan yang membungkus utuh (`Text("Mitutoyo CD-15CPX ·")` dan
+  `Text("SN 2201-0457")` mono), jadi tidak ada string " · " di kode, dan "SN seri" tidak
+  pernah terbelah di layar sempit.
+
 ## Belum dikerjakan (PR berikutnya)
 
-Poles layar: Beranda ("Kalibrasi Anda", ringkasan permintaan aktif), Alat saya (kartu
-ringkas satu baris status, alat nonaktif dibedakan), Sertifikat (urutan informasi),
-auth (label di atas kolom, kepala lebih kecil), lalu detail alat, sertifikat, paket,
-akun, anggota, preferensi, notifikasi. Tema gelap masih titik awal (belum ditinjau).
+Poles layar: detail alat, sertifikat, paket, akun (termasuk Ganti sandi: label permanen
+lewat `KolomIsian`), anggota, preferensi, notifikasi, bantuan, dan kondisi sistem. Sertifikat
+(daftar) sudah di #31. Tema gelap masih titik awal (belum ditinjau). Pembersihan token Bento
+yang tak dipakai lagi (`UkuranUbin.alat/alatBeranda`, `UkuranVisual.alat*`, nama token yang
+menyesatkan) menyusul di PR bersih-bersih.
