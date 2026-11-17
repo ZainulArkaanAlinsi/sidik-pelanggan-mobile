@@ -29,6 +29,7 @@ void main() {
       for (final u in [
         'javascript:alert(1)',
         'http://pt-sidik.com',
+        'http://pt-sidik.com/halaman',
         'file:///etc/passwd',
         'content://com.android.contacts',
         'intent://scan/#Intent;scheme=zxing;end',

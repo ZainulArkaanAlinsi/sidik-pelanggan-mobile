@@ -47,7 +47,10 @@ abstract final class TautanLuar {
           !uri.toString().contains(_tidakBoleh);
     }
     // mailto / tel: ada tujuannya.
-    return uri.path.isNotEmpty && !uri.path.contains(_tidakBoleh);
+    if (skema == 'mailto' || skema == 'tel') {
+      return uri.path.isNotEmpty && !uri.path.contains(_tidakBoleh);
+    }
+    return false;
   }
 
   /// Tautan web dari server (Instagram, LinkedIn, PDF ruang lingkup, dokumen
