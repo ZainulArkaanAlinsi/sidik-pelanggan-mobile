@@ -8,6 +8,7 @@ import '../../core/tema/warna_sidik.dart';
 import '../../models/arsip.dart';
 import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
+import '../../providers/sesi_provider.dart';
 import '../../widgets/bagian_sidik.dart';
 import '../../widgets/daftar_berhalaman.dart';
 import '../../widgets/halaman_sidik.dart';
@@ -216,8 +217,40 @@ class _GarisState extends ConsumerState<_Garis> {
     });
   }
 
+  /// Muat ulang tingkat ini beserta isi tahun-tahun yang sedang dibuka: bulan
+  /// di tahun yang terbuka tidak boleh basi sampai tahunnya ditutup.
+  Future<void> _muatUlang(DataBerhalaman<BarisArsip>? data) async {
+    final ditunggu = <Future<Object?>>[];
+    ref.invalidate(garisWaktuProvider(parameter));
+    ditunggu.add(ref.read(garisWaktuProvider(parameter).future));
+    if (akar) {
+      for (final baris in data?.isi ?? const <BarisArsip>[]) {
+        if (baris is! BarisKelompok ||
+            !_terbuka.contains(baris.kelompok.kunci)) {
+          continue;
+        }
+        final isiTahun = garisWaktuProvider(baris.kelompok.parameter);
+        ref.invalidate(isiTahun);
+        ditunggu.add(ref.read(isiTahun.future));
+      }
+    }
+    try {
+      await Future.wait(ditunggu);
+    } catch (_) {
+      // Galatnya sudah tampil di layar (KeadaanGalat, atau "Coba lagi" di
+      // dalam tahun); tarik-muat-ulang tidak perlu melempar lagi.
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Tahun yang terbuka milik perusahaan sebelumnya tidak boleh terbawa ke
+    // perusahaan baru (layar ini tidak dipasang ulang saat perusahaan berganti).
+    ref.listen(sesiProvider.select((s) => s.value?.perusahaanId), (lama, baru) {
+      if (lama != baru && _terbuka.isNotEmpty) {
+        setState(_terbuka.clear);
+      }
+    });
     final async = ref.watch(garisWaktuProvider(parameter));
     final tidakAda = _tidakDitemukan(
       context,
@@ -230,15 +263,7 @@ class _GarisState extends ConsumerState<_Garis> {
     final data = async.value;
     final total = data?.jumlah['total_dokumen'];
     return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(garisWaktuProvider(parameter));
-        try {
-          await ref.read(garisWaktuProvider(parameter).future);
-        } catch (_) {
-          // Galatnya sudah tampil di layar (KeadaanGalat); tarik-muat-ulang
-          // tidak perlu melempar lagi.
-        }
-      },
+      onRefresh: () => _muatUlang(data),
       child: DaftarBerhalaman<BarisArsip>(
         async: async,
         namaButir: 'sertifikat',

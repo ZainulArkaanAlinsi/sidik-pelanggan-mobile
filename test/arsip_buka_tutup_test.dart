@@ -241,6 +241,102 @@ void main() {
     });
   });
 
+  group('tahun yang terbuka mengikuti perusahaan dan muat ulang', () {
+    Widget appDuaPerusahaan(LayananArsipPalsu layanan) => ProviderScope(
+      overrides: overrideDasar(
+        tambahan: [
+          layananProvider.overrideWithValue(layanan),
+          sesiProvider.overrideWith(() => SesiBisaGanti(sesiDuaPerusahaan())),
+        ],
+      ),
+      child: MaterialApp(
+        theme: TemaSidik.terang,
+        home: const _Gerbang(ArsipScreen()),
+      ),
+    );
+
+    testWidgets('berganti perusahaan: tahun yang terbuka kembali tertutup, '
+        'isinya tidak terbawa ke perusahaan baru', (tester) async {
+      layarHp(tester, lebar: 392, tinggi: 1600);
+      final palsu = LayananArsipPalsu(_server);
+      await tester.pumpWidget(appDuaPerusahaan(palsu));
+      await tester.pumpAndSettle();
+      await tester.tap(_tahun2026);
+      await tester.pumpAndSettle();
+      expect(find.text('November 2026'), findsOneWidget);
+      expect(_ikon(tester, '2026'), Icons.expand_less);
+
+      ProviderScope.containerOf(
+        tester.element(find.byType(ArsipIsi)),
+      ).read(sesiProvider.notifier).pilihPerusahaan(4);
+      await tester.pumpAndSettle();
+
+      expect(_tahun2026, findsOneWidget);
+      expect(find.text('November 2026'), findsNothing);
+      expect(_ikon(tester, '2026'), Icons.expand_more);
+
+      // Perusahaan baru: tahun yang sama bisa dibuka lagi seperti biasa.
+      await tester.tap(_tahun2026);
+      await tester.pumpAndSettle();
+      expect(find.text('November 2026'), findsOneWidget);
+      expect(_ikon(tester, '2026'), Icons.expand_less);
+    });
+
+    testWidgets('tarik-muat-ulang: bulan di tahun yang terbuka ikut segar, '
+        'tahun yang tertutup tidak diminta', (tester) async {
+      layarHp(tester, lebar: 392, tinggi: 1600);
+      var diperbarui = false;
+      final palsu = LayananArsipPalsu((p, h) async {
+        if (diperbarui &&
+            p.tingkat == TingkatArsip.bulan &&
+            p.query()['tahun'] == '2026') {
+          return HasilArsip.dariJson(
+            jawabanArsip(
+              tingkat: 'bulan',
+              induk: {'tahun': 2026},
+              total: 6,
+              kelompok: [
+                kelompokJson(
+                  '2026-12',
+                  'Desember 2026',
+                  1,
+                  mulai: '2026-12-01',
+                  selesai: '2026-12-31',
+                  telusuri: {'tingkat': 'pekan', 'tahun': 2026, 'bulan': 12},
+                ),
+              ],
+            ),
+          );
+        }
+        return _server(p, h);
+      });
+      await tester.pumpWidget(appDuaPerusahaan(palsu));
+      await tester.pumpAndSettle();
+      await tester.tap(_tahun2026);
+      await tester.pumpAndSettle();
+      expect(find.text('November 2026'), findsOneWidget);
+      expect(find.text('Desember 2026'), findsNothing);
+      expect(palsu.panggilan, hasLength(2));
+
+      diperbarui = true;
+      await tester.fling(_tahun2026, const Offset(0, 400), 1000);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Desember 2026'), findsOneWidget);
+      expect(find.text('November 2026'), findsNothing);
+      expect(_ikon(tester, '2026'), Icons.expand_less);
+      final tahunDiminta = [
+        for (final c in palsu.panggilan)
+          if (c.parameter.tingkat == TingkatArsip.bulan)
+            c.parameter.query()['tahun'],
+      ];
+      expect(tahunDiminta, [
+        '2026',
+        '2026',
+      ], reason: '2025 tidak pernah dibuka');
+    });
+  });
+
   group('keadaan di dalam tahun yang dibuka', () {
     testWidgets('memuat: penanda berlabel, lalu isi', (tester) async {
       final semantik = tester.ensureSemantics();
