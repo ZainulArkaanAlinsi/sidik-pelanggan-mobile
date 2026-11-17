@@ -107,6 +107,42 @@ data, dan aturan baca-saja tidak berubah.
   `Text("SN 2201-0457")` mono), jadi tidak ada string " · " di kode, dan "SN seri" tidak
   pernah terbelah di layar sempit.
 
+## P5d-A: sisa temuan R1b, Hubungi PT SIDIK, "Tanya admin"
+
+Sumber: REVISI-1 butir 10 dan 11, REVISI-2 butir 12, tinjauan R1b (A1, A3, A5-A8).
+Logika, alur, API, peran, rute, data, dan aturan baca-saja tidak berubah; tidak ada
+panggilan tulis baru (`test/guard_tulis_test.dart` tidak disentuh).
+
+- **Layar Hubungi PT SIDIK** (`hubungi_screen.dart`, menggantikan Bantuan & kontak): identitas
+  dan akreditasi KAN (`LencanaKan`), jam layanan HANYA bila server mengirimnya, tombol utama
+  "Chat dengan admin" (WhatsApp), kanal ringkas (telepon, email, email pemasaran, alamat; ketuk
+  baris = buka, tombol di kanan = salin satu ketuk + konfirmasi), tautan sekunder (Instagram,
+  LinkedIn, ruang lingkup akreditasi PDF). Field `null` atau tidak aman = barisnya tidak ada;
+  server lama tanpa field baru tetap jalan. Dari Akun, Beranda, Sambutan, undangan, pemeliharaan,
+  dan "akun belum aktif". Kontak yang pernah terbaca tetap tampil bila pemuatan ulang gagal.
+- **Keamanan tautan** (`core/tautan_luar.dart`, satu-satunya pintu ke `launchUrl` lewat
+  `providers/tautan_provider.dart`): hanya skema `https`, `mailto`, `tel`; tautan server
+  dipakai hanya bila `https`, bertuan rumah, tanpa `user:sandi@`, tanpa spasi atau karakter
+  kendali/arah teks. Tautan WhatsApp berpesan, `mailto`, `tel`, dan peta DIBANGUN aplikasi
+  dari nilai yang sudah divalidasi, isi pesan di-encode per komponen (satu-satunya parameter
+  `text`; `&`, `#`, `?`, `%`, baris baru, emoji aman).
+- **"Tanya admin tentang ini"** (`core/pesan_admin.dart`, `widgets/lembar_tanya_admin.dart`):
+  detail alat "Minta kalibrasi ulang" (tidak untuk alat tidak aktif) dan detail sertifikat
+  "Tanya tentang sertifikat ini" / "Laporkan data yang keliru". Pesan Bahasa Indonesia dari data
+  layar saja (nama perusahaan aktif, alat, merk/model, nomor seri, jadwal, nomor sertifikat,
+  status); butir kosong dilewati, tiap butir satu baris dan paling panjang 120 karakter.
+  Lembar bawah menampilkan pratinjau pesan lalu WhatsApp (`wa.me/<nomor>?text=`; email bila
+  tautan server bukan `wa.me/<nomor>`) atau "Salin pesan". Tombol hanya ada bila `GET /app/info`
+  sudah terbaca dan memberi jalan.
+- **Sisa temuan R1b**: A1 tombol tampilkan sandi tetap simpul tombol sendiri (`KolomIsian`
+  dengan `ikonAkhir` tidak lagi memakai `MergeSemantics`); A3 hasil cari kosong menyebut kata dan
+  saringan aktif dan punya "Hapus pencarian"; A5 batas hari 0 dikunci tes; A8 satu istilah "Tidak
+  aktif" dan kalimat baca "Jadwal sejak ...", "Jadwal jatuh tempo ..."; A7 di layar sempit atau
+  huruf besar pil perusahaan Beranda turun ke baris sendiri (sapaan dan nama terbaca utuh); A6
+  pengecualian bernama untuk baris "merk · SN seri" di `anti_slop_test` (satu berkas, bukan celah).
+  A8(a), indent teks bantuan isian ~20 dp, tidak diubah: itu perataan standar Material 3 pada
+  `InputDecorator` dan menggantinya berarti memindahkan teks galat keluar dari isian.
+
 ## Belum dikerjakan (PR berikutnya)
 
 Poles layar: detail alat, sertifikat, paket, akun (termasuk Ganti sandi: label permanen
