@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
 import '../../core/tema/spasi.dart';
+import '../../core/tema/ukuran.dart';
 import '../../core/tema/warna_sidik.dart';
 import '../../models/arsip.dart';
 import '../../models/data_pelanggan.dart';
@@ -176,7 +177,12 @@ Widget? _tidakDitemukan(
 }
 
 /// Garis waktu satu tingkat (tanpa kata cari).
-class _Garis extends ConsumerWidget {
+///
+/// Di tingkat awal, TAHUN membuka dan menutup isinya di tempat (bulan-bulannya
+/// tampil di bawah tahunnya; ketukan bulan membuka layar tingkat berikutnya
+/// seperti biasa). Tahun yang dibuka diingat di sini (bukan di baris daftar),
+/// jadi tidak hilang waktu baris tergulir keluar layar.
+class _Garis extends ConsumerStatefulWidget {
   const _Garis({
     required this.parameter,
     required this.akar,
@@ -190,7 +196,28 @@ class _Garis extends ConsumerWidget {
   final void Function(int id) onBukaSertifikat;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Garis> createState() => _GarisState();
+}
+
+class _GarisState extends ConsumerState<_Garis> {
+  /// Kunci kelompok tahun yang sedang dibuka.
+  final _terbuka = <String>{};
+
+  ParameterArsip get parameter => widget.parameter;
+  bool get akar => widget.akar;
+  void Function(KelompokArsip) get onBukaKelompok => widget.onBukaKelompok;
+  void Function(int) get onBukaSertifikat => widget.onBukaSertifikat;
+
+  void _balik(KelompokArsip k) {
+    // Tanpa `telusuri` tidak ada isi untuk dibuka (jawaban rusak): abaikan.
+    if (k.telusuri.isEmpty) return;
+    setState(() {
+      if (!_terbuka.remove(k.kunci)) _terbuka.add(k.kunci);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(garisWaktuProvider(parameter));
     final tidakAda = _tidakDitemukan(
       context,
@@ -239,6 +266,15 @@ class _Garis extends ConsumerWidget {
               'Sertifikat muncul di sini begitu diterbitkan dan disahkan laboratorium.',
         ),
         butir: (context, baris) => switch (baris) {
+          BarisKelompok(:final kelompok, :final tingkat)
+              when akar && tingkat == TingkatArsip.tahun =>
+            _KelompokTahun(
+              kelompok: kelompok,
+              terbuka: _terbuka.contains(kelompok.kunci),
+              onBalik: () => _balik(kelompok),
+              onBukaKelompok: onBukaKelompok,
+              onBukaSertifikat: onBukaSertifikat,
+            ),
           BarisKelompok(:final kelompok, :final tingkat) => KartuKelompokArsip(
             kelompok: kelompok,
             tingkat: tingkat,
@@ -323,6 +359,149 @@ class _Hasil extends ConsumerWidget {
         butir: (context, s) =>
             KartuSertifikat(sertifikat: s, onTap: () => onBukaSertifikat(s.id)),
       ),
+    );
+  }
+}
+
+/// Satu tahun di tingkat awal: kartu yang membuka dan menutup isinya di tempat.
+/// Terbuka = bulan-bulannya (SATU tingkat, diminta ke server hanya saat dibuka;
+/// server tidak memaginasi kelompok, jadi semuanya tampil) menjorok di bawah
+/// kartunya. Ketukan bulan membuka layar tingkat berikutnya.
+class _KelompokTahun extends ConsumerWidget {
+  const _KelompokTahun({
+    required this.kelompok,
+    required this.terbuka,
+    required this.onBalik,
+    required this.onBukaKelompok,
+    required this.onBukaSertifikat,
+  });
+
+  final KelompokArsip kelompok;
+  final bool terbuka;
+  final VoidCallback onBalik;
+  final void Function(KelompokArsip kelompok) onBukaKelompok;
+  final void Function(int id) onBukaSertifikat;
+
+  /// Jorokan isi tahun terhadap kartu tahunnya.
+  static const double _jorok = Spasi.lg;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KartuKelompokArsip(
+          kelompok: kelompok,
+          tingkat: TingkatArsip.tahun,
+          terbuka: terbuka,
+          onTap: onBalik,
+        ),
+        if (terbuka)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(
+              start: _jorok,
+              top: Spasi.sm,
+            ),
+            child: _IsiTahun(
+              kelompok: kelompok,
+              onBukaKelompok: onBukaKelompok,
+              onBukaSertifikat: onBukaSertifikat,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Isi satu tahun yang dibuka: tingkat di bawahnya dari server, dengan keadaan
+/// memuat, galat + "Coba lagi", dan kosong.
+class _IsiTahun extends ConsumerWidget {
+  const _IsiTahun({
+    required this.kelompok,
+    required this.onBukaKelompok,
+    required this.onBukaSertifikat,
+  });
+
+  final KelompokArsip kelompok;
+  final void Function(KelompokArsip kelompok) onBukaKelompok;
+  final void Function(int id) onBukaSertifikat;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final parameter = kelompok.parameter;
+    final async = ref.watch(garisWaktuProvider(parameter));
+    final t = context.teks;
+    return async.when(
+      skipLoadingOnReload: true,
+      loading: () => Semantics(
+        liveRegion: true,
+        label: 'Memuat isi ${kelompok.label}',
+        child: const Padding(
+          padding: EdgeInsets.all(Spasi.lg),
+          child: Center(
+            child: SizedBox.square(
+              dimension: UkuranIkon.sedang,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        ),
+      ),
+      error: (e, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            e is GalatApi
+                ? e.pesan
+                : 'Isi ${kelompok.label} belum bisa dimuat.',
+            style: t.bodyMedium,
+          ),
+          const SizedBox(height: Spasi.sm),
+          TombolSidik(
+            label: 'Coba lagi',
+            ikon: Icons.refresh,
+            ragam: RagamTombol.teks,
+            onPressed: () => ref.invalidate(garisWaktuProvider(parameter)),
+          ),
+        ],
+      ),
+      data: (d) {
+        if (d.isi.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: Spasi.md),
+            child: Text(
+              'Tidak ada sertifikat di ${kelompok.label}.',
+              style: t.bodyMedium,
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final baris in d.isi) ...[
+              switch (baris) {
+                BarisKelompok(:final kelompok, :final tingkat) =>
+                  KartuKelompokArsip(
+                    kelompok: kelompok,
+                    tingkat: tingkat,
+                    onTap: () => onBukaKelompok(kelompok),
+                  ),
+                BarisHari(:final kelompok) => BagianSidik(
+                  kelompok.label,
+                  aksi: Text(
+                    '${kelompok.jumlah} sertifikat',
+                    style: t.bodySmall,
+                  ),
+                ),
+                BarisSertifikat(:final sertifikat) => KartuSertifikat(
+                  sertifikat: sertifikat,
+                  onTap: () => onBukaSertifikat(sertifikat.id),
+                ),
+              },
+              const SizedBox(height: Spasi.sm),
+            ],
+          ],
+        );
+      },
     );
   }
 }

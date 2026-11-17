@@ -369,10 +369,12 @@ void main() {
         reason: 'judul $label',
       );
 
+      // Tahun membuka isinya DI TEMPAT (P5d-B): bulan tampil di bawah tahunnya
+      // dan tidak ada layar baru; bulan membuka layar pekan seperti biasa.
       await tester.tap(find.text('2026'));
       await tester.pumpAndSettle();
       expect(terakhir(), {'tingkat': 'bulan', 'tahun': '2026', 'page': '1'});
-      judul('2026');
+      expect(find.byType(ArsipScreen, skipOffstage: false), findsOneWidget);
       expect(find.text('November 2026'), findsOneWidget);
       expect(find.text('Oktober 2026'), findsOneWidget);
       expect(find.text('4 sertifikat'), findsWidgets);
@@ -440,13 +442,19 @@ void main() {
       final palsu = LayananArsipPalsu(_server);
       await tester.pumpWidget(_app(const ArsipScreen(), palsu));
       await tester.pumpAndSettle();
+      // Tahun buka-tutup di tempat; layar baru dimulai dari bulan.
       await tester.tap(find.text('2026'));
       await tester.pumpAndSettle();
       expect(find.text('November 2026'), findsOneWidget);
+      await tester.tap(find.text('November 2026'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pekan 46 (9–15 Nov 2026)'), findsOneWidget);
 
       await tester.pageBack();
       await tester.pumpAndSettle();
-      expect(find.text('November 2026'), findsNothing);
+      expect(find.text('Pekan 46 (9–15 Nov 2026)'), findsNothing);
+      // Kembali ke arsip dengan tahun masih terbuka.
+      expect(find.text('November 2026'), findsOneWidget);
       expect(find.text('2025'), findsOneWidget);
     });
 
@@ -1058,16 +1066,19 @@ void main() {
       await tester.tap(find.text('2026'));
       await tester.pumpAndSettle();
       expect(find.text('November 2026'), findsOneWidget);
+      await tester.tap(find.text('November 2026'));
+      await tester.pumpAndSettle();
       await tester.pageBack();
       await tester.pumpAndSettle();
 
-      // Masih di Arsip, daftar tahun utuh dan tidak diminta ulang.
+      // Masih di Arsip, tahun yang dibuka tetap terbuka dan tidak diminta ulang.
       expect(find.text('2026'), findsOneWidget);
       expect(find.text('2025'), findsOneWidget);
+      expect(find.text('November 2026'), findsOneWidget);
       expect(
         palsu.panggilan,
-        hasLength(2),
-        reason: 'tahun sekali, bulan sekali',
+        hasLength(3),
+        reason: 'tahun sekali, bulan sekali, pekan sekali',
       );
     });
 

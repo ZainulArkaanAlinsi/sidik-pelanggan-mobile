@@ -10,6 +10,10 @@ import 'kartu_sidik.dart';
 /// jumlah sertifikat, dan panah tanda bisa dibuka. Mengetuknya membuka tingkat
 /// berikutnya ([onTap]).
 ///
+/// [terbuka] non-null = kelompok yang membuka/menutup isinya DI TEMPAT (tahun di
+/// tingkat awal): penunjuknya panah turun/naik (bukan panah kanan) dan pembaca
+/// layar menerima status "dibuka"/"ditutup". Null = membuka layar baru.
+///
 /// Label boleh membungkus dua baris ("Pekan 46 (9–15 Nov 2026)" di layar
 /// sempit atau huruf besar); jumlah selalu di baris sendiri, jadi tidak ada
 /// yang terjepit.
@@ -19,6 +23,7 @@ class KartuKelompokArsip extends StatelessWidget {
     required this.kelompok,
     required this.tingkat,
     required this.onTap,
+    this.terbuka,
   });
 
   final KelompokArsip kelompok;
@@ -26,6 +31,9 @@ class KartuKelompokArsip extends StatelessWidget {
   /// Tingkat kelompok ini, untuk memilih ikon.
   final TingkatArsip tingkat;
   final VoidCallback onTap;
+
+  /// Kelompok ini buka-tutup di tempat: `true` terbuka, `false` tertutup.
+  final bool? terbuka;
 
   static IconData ikonUntuk(TingkatArsip tingkat) => switch (tingkat) {
     TingkatArsip.tahun => Icons.folder_outlined,
@@ -41,6 +49,7 @@ class KartuKelompokArsip extends StatelessWidget {
     final jumlah = '${kelompok.jumlah} sertifikat';
     return KartuSidik(
       onTap: onTap,
+      terbuka: terbuka,
       labelSemantik: '${kelompok.label}, $jumlah',
       child: Row(
         children: [
@@ -69,7 +78,12 @@ class KartuKelompokArsip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: Spasi.sm),
-          Icon(Icons.chevron_right, color: s.onSurfaceVariant),
+          Icon(
+            terbuka == null
+                ? Icons.chevron_right
+                : (terbuka! ? Icons.expand_less : Icons.expand_more),
+            color: s.onSurfaceVariant,
+          ),
         ],
       ),
     );
