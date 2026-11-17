@@ -143,10 +143,44 @@ panggilan tulis baru (`test/guard_tulis_test.dart` tidak disentuh).
   A8(a), indent teks bantuan isian ~20 dp, tidak diubah: itu perataan standar Material 3 pada
   `InputDecorator` dan menggantinya berarti memindahkan teks galat keluar dari isian.
 
+## P5d-B: detail alat, detail sertifikat, arsip, pratinjau PDF (kepala dan bilah)
+
+Sumber: REVISI-2 butir 3, 4, 5, 6. Logika, alur, API, peran, rute, data, dan aturan
+baca-saja tidak berubah; isi PDF beku (hanya kepala layar dan bilah aksi).
+
+- **Detail alat**: judul layar "Detail alat"; nama alat SEKALI (di kelompok identitas).
+  Empat kelompok: *Identitas alat* (merk/model dan nomor seri selalu ada, "Belum tersedia"
+  bila kosong; nomor identifikasi, rentang ukur, lokasi, catatan disembunyikan bila kosong;
+  nomor seri dan nomor identifikasi bisa disalin), *Jadwal kalibrasi* (lencana berwaktu dari
+  `labelStatusJadwal`, satu sumber dengan kartu alat), *Status layanan* (hanya bila alat di
+  lab: tahap, nomor order, "Lihat paket"), *Riwayat kalibrasi* (terbaru di atas WALAU server
+  mengirim sebaliknya; tiap simpul "Buka sertifikat"). **Alat tidak aktif**: lencana "Tidak
+  aktif", kalimat "Alat tidak aktif, jadwal tercatat ...", tanpa hitung mundur, tanpa kata
+  lewat/lagi, tanpa "Minta kalibrasi ulang" (A4 peninjau R1b).
+- **Detail sertifikat**: kelompok *Identitas dokumen* (nomor bisa disalin), *Alat*, *Status
+  dokumen* (Berlaku/Digantikan/Dibatalkan + "Jadwal kalibrasi ulang"; kata "Berlaku sampai"
+  dibuang, sama dengan daftar #31), *Hasil teknis* (hanya bila dinyatakan; FAIL tetap apa
+  adanya), *Rincian kalibrasi* (hanya bila ada), *Tindakan*. Penjelasan kenapa tombol mati
+  (dibatalkan, offline, PDF belum siap, PDF lama) di ATAS tombolnya. Yang digantikan tetap
+  menampilkan "Buka yang berlaku"; yang dibatalkan tidak membawa jadwal dan hasil.
+- **Arsip**: TAHUN buka-tutup di tempat (isi = bulan-bulannya, satu tingkat diminta hanya
+  saat dibuka; panah turun/naik; pembaca layar menerima "dibuka/ditutup"); beberapa tahun
+  bisa terbuka sekaligus dan keadaannya diingat walau baris tergulir atau kembali dari
+  layar pekan. Bulan tetap membuka layar tingkat berikutnya (rute tidak berubah; server tidak memaginasi
+  kelompok, jadi semua bulan tampil). Pencarian (nomor persis, tertulis di bawah kolom)
+  dan hasilnya bertahan saat kembali dari detail (sudah demikian; kini diuji).
+- **Pratinjau PDF**: kepala berisi nomor sertifikat utuh (mengecil, tidak dipotong) dan
+  "Unduh PDF" di tempat tetap (kata dan ikon sama dengan detail; mati saat memuat dan untuk
+  yang dibatalkan); bilah bawah dua kelompok bernama ("Navigasi halaman": panah + "Halaman x
+  dari y"; "Tampilan dokumen": perkecil, perbesar, putar). Memuat: "Batal". Gagal: "Coba
+  lagi", "Buka di aplikasi PDF lain" (bukan untuk yang dibatalkan), dan "Tanya admin tentang
+  sertifikat ini".
+
 ## Belum dikerjakan (PR berikutnya)
 
-Poles layar: detail alat, sertifikat, paket, akun (termasuk Ganti sandi: label permanen
-lewat `KolomIsian`), anggota, preferensi, notifikasi, bantuan, dan kondisi sistem. Sertifikat
-(daftar) sudah di #31. Tema gelap masih titik awal (belum ditinjau). Pembersihan token Bento
+Poles layar: paket (daftar dan detail), akun (termasuk Ganti sandi: label permanen lewat
+`KolomIsian`), anggota, preferensi, notifikasi, dan kondisi sistem selain pemeliharaan.
+Sertifikat (daftar) sudah di #31; detail alat, detail sertifikat, arsip, kepala pratinjau PDF,
+dan Hubungi PT SIDIK di P5d. Tema gelap masih titik awal (belum ditinjau). Pembersihan token Bento
 yang tak dipakai lagi (`UkuranUbin.alat/alatBeranda`, `UkuranVisual.alat*`, nama token yang
 menyesatkan) menyusul di PR bersih-bersih.

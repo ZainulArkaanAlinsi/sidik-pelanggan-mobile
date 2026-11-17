@@ -708,6 +708,8 @@ final _layarKunci = <_Layar>[
     kunci: true,
   ),
   _layar('alat_detail', () => const AlatDetailScreen(id: 1), kunci: true),
+  // Alat tidak aktif (id 6, jadwal tercatat): tanpa hitung mundur (P5d-B).
+  _layar('alat_detail_nonaktif', () => const AlatDetailScreen(id: 6)),
   _layar(
     'sertifikat',
     () => const Rangka(),
@@ -743,6 +745,12 @@ final _layarKunci = <_Layar>[
     sesudah: (tester) => tester.tap(find.text('Arsip')),
   ),
   _layar('arsip', () => const ArsipScreen()),
+  // Tahun 2026 dibuka di tempat: bulan-bulannya di bawah tahunnya (P5d-B).
+  _layar(
+    'arsip_terbuka',
+    () => const ArsipScreen(),
+    sesudah: (tester) => tester.tap(find.text('2026')),
+  ),
   _layar('arsip_kosong', () => const ArsipScreen(), perusahaan: 5),
   _layar(
     'arsip_hari',
