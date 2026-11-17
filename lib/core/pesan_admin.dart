@@ -25,7 +25,7 @@ abstract final class PembangunPesanAdmin {
   static const int maksPanjangButir = 120;
 
   static final RegExp _tidakTampil = RegExp(
-    r'[\u0000-\u001F\u007F-\u009F​-‏ - ⁠-⁯﻿]',
+    r'[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF]',
   );
 
   /// Satu butir data sebagai SATU baris: kendali (baris baru, tab, arah teks,

@@ -37,7 +37,7 @@ abstract final class TautanLuar {
   /// Spasi, kontrol, kendali arah teks (bidi), dan lebar-nol: tidak boleh ada
   /// di tautan dari server maupun di kolom yang dimasukkan ke pesan.
   static final RegExp _tidakBoleh = RegExp(
-    r'[\u0000- \u007F-\u009F​-‏ - ⁠-⁯﻿]',
+    r'[\u0000-\u0020\u007F-\u009F\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF]',
   );
 
   /// `true` bila [uri] boleh diserahkan ke aplikasi luar.

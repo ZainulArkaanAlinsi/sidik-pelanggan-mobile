@@ -127,6 +127,40 @@ void main() {
     });
   });
 
+  group('bersihkan: himpunan karakter kendali persis', () {
+    // Jadi spasi: U+0000-001F, U+007F-009F, U+200B-200F, U+2028-202F,
+    // U+2060-206F, U+FEFF. Satu titik di luar tiap rentang dibiarkan.
+    String? bersih(int kode) =>
+        PembangunPesanAdmin.bersihkan('a${String.fromCharCode(kode)}b');
+
+    test('tepi dan isi tiap rentang jadi spasi', () {
+      for (final k in [
+        0x00, 0x01, 0x09, 0x0A, 0x0D, 0x1F, //
+        0x7F, 0x80, 0x9F, //
+        0x200B, 0x200C, 0x200D, 0x200E, 0x200F, //
+        0x2028, 0x2029, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x202F, //
+        0x2060, 0x2061, 0x2066, 0x2069, 0x206F, //
+        0xFEFF,
+      ]) {
+        expect(bersih(k), 'a b', reason: 'U+${k.toRadixString(16)}');
+      }
+    });
+
+    test('titik tepat di luar rentang dibiarkan', () {
+      for (final k in [
+        0x21, 0x7E, 0xA0, 0xA1, //
+        0x200A, 0x2010, 0x2027, 0x2030, 0x205F, 0x2070, //
+        0xFEFE, 0xFF00,
+      ]) {
+        expect(
+          bersih(k),
+          'a${String.fromCharCode(k)}b',
+          reason: 'U+${k.toRadixString(16)}',
+        );
+      }
+    });
+  });
+
   group('bersihkan: satu baris, tanpa kendali, terpotong', () {
     test('baris baru, tab, dan arah teks menjadi spasi lalu dilipat', () {
       expect(PembangunPesanAdmin.bersihkan('A\nB\r\nC\tD'), 'A B C D');

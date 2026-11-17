@@ -96,6 +96,44 @@ void main() {
     });
   });
 
+  group('web: himpunan karakter terlarang persis', () {
+    // Ditolak: U+0000-0020, U+007F-009F, U+200B-200F, U+2028-202F,
+    // U+2060-206F, U+FEFF. Satu titik di luar tiap rentang tetap lolos.
+    String tautan(int kode) =>
+        'https://pt-sidik.com/a${String.fromCharCode(kode)}b';
+
+    test('tepi dan isi tiap rentang ditolak', () {
+      for (final k in [
+        0x00, 0x01, 0x09, 0x0A, 0x0D, 0x1F, 0x20, //
+        0x7F, 0x80, 0x9F, //
+        0x200B, 0x200C, 0x200D, 0x200E, 0x200F, //
+        0x2028, 0x2029, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x202F, //
+        0x2060, 0x2061, 0x2066, 0x2069, 0x206F, //
+        0xFEFF,
+      ]) {
+        expect(
+          TautanLuar.web(tautan(k)),
+          isNull,
+          reason: 'U+${k.toRadixString(16)}',
+        );
+      }
+    });
+
+    test('titik tepat di luar rentang tidak ikut ditolak', () {
+      for (final k in [
+        0x21, 0x7E, 0xA0, 0xA1, //
+        0x200A, 0x2010, 0x2027, 0x2030, 0x205F, 0x2070, //
+        0xFEFE, 0xFF00,
+      ]) {
+        expect(
+          TautanLuar.web(tautan(k)),
+          isNotNull,
+          reason: 'U+${k.toRadixString(16)}',
+        );
+      }
+    });
+  });
+
   group('whatsapp dan nomorWhatsapp', () {
     test('wa.me dan api.whatsapp.com dikenal; host lain ditolak', () {
       expect(TautanLuar.whatsapp('https://wa.me/6282260060037'), isNotNull);
