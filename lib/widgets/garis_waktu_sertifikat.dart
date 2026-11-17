@@ -173,7 +173,11 @@ class _Simpul extends StatelessWidget {
                     const SizedBox(height: Spasi.sm),
                     // `berlaku_sampai` = jadwal kalibrasi ulang (REVISI-2 butir 5):
                     // kata "Berlaku sampai" tertukar dengan status dokumen.
-                    if (s.berlakuSampai != null)
+                    // Hanya untuk yang masih berlaku, sama dengan daftar
+                    // sertifikat: jadwal pada yang digantikan atau dibatalkan
+                    // sudah usang dan bisa dikira masih harus dipenuhi.
+                    if (s.berlakuSampai != null &&
+                        s.status == StatusDokumen.berlaku)
                       Text(
                         'Jadwal kalibrasi ulang ${Format.tanggal(s.berlakuSampai)}',
                         style: t.bodySmall,

@@ -349,6 +349,66 @@ void main() {
       expect(find.textContaining('Berlaku sampai'), findsNothing);
     });
 
+    testWidgets('jadwal tampil untuk sertifikat yang berlaku', (tester) async {
+      await _Uji(
+        _oven(
+          riwayat: [
+            sertifikatJson(
+              31,
+              'CAL/ALFA/0031',
+              diterbitkan: -345,
+              berlakuSampai: 20,
+            ),
+          ],
+        ),
+      ).buka(tester);
+      expect(find.text('Jadwal kalibrasi ulang ${_tgl(20)}'), findsOneWidget);
+    });
+
+    testWidgets('jadwal TIDAK tampil untuk sertifikat dibatalkan maupun '
+        'digantikan (sama dengan daftar sertifikat)', (tester) async {
+      await _Uji(
+        _oven(
+          riwayat: [
+            sertifikatJson(
+              33,
+              'CAL/ALFA/0033',
+              diterbitkan: -100,
+              berlakuSampai: 20,
+            ),
+            sertifikatJson(
+              32,
+              'CAL/ALFA/0032',
+              diterbitkan: -345,
+              berlakuSampai: 11,
+              status: 'digantikan',
+              digantikanOleh: {'id': 33, 'nomor': 'CAL/ALFA/0033'},
+            ),
+            sertifikatJson(
+              31,
+              'CAL/ALFA/0031',
+              diterbitkan: -710,
+              berlakuSampai: 7,
+              status: 'dibatalkan',
+              dibatalkanPada: -600,
+            ),
+          ],
+        ),
+      ).buka(tester);
+      // Yang berlaku tetap menunjukkan jadwalnya.
+      expect(find.text('Jadwal kalibrasi ulang ${_tgl(20)}'), findsOneWidget);
+      // Jadwal usang pada yang digantikan/dibatalkan bisa dikira masih harus
+      // dipenuhi: tidak ditampilkan.
+      expect(find.text('Jadwal kalibrasi ulang ${_tgl(11)}'), findsNothing);
+      expect(find.text('Jadwal kalibrasi ulang ${_tgl(7)}'), findsNothing);
+      // (Label bagian jadwal alat tanpa tanggal, jadi dicocokkan dengan spasi.)
+      expect(find.textContaining('Jadwal kalibrasi ulang '), findsOneWidget);
+      // Riwayatnya sendiri tetap utuh dengan statusnya.
+      expect(find.text('CAL/ALFA/0032'), findsOneWidget);
+      expect(find.text('CAL/ALFA/0031'), findsOneWidget);
+      expect(find.text('Digantikan oleh CAL/ALFA/0033'), findsOneWidget);
+    });
+
     testWidgets('kosong: penjelasan, bukan kartu kosong tanpa kata', (
       tester,
     ) async {
