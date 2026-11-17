@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
+import '../../core/tautan_luar.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/warna_sidik.dart';
 import '../../providers/sesi_provider.dart';
+import '../../providers/tautan_provider.dart';
 import '../../widgets/kolom_isian.dart';
 import '../../widgets/tombol_sidik.dart';
-import '../akun/bantuan_screen.dart';
+import '../akun/hubungi_screen.dart';
 import 'kerangka_auth.dart';
 
 /// Pesan untuk email undangan yang SUDAH punya akun. Sengaja tidak menyebut
@@ -143,6 +145,9 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
   Widget build(BuildContext context) {
     final s = context.skema;
     final info = ref.watch(infoAplikasiProvider).value;
+    // Hanya tautan https yang sah dari server yang ditawarkan.
+    final privasi = TautanLuar.web(info?.kebijakanPrivasiUrl);
+    final syarat = TautanLuar.web(info?.syaratUrl);
     final galatKode = _galatIsian['kode'] != null || _galat != null;
     return KerangkaAuth(
       ringkas: true,
@@ -193,19 +198,18 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
                 ),
         ),
         // REQ-PRV-01: dokumen yang disetujui harus bisa dibaca dulu.
-        if (info?.kebijakanPrivasiUrl != null || info?.syaratUrl != null)
+        if (privasi != null || syarat != null)
           Wrap(
             spacing: 8,
             children: [
-              if (info?.kebijakanPrivasiUrl != null)
+              if (privasi != null)
                 TextButton(
-                  onPressed: () =>
-                      bukaTautanLuar(Uri.parse(info!.kebijakanPrivasiUrl!)),
+                  onPressed: () => bukaAtauBeritahu(context, ref, privasi),
                   child: const Text('Baca kebijakan privasi'),
                 ),
-              if (info?.syaratUrl != null)
+              if (syarat != null)
                 TextButton(
-                  onPressed: () => bukaTautanLuar(Uri.parse(info!.syaratUrl!)),
+                  onPressed: () => bukaAtauBeritahu(context, ref, syarat),
                   child: const Text('Baca syarat & ketentuan'),
                 ),
             ],
@@ -222,7 +226,7 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
               icon: const Icon(Icons.support_agent),
               label: const Text('Minta kode baru ke PT Sidik'),
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const BantuanScreen()),
+                MaterialPageRoute<void>(builder: (_) => const HubungiScreen()),
               ),
             ),
           ),

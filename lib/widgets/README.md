@@ -107,6 +107,7 @@ diaktifkan pembaca layar (`KartuSidik` lama memakai pola itu; lihat laporan PR).
 |---|---|
 | `tombol_sidik.dart` | `TombolSidik` (`RagamTombol`: utama, sekunder, teks, bahaya). Satu `utama` per layar. Persegi bersudut 10, tinggi 48; `jumlah` = lencana bulat 28 putih bertinta biru di tombol utama; skala tekan 0,97; cincin fokus papan ketik. |
 | `kolom_cari.dart` | `KolomCari`: kolom cari dengan jeda ketik 350 ms. |
+| `lembar_tanya_admin.dart` | `TombolTanyaAdmin` + `LembarTanyaAdmin` (P5d): "Tanya admin tentang ini" di detail alat dan sertifikat. Tombol hanya ada bila `GET /app/info` memberi jalan (tautan `wa.me/<nomor>` atau email yang wajar); lembar bawah menampilkan PRATINJAU pesan terisi dari data layar (`PembangunPesanAdmin`), lalu membuka WhatsApp (utama) atau email, atau menyalin. Hanya membuka aplikasi luar lewat `pembukaTautanProvider`; tidak ada panggilan tulis ke server. |
 
 ## Keadaan
 

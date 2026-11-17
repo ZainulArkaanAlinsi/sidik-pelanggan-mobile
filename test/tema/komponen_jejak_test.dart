@@ -91,6 +91,9 @@ void main() {
         'kolom_cari',
         'kolom_formulir',
         'konten_tengah',
+        // P5d: lembar bawah "Tanya admin" = komponen layar (seperti `pembaruan`),
+        // bukan komponen Jejak; dites di test/tanya_admin_test.dart.
+        'lembar_tanya_admin',
         'lencana_kan',
         'logo_sidik',
         'navigasi_utama',

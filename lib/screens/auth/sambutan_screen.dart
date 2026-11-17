@@ -7,7 +7,7 @@ import '../../providers/perangkat_provider.dart';
 import '../../providers/sesi_provider.dart';
 import '../../widgets/lencana_kan.dart';
 import '../../widgets/tombol_sidik.dart';
-import '../akun/bantuan_screen.dart';
+import '../akun/hubungi_screen.dart';
 import 'kerangka_auth.dart';
 import 'terima_undangan_screen.dart';
 
@@ -69,11 +69,11 @@ class SambutanScreen extends ConsumerWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: TombolSidik(
-              label: 'Hubungi PT Sidik',
+              label: 'Hubungi PT SIDIK',
               ikon: Icons.support_agent,
               ragam: RagamTombol.teks,
               onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const BantuanScreen()),
+                MaterialPageRoute<void>(builder: (_) => const HubungiScreen()),
               ),
             ),
           ),

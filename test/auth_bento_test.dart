@@ -389,7 +389,7 @@ void main() {
     testWidgets('tanpa kontak lab: tidak ada tombol Hubungi', (tester) async {
       await _pasang(tester, const SambutanScreen());
       expect(
-        find.widgetWithText(TombolSidik, 'Hubungi PT Sidik'),
+        find.widgetWithText(TombolSidik, 'Hubungi PT SIDIK'),
         findsNothing,
       );
     });
@@ -399,7 +399,7 @@ void main() {
       _layarTinggi(tester);
       await _pasang(tester, const SambutanScreen(), info: _kontak);
       expect(
-        find.widgetWithText(TombolSidik, 'Hubungi PT Sidik'),
+        find.widgetWithText(TombolSidik, 'Hubungi PT SIDIK'),
         findsOneWidget,
       );
       final kartu = tester.getRect(find.byKey(KerangkaAuth.kunciKartu));

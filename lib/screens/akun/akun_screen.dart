@@ -17,6 +17,7 @@ import '../paket/paket_screen.dart';
 import 'anggota_screen.dart';
 import 'bantuan_screen.dart';
 import 'ganti_sandi_screen.dart';
+import 'hubungi_screen.dart';
 import 'preferensi_notifikasi_screen.dart';
 
 /// Teks kaki Akun (S17): versi + build + ID pengguna, untuk dukungan.
@@ -195,8 +196,8 @@ class AkunScreen extends ConsumerWidget {
             baris: [
               BarisMenu(
                 ikon: Icons.support_agent,
-                judul: 'Bantuan & kontak',
-                onTap: () => _buka(context, const BantuanScreen()),
+                judul: 'Hubungi PT SIDIK',
+                onTap: () => _buka(context, const HubungiScreen()),
               ),
               BarisMenu(
                 ikon: Icons.privacy_tip_outlined,

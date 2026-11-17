@@ -1,51 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/tautan_luar.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/warna_sidik.dart';
 import '../../models/akun.dart';
 import '../../providers/sesi_provider.dart';
-import '../../widgets/bagian_sidik.dart';
+import '../../providers/tautan_provider.dart';
 import '../../widgets/baris_menu.dart';
 import '../../widgets/halaman_sidik.dart';
-import '../../widgets/kartu_sidik.dart';
 import '../../widgets/keadaan_galat.dart';
 import '../../widgets/kerangka.dart';
 
-/// Buka tautan di aplikasi luar (WhatsApp, email, telepon, peramban).
-/// `false` kalau HP tidak punya aplikasi untuk membukanya.
-Future<bool> bukaTautanLuar(Uri uri) async {
-  try {
-    return await launchUrl(uri, mode: LaunchMode.externalApplication);
-  } catch (_) {
-    return false;
-  }
-}
-
-Future<void> _buka(BuildContext context, Uri uri) async {
-  final pesan = ScaffoldMessenger.of(context);
-  if (!await bukaTautanLuar(uri)) {
-    pesan.showSnackBar(
-      const SnackBar(content: Text('Tidak ada aplikasi untuk membukanya.')),
-    );
-  }
-}
-
 /// Kerangka layar yang isinya dari `GET /app/info`: dimuat ulang tiap layar
-/// dibuka (kontrak §6), cache selama aplikasi hidup tetap tampil selagi
-/// memuat.
-class _LayarInfo extends ConsumerStatefulWidget {
-  const _LayarInfo({required this.judul, required this.isi});
+/// dibuka (kontrak §6). Isi yang sudah ada tetap tampil selagi memuat DAN bila
+/// pemuatan ulang gagal (mis. tanpa sinyal atau server sedang pemeliharaan):
+/// kontak yang pernah terbaca lebih berguna daripada layar galat. Galat hanya
+/// bila belum pernah ada isi.
+class LayarInfoAplikasi extends ConsumerStatefulWidget {
+  const LayarInfoAplikasi({super.key, required this.judul, required this.isi});
 
   final String judul;
-  final List<Widget> Function(BuildContext context, InfoAplikasi info) isi;
+  final List<Widget> Function(
+    BuildContext context,
+    InfoAplikasi info,
+    WidgetRef ref,
+  )
+  isi;
 
   @override
-  ConsumerState<_LayarInfo> createState() => _LayarInfoState();
+  ConsumerState<LayarInfoAplikasi> createState() => _LayarInfoAplikasiState();
 }
 
-class _LayarInfoState extends ConsumerState<_LayarInfo> {
+class _LayarInfoAplikasiState extends ConsumerState<LayarInfoAplikasi> {
   @override
   void initState() {
     super.initState();
@@ -62,17 +49,23 @@ class _LayarInfoState extends ConsumerState<_LayarInfo> {
       isi: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(infoAplikasiProvider);
-          await ref.read(infoAplikasiProvider.future);
+          try {
+            await ref.read(infoAplikasiProvider.future);
+          } catch (_) {
+            // Galat tampil lewat `KeadaanGalat` bila belum ada isi.
+          }
         },
         child: async.when(
+          skipError: true,
           loading: () => const Memuat.detail(),
           error: (e, _) => KeadaanGalat(
             galat: e,
             cobaLagi: () => ref.invalidate(infoAplikasiProvider),
           ),
           data: (info) => ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: Spasi.daftar(context),
-            children: widget.isi(context, info),
+            children: widget.isi(context, info, ref),
           ),
         ),
       ),
@@ -80,115 +73,44 @@ class _LayarInfoState extends ConsumerState<_LayarInfo> {
   }
 }
 
-/// S17 → Bantuan & kontak. Hanya kanal yang DIISI lab yang tampil — tidak
-/// ada nomor atau alamat karangan (kontrak §6).
-class BantuanScreen extends StatelessWidget {
-  const BantuanScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) => _LayarInfo(
-    judul: 'Bantuan & kontak',
-    isi: (context, info) {
-      final t = context.teks;
-      final baris = <Widget>[
-        if (info.whatsappUrl != null)
-          BarisMenu(
-            ikon: Icons.chat_outlined,
-            judul: 'WhatsApp',
-            keterangan: info.whatsapp,
-            luar: true,
-            onTap: () => _buka(context, Uri.parse(info.whatsappUrl!)),
-          ),
-        if (info.email != null)
-          BarisMenu(
-            ikon: Icons.mail_outline,
-            judul: 'Email',
-            keterangan: info.email,
-            luar: true,
-            onTap: () =>
-                _buka(context, Uri(scheme: 'mailto', path: info.email)),
-          ),
-        if (info.teleponOrganisasi != null)
-          BarisMenu(
-            ikon: Icons.call_outlined,
-            judul: 'Telepon',
-            keterangan: info.teleponOrganisasi,
-            luar: true,
-            onTap: () => _buka(
-              context,
-              Uri(
-                scheme: 'tel',
-                path: info.teleponOrganisasi!.replaceAll(
-                  RegExp(r'[^0-9+]'),
-                  '',
-                ),
-              ),
-            ),
-          ),
-      ];
-      return [
-        if (info.namaOrganisasi != null || info.alamatOrganisasi != null)
-          KartuSidik(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (info.namaOrganisasi != null)
-                  Text(info.namaOrganisasi!, style: t.titleMedium),
-                if (info.alamatOrganisasi != null) ...[
-                  const SizedBox(height: Spasi.xs),
-                  SelectableText(info.alamatOrganisasi!, style: t.bodyMedium),
-                ],
-              ],
-            ),
-          ),
-        if (info.jamLayanan != null) ...[
-          const SizedBox(height: Spasi.md),
-          Text('Jam layanan: ${info.jamLayanan}', style: t.bodyMedium),
-        ],
-        const BagianSidik('Hubungi Tim PT Sidik'),
-        if (baris.isEmpty)
-          Text('Informasi kontak belum tersedia.', style: t.bodyMedium)
-        else
-          KelompokBaris(baris: baris),
-      ];
-    },
-  );
-}
-
 /// S17 → Privasi & ketentuan (REQ-PRV-01/03). Dokumen dibuka di peramban.
+/// Hanya tautan `https` yang sah yang ditawarkan ([TautanLuar.web]).
 class PrivasiScreen extends StatelessWidget {
   const PrivasiScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => _LayarInfo(
+  Widget build(BuildContext context) => LayarInfoAplikasi(
     judul: 'Privasi & ketentuan',
-    isi: (context, info) {
+    isi: (context, info, ref) {
       final t = context.teks;
       String? versi(String? v) => v == null ? null : 'Versi $v';
+      final privasi = TautanLuar.web(info.kebijakanPrivasiUrl);
+      final syarat = TautanLuar.web(info.syaratUrl);
+      final hapus = TautanLuar.web(info.hapusAkunUrl);
       final baris = <Widget>[
-        if (info.kebijakanPrivasiUrl != null)
+        if (privasi != null)
           BarisMenu(
             ikon: Icons.privacy_tip_outlined,
             judul: 'Kebijakan privasi',
             keterangan: versi(info.kebijakanPrivasiVersi),
             luar: true,
-            onTap: () => _buka(context, Uri.parse(info.kebijakanPrivasiUrl!)),
+            onTap: () => bukaAtauBeritahu(context, ref, privasi),
           ),
-        if (info.syaratUrl != null)
+        if (syarat != null)
           BarisMenu(
             ikon: Icons.gavel_outlined,
             judul: 'Syarat & ketentuan',
             keterangan: versi(info.syaratVersi),
             luar: true,
-            onTap: () => _buka(context, Uri.parse(info.syaratUrl!)),
+            onTap: () => bukaAtauBeritahu(context, ref, syarat),
           ),
-        if (info.hapusAkunUrl != null)
+        if (hapus != null)
           BarisMenu(
             ikon: Icons.person_remove_outlined,
             judul: 'Permintaan hapus akun (web)',
             keterangan: 'Untuk yang tidak bisa masuk ke aplikasi lagi',
             luar: true,
-            onTap: () => _buka(context, Uri.parse(info.hapusAkunUrl!)),
+            onTap: () => bukaAtauBeritahu(context, ref, hapus),
           ),
       ];
       return [

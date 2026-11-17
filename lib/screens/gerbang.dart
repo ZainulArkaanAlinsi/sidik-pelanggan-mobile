@@ -16,7 +16,7 @@ import '../widgets/kolom_formulir.dart';
 import '../widgets/logo_sidik.dart';
 import '../widgets/pembaruan.dart';
 import '../widgets/tombol_sidik.dart';
-import 'akun/bantuan_screen.dart';
+import 'akun/hubungi_screen.dart';
 import 'auth/masuk_screen.dart';
 import 'auth/sambutan_screen.dart';
 import 'rangka.dart';
@@ -81,9 +81,9 @@ class Gerbang extends ConsumerWidget {
                       'Anda perlu menautkannya dulu. Halaman ini diperbarui otomatis saat Anda membukanya lagi.',
             aksi: 'Periksa lagi',
             onAksi: () => ref.read(sesiProvider.notifier).segarkan(),
-            aksiTengah: adaKontak ? 'Hubungi PT Sidik' : null,
+            aksiTengah: adaKontak ? 'Hubungi PT SIDIK' : null,
             onAksiTengah: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const BantuanScreen()),
+              MaterialPageRoute<void>(builder: (_) => const HubungiScreen()),
             ),
             aksiKedua: 'Keluar',
             onAksiKedua: () => ref.read(sesiProvider.notifier).keluar(),
@@ -268,6 +268,9 @@ class _LayarPemeliharaanState extends ConsumerState<LayarPemeliharaan> {
   @override
   Widget build(BuildContext context) {
     final pesan = widget.pesan.trim();
+    // `GET /app/info` publik dan di luar gerbang fitur: kontak tetap terbaca
+    // saat pemeliharaan. Tombolnya hanya ada bila ada kontak yang aman dibuka.
+    final adaKontak = ref.watch(infoAplikasiProvider).value?.adaKontak ?? false;
     return _LayarInfo(
       ikon: Icons.build_circle_outlined,
       judul: 'Sedang dalam perbaikan',
@@ -275,6 +278,10 @@ class _LayarPemeliharaanState extends ConsumerState<LayarPemeliharaan> {
       catatan: 'Aplikasi memeriksa ulang sendiri setiap menit.',
       aksi: 'Periksa lagi',
       onAksi: () => ref.invalidate(statusAplikasiProvider),
+      aksiTengah: adaKontak ? 'Hubungi PT SIDIK' : null,
+      onAksiTengah: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const HubungiScreen())),
     );
   }
 }

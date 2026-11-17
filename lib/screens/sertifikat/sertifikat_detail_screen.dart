@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api_pelanggan.dart';
 import '../../core/format.dart';
+import '../../core/pesan_admin.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/tipografi.dart';
 import '../../core/tema/warna_sidik.dart';
@@ -18,6 +19,7 @@ import '../../widgets/halaman_sidik.dart';
 import '../../widgets/kartu_sidik.dart';
 import '../../widgets/keadaan_galat.dart';
 import '../../widgets/kerangka.dart';
+import '../../widgets/lembar_tanya_admin.dart';
 import '../../widgets/lencana_kan.dart';
 import '../../widgets/panel_pemberitahuan.dart';
 import '../../widgets/pemetaan_status.dart';
@@ -69,6 +71,10 @@ class _SertifikatDetailScreenState
       if (mounted) setState(() => _mengunduh = false);
     }
   }
+
+  /// Nama perusahaan aktif untuk pesan "Tanya admin" (tidak dikarang).
+  String? _namaPerusahaan() =>
+      ref.read(sesiProvider).value?.keanggotaanAktif?.namaPerusahaan;
 
   @override
   Widget build(BuildContext context) {
@@ -219,6 +225,30 @@ class _SertifikatDetailScreenState
                 _Catatan('PDF sedang disiapkan laboratorium. Coba lagi nanti.')
               else if (s.digantikan)
                 _Catatan('PDF lama tetap bisa diunduh sebagai riwayat.'),
+              const SizedBox(height: Spasi.sm),
+              TombolTanyaAdmin(
+                label: 'Tanya tentang sertifikat ini',
+                ragam: RagamTombol.teks,
+                pesan: () => PembangunPesanAdmin.tanyaSertifikat(
+                  perusahaan: _namaPerusahaan(),
+                  nomor: s.nomor,
+                  namaAlat: s.namaAlat,
+                  serial: s.serial,
+                  status: statusDokumen(s.status).label,
+                ),
+              ),
+              TombolTanyaAdmin(
+                label: 'Laporkan data yang keliru',
+                ikon: Icons.flag_outlined,
+                ragam: RagamTombol.teks,
+                pesan: () => PembangunPesanAdmin.laporkanDataKeliru(
+                  perusahaan: _namaPerusahaan(),
+                  nomor: s.nomor,
+                  namaAlat: s.namaAlat,
+                  serial: s.serial,
+                  status: statusDokumen(s.status).label,
+                ),
+              ),
               if (s.tautanVerifikasi != null) ...[
                 const SizedBox(height: Spasi.sm),
                 TombolSidik(

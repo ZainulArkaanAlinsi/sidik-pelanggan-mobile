@@ -15,7 +15,7 @@ import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
-import 'package:sidik_pelanggan/screens/akun/bantuan_screen.dart';
+import 'package:sidik_pelanggan/screens/akun/hubungi_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/masuk_screen.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_detail_screen.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
@@ -342,21 +342,21 @@ void main() {
       );
     });
 
-    Widget bantuan(LayananPelanggan l) => ProviderScope(
+    Widget hubungi(LayananPelanggan l) => ProviderScope(
       overrides: [
         layananProvider.overrideWithValue(l),
         infoPaketProvider.overrideWith(
           (ref) async => (versi: '1.0.0', build: '1'),
         ),
       ],
-      child: MaterialApp(theme: TemaSidik.terang, home: const BantuanScreen()),
+      child: MaterialApp(theme: TemaSidik.terang, home: const HubungiScreen()),
     );
 
-    testWidgets('Bantuan saat server 404: pesan ramah, tanpa galat mentah', (
+    testWidgets('Hubungi saat server 404: pesan ramah, tanpa galat mentah', (
       tester,
     ) async {
       await tester.pumpWidget(
-        bantuan(layananDari(() => _json({'message': 'No query results'}, 404))),
+        hubungi(layananDari(() => _json({'message': 'No query results'}, 404))),
       );
       await tester.pumpAndSettle();
       expect(find.text('Informasi kontak belum tersedia.'), findsOneWidget);
@@ -366,11 +366,11 @@ void main() {
       expect(find.text('Email'), findsNothing);
     });
 
-    testWidgets('Bantuan dengan field null: tampil tanpa tombol kontak', (
+    testWidgets('Hubungi dengan field null: tampil tanpa tombol kontak', (
       tester,
     ) async {
       await tester.pumpWidget(
-        bantuan(
+        hubungi(
           layananDari(
             () => _json({
               'data': {'organisasi': null, 'kontak': null, 'dokumen': null},

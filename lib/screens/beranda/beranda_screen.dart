@@ -29,7 +29,7 @@ import '../../widgets/status_tampil.dart';
 import '../../widgets/tombol_sidik.dart';
 import '../../widgets/ubin_alat.dart';
 import '../../widgets/ubin_ringkas.dart';
-import '../akun/bantuan_screen.dart';
+import '../akun/hubungi_screen.dart';
 import '../alat/alat_detail_screen.dart';
 import '../alat/daftar_alat_screen.dart';
 import '../gerbang.dart';
@@ -163,8 +163,20 @@ String _teksOffline(KeadaanKoneksi k, DateTime sekarang) =>
 /// Bagian lebar baris kepala yang boleh dipakai pil perusahaan.
 const double _bagianPil = 0.45;
 
+/// Lebar minimum kolom sapaan + nama (pada skala huruf 1,0) supaya "Selamat
+/// pagi," dan nama akun yang wajar tidak terpotong. Di bawah itu (layar 320 dp,
+/// atau huruf diperbesar) pil perusahaan turun ke baris sendiri di bawah
+/// sapaan, supaya sapaan, nama, dan nama perusahaan terbaca utuh (A7,
+/// tinjauan R1b; REVISI-1 butir 10).
+const double _lebarSapaanMin = 100;
+
 /// Kepala layar (T 48): avatar inisial, sapaan, nama, dan pil perusahaan bila
 /// ada. Nama dan sapaan dari akun yang masuk, bukan dari data perusahaan.
+///
+/// Selebar cukup: pil perusahaan di kanan sapaan (satu baris). Terlalu sempit
+/// ([_lebarSapaanMin] menurut skala huruf): pil di baris sendiri di bawahnya,
+/// selebar yang diperlukan namanya (nama perusahaan panjang tetap satu baris
+/// dengan elipsis di lebar penuh).
 class _KepalaBeranda extends StatelessWidget {
   const _KepalaBeranda({
     required this.sapaan,
@@ -184,45 +196,74 @@ class _KepalaBeranda extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.teks;
     final s = context.skema;
+    final skala = MediaQuery.textScalerOf(context).scale(1);
     return LayoutBuilder(
-      builder: (context, batas) => Row(
-        children: [
-          _Avatar(inisial: inisialNama(nama)),
-          const SizedBox(width: Spasi.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+      builder: (context, batas) {
+        final pil = perusahaan == null
+            ? null
+            : _PilPerusahaan(nama: perusahaan!, onTap: onGanti);
+        // Lebar kolom sapaan bila pil ada di sebelah kanannya.
+        final kolomSebaris = pil == null
+            ? double.infinity
+            : batas.maxWidth -
+                  UkuranUbin.avatar -
+                  Spasi.md -
+                  Spasi.sm -
+                  batas.maxWidth * _bagianPil;
+        final pilDiBawah =
+            pil != null && kolomSebaris < _lebarSapaanMin * skala;
+        final sapa = Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                nama.isEmpty ? sapaan : '$sapaan,',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: t.labelMedium?.copyWith(
+                  color: s.onSurfaceVariant,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              if (nama.isNotEmpty)
                 Text(
-                  nama.isEmpty ? sapaan : '$sapaan,',
+                  nama,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: t.labelMedium?.copyWith(
-                    color: s.onSurfaceVariant,
-                    fontWeight: FontWeight.w400,
-                  ),
+                  style: t.titleSmall,
                 ),
-                if (nama.isNotEmpty)
-                  Text(
-                    nama,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.titleSmall,
-                  ),
-              ],
-            ),
+            ],
           ),
-          if (perusahaan != null) ...[
-            const SizedBox(width: Spasi.sm),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: batas.maxWidth * _bagianPil,
+        );
+        final baris = Row(
+          children: [
+            _Avatar(inisial: inisialNama(nama)),
+            const SizedBox(width: Spasi.md),
+            sapa,
+            if (pil != null && !pilDiBawah) ...[
+              const SizedBox(width: Spasi.sm),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: batas.maxWidth * _bagianPil,
+                ),
+                child: pil,
               ),
-              child: _PilPerusahaan(nama: perusahaan!, onTap: onGanti),
+            ],
+          ],
+        );
+        if (!pilDiBawah) return baris;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            baris,
+            const SizedBox(height: Spasi.sm),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: batas.maxWidth),
+              child: pil,
             ),
           ],
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -617,7 +658,7 @@ class _IsiState extends ConsumerState<_Isi> {
 
     final bantuan = _masuk(
       5,
-      _BarisBantuan(onTap: () => buka(const BantuanScreen())),
+      _BarisBantuan(onTap: () => buka(const HubungiScreen())),
     );
 
     const jarak = SizedBox(height: Spasi.antarUbin);

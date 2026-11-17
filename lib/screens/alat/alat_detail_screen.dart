@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format.dart';
+import '../../core/pesan_admin.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/warna_sidik.dart';
+import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
+import '../../providers/sesi_provider.dart';
 import '../../widgets/bagian_sidik.dart';
 import '../../widgets/baris_info.dart';
 import '../../widgets/chip_status.dart';
@@ -14,6 +17,7 @@ import '../../widgets/kartu_sidik.dart';
 import '../../widgets/keadaan_galat.dart';
 import '../../widgets/keadaan_kosong.dart';
 import '../../widgets/kerangka.dart';
+import '../../widgets/lembar_tanya_admin.dart';
 import '../../widgets/pemetaan_status.dart';
 import '../sertifikat/sertifikat_detail_screen.dart';
 
@@ -89,6 +93,30 @@ class AlatDetailScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              // Alat tidak aktif tidak ditawari "minta kalibrasi ulang": jadwalnya
+              // hanya catatan (aturan alat nonaktif R1b).
+              if (a.status != StatusKalibrasi.nonaktif) ...[
+                const SizedBox(height: Spasi.md),
+                TombolTanyaAdmin(
+                  label: 'Minta kalibrasi ulang',
+                  pesan: () => PembangunPesanAdmin.kalibrasiUlang(
+                    perusahaan: ref
+                        .read(sesiProvider)
+                        .value
+                        ?.keanggotaanAktif
+                        ?.namaPerusahaan,
+                    namaAlat: a.nama,
+                    merkTipe: [
+                      a.merk,
+                      a.model,
+                    ].where((x) => x != null && x.isNotEmpty).join(' '),
+                    serial: a.serial,
+                    jadwal: a.jatuhTempo == null
+                        ? null
+                        : Format.tanggal(a.jatuhTempo),
+                  ),
+                ),
+              ],
               const BagianSidik('Riwayat kalibrasi'),
               if (a.riwayat.isEmpty)
                 const KartuSidik(
