@@ -45,7 +45,12 @@ abstract final class TautanLuar {
     final skema = uri.scheme.toLowerCase();
     if (!skemaDiizinkan.contains(skema)) return false;
     if (skema == 'https') {
+      // `Uri.parse` sudah mem-percent-encode spasi, kendali, bidi, dan
+      // lebar-nol, jadi `toString()` tidak pernah memuatnya mentah (cek
+      // [_tidakBoleh] di sini hanya cadangan; penjaga mentahnya ada di [web]).
+      // Yang tersisa di host adalah `%`: nama DNS sah tidak pernah ber-%.
       return uri.host.isNotEmpty &&
+          !uri.host.contains('%') &&
           uri.userInfo.isEmpty &&
           !uri.toString().contains(_tidakBoleh);
     }
