@@ -115,11 +115,17 @@ abstract final class TautanLuar {
     );
   }
 
+  /// Teks telepon yang wajar: `+` hanya di depan, selebihnya angka, spasi, `-`,
+  /// dan tanda kurung. Huruf, `;`, `,`, `#`, `*`, dan kendali arah teks ditolak
+  /// (mis. "0822 6006 0037 ext 12" tidak boleh digabung jadi satu nomor lain).
+  static final RegExp _teleponWajar = RegExp(r'^\+?[0-9 ()-]+$');
+
   /// `tel:<nomor>` dari teks telepon bebas ("0822 6006 0037", "+62 822-6006-0037");
-  /// hanya angka dan `+` di depan yang dibawa. `null` bila kurang dari 6 angka.
+  /// hanya angka dan `+` di depan yang dibawa. `null` bila kurang dari 6 angka
+  /// atau teksnya memuat selain pemisah wajar ([_teleponWajar]).
   static Uri? telepon(String? mentah) {
     final t = mentah?.trim();
-    if (t == null || t.isEmpty) return null;
+    if (t == null || t.isEmpty || !_teleponWajar.hasMatch(t)) return null;
     final awalPlus = t.startsWith('+');
     final angka = t.replaceAll(RegExp(r'[^0-9]'), '');
     if (angka.length < 6 || angka.length > 15) return null;

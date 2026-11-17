@@ -318,6 +318,38 @@ void main() {
       }
     });
 
+    test('telepon menolak huruf, titik koma, ekstensi, dan plus di tengah '
+        '(angka tidak digabung lintas pemisah)', () {
+      for (final x in <String>[
+        '0822 6006 0037 ext 12',
+        '0822 6006 0037 x12',
+        '+62812345678;ext=1',
+        '0822;6006;0037',
+        '0822,6006,0037',
+        '0822#6006',
+        '0822*6006',
+        '+62 822 +6006 0037',
+        // Kendali arah teks di depan membuang tanda plus: ditolak, bukan
+        // diubah jadi nomor lain.
+        '\u202D+62 822 6006 0037',
+        '\u200B082260060037',
+        '0822\n6006 0037',
+      ]) {
+        expect(TautanLuar.telepon(x), isNull, reason: x.codeUnits.toString());
+      }
+      // Bentuk nyata dari API dan pemisah wajar tetap lolos.
+      expect(TautanLuar.telepon('082260060037').toString(), 'tel:082260060037');
+      expect(
+        TautanLuar.telepon('+62 822-6006-0037').toString(),
+        'tel:+6282260060037',
+      );
+      expect(TautanLuar.telepon('(021) 555-0123').toString(), 'tel:0215550123');
+      expect(
+        TautanLuar.telepon('  +62 (21) 555 0123  ').toString(),
+        'tel:+62215550123',
+      );
+    });
+
     test('peta: alamat jadi satu-satunya kata cari di tautan Google Maps', () {
       const alamat =
           'Komplek Nuansa Mas Estate, Blk. E No.2, Cipamokolan, Rancasari, '
