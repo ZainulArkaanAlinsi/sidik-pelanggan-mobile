@@ -39,11 +39,9 @@ void main() {
       baseline: const {
         'lib/screens/akun/akun_screen.dart': 1,
         'lib/screens/akun/anggota_screen.dart': 2,
-        'lib/screens/alat/alat_detail_screen.dart': 2,
         'lib/screens/gerbang.dart': 1,
         'lib/screens/notifikasi/notifikasi_screen.dart': 1,
         'lib/screens/paket/paket_detail_screen.dart': 3,
-        'lib/screens/sertifikat/sertifikat_detail_screen.dart': 1,
         'lib/widgets/baris_menu.dart': 1,
         'lib/widgets/garis_waktu_sertifikat.dart': 1,
         'lib/widgets/kartu_kelompok_arsip.dart': 1,
@@ -59,7 +57,6 @@ void main() {
       dikecualikan: 'lib/widgets/chip_status.dart',
       baseline: const {
         'lib/screens/akun/anggota_screen.dart': 1,
-        'lib/screens/alat/alat_detail_screen.dart': 1,
         'lib/screens/paket/paket_detail_screen.dart': 3,
         'lib/screens/sertifikat/sertifikat_detail_screen.dart': 2,
         'lib/widgets/garis_waktu_sertifikat.dart': 2,
@@ -77,7 +74,6 @@ void main() {
         'lib/screens/akun/akun_screen.dart': 1,
         'lib/screens/akun/anggota_screen.dart': 1,
         'lib/screens/paket/paket_detail_screen.dart': 1,
-        'lib/screens/sertifikat/sertifikat_detail_screen.dart': 1,
         // `Alat.merkModel`: "merk · model" dibentuk di model, bukan di layar.
         'lib/models/data_pelanggan.dart': 1,
         'lib/widgets/kartu_paket.dart': 1,

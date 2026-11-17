@@ -236,6 +236,14 @@ void main() {
 
   group('2b. layar detail sertifikat menampilkan pesan yang tepat', () {
     Future<void> ketukUnduh(WidgetTester tester, Object galat) async {
+      // Layar tinggi: detail sertifikat kini berkelompok (P5d-B) dan "Unduh PDF"
+      // ada di kelompok Tindakan paling bawah; ListView hanya membangun yang
+      // dekat layar, jadi tanpa ini tombolnya belum ada di pohon.
+      tester.view
+        ..physicalSize = const Size(800, 3000)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [layananProvider.overrideWithValue(_LayananGagal(galat))],

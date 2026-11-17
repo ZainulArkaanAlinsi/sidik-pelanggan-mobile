@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/format.dart';
 import '../core/tema/spasi.dart';
 import '../core/tema/tipografi.dart';
+import '../core/tema/ukuran.dart';
 import '../core/tema/warna_sidik.dart';
 import '../models/data_pelanggan.dart';
 import '../models/status_berlaku.dart';
@@ -170,12 +171,13 @@ class _Simpul extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: Spasi.sm),
-                    Text(
-                      s.berlakuSampai == null
-                          ? 'Tanpa tanggal berlaku'
-                          : 'Berlaku sampai ${Format.tanggal(s.berlakuSampai)}',
-                      style: t.bodySmall,
-                    ),
+                    // `berlaku_sampai` = jadwal kalibrasi ulang (REVISI-2 butir 5):
+                    // kata "Berlaku sampai" tertukar dengan status dokumen.
+                    if (s.berlakuSampai != null)
+                      Text(
+                        'Jadwal kalibrasi ulang ${Format.tanggal(s.berlakuSampai)}',
+                        style: t.bodySmall,
+                      ),
                     if (s.revisiDari != null)
                       Text('Merevisi ${s.revisiDari}', style: t.bodySmall),
                     if (s.digantikanOleh != null)
@@ -188,6 +190,31 @@ class _Simpul extends StatelessWidget {
                         'Dibatalkan ${Format.tanggal(s.dibatalkanPada)}',
                         style: t.bodySmall,
                       ),
+                    // Akses langsung ke sertifikatnya: seluruh kartu satu tombol,
+                    // kalimat ini hanya penunjuk (dibaca sebagai bagian kartu).
+                    const SizedBox(height: Spasi.sm),
+                    ExcludeSemantics(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Buka sertifikat',
+                              style: t.labelLarge?.copyWith(
+                                color: skema.primary,
+                                fontWeight: TipografiSidik.beratTebal,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: Spasi.xs),
+                          Icon(
+                            Icons.arrow_forward,
+                            size: UkuranIkon.kecil,
+                            color: skema.primary,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

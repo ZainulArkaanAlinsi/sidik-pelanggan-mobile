@@ -9,6 +9,30 @@ import 'dasar/dasar_ubin.dart';
 import 'status_tampil.dart';
 import 'stempel.dart';
 
+/// Kata lencana status jadwal alat. Tiga status jadwal (lewat jadwal, segera
+/// jatuh tempo, berlaku) membawa waktunya: "Lewat jadwal 4 hari", "Segera jatuh
+/// tempo 12 hari lagi", "Segera jatuh tempo hari ini", "Berlaku 120 hari lagi".
+/// Status lain (tidak aktif, belum pernah, sedang diproses) memakai katanya
+/// saja, juga bila [nonaktif]: alat nonaktif tidak punya hitung mundur. Satu
+/// sumber untuk kartu alat dan detail alat.
+String labelStatusJadwal(
+  StatusTampil status,
+  int? hari, {
+  bool nonaktif = false,
+}) {
+  if (nonaktif || hari == null) return status.label;
+  final nada = status.nada;
+  if (nada == NadaStatus.gagal && hari < 0) {
+    return '${status.label} ${-hari} hari';
+  }
+  if ((nada == NadaStatus.awas || nada == NadaStatus.lulus) && hari >= 0) {
+    return hari == 0
+        ? '${status.label} hari ini'
+        : '${status.label} $hari hari lagi';
+  }
+  return status.label;
+}
+
 /// Kartu alat ringkas (REVISI-2 butir 2, R1b): satu alat, satu kartu NETRAL
 /// (permukaan putih, garis halus; warna hanya pada lencana status). Dipakai
 /// daftar "Alat saya" dan Beranda (alat paling mendesak): satu bentuk di dua
@@ -104,23 +128,8 @@ class UbinAlat extends StatelessWidget {
     return l == null || l.isEmpty ? null : l;
   }
 
-  /// Kata lencana status. Tiga status jadwal (lewat jadwal, segera jatuh tempo,
-  /// berlaku) membawa waktunya: "Lewat jadwal 4 hari", "Segera jatuh tempo 12
-  /// hari lagi", "Segera jatuh tempo hari ini", "Berlaku 120 hari lagi". Status
-  /// lain (tidak aktif, belum pernah, sedang diproses) memakai katanya saja,
-  /// juga bila [nonaktif]: alat nonaktif tidak punya hitung mundur.
-  String get labelStatus {
-    final h = hari;
-    if (nonaktif || h == null) return status.label;
-    final nada = status.nada;
-    if (nada == NadaStatus.gagal && h < 0) return '${status.label} ${-h} hari';
-    if ((nada == NadaStatus.awas || nada == NadaStatus.lulus) && h >= 0) {
-      return h == 0
-          ? '${status.label} hari ini'
-          : '${status.label} $h hari lagi';
-    }
-    return status.label;
-  }
+  /// Kata lencana status (lihat [labelStatusJadwal]).
+  String get labelStatus => labelStatusJadwal(status, hari, nonaktif: nonaktif);
 
   /// Konteks alat nonaktif (menggantikan hitung mundur); null bila aktif.
   String? get konteksNonaktif {

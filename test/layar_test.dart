@@ -268,7 +268,8 @@ void main() {
     await tester.pumpWidget(_bungkus(const AlatDetailScreen(id: 1), _Palsu()));
     await tester.pumpAndSettle();
 
-    expect(find.text('12 hari lagi'), findsOneWidget);
+    // Hitung mundur di lencana jadwal (kata yang sama dengan kartu alat).
+    expect(find.textContaining('12 hari lagi'), findsOneWidget);
     expect(find.text('Riwayat kalibrasi'), findsOneWidget);
     expect(find.text('CAL/2026/09/0002'), findsOneWidget);
     expect(find.byIcon(Icons.edit_outlined), findsNothing);
