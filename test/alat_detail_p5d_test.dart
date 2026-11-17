@@ -149,6 +149,13 @@ void main() {
       expect(find.text('Dipakai di ruang uji 2'), findsOneWidget);
       // Tanpa pemisah titik tengah antara merk dan model.
       expect(find.textContaining('·'), findsNothing);
+      // Baris bertombol salin sejajar dengan baris tetangganya: label di kiri
+      // yang sama, nilai di kolom yang sama (tidak berpindah ke tata letak
+      // menumpuk hanya karena ada tombol).
+      double x(String t) => tester.getTopLeft(find.text(t)).dx;
+      expect(x('Nomor seri'), x('Merk / model'));
+      expect(x('0457-2201'), x('Memmert UF55'));
+      expect(x('AST-0457'), x('Memmert UF55'));
     });
 
     testWidgets('data wajib kosong = "Belum tersedia"; kolom opsional yang '

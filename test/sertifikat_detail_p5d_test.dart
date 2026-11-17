@@ -142,6 +142,10 @@ void main() {
       expect(find.text('CAL/ALFA/2026/0012'), findsOneWidget);
       expect(find.text('Diterbitkan'), findsOneWidget);
       expect(find.textContaining('LK-285-IDN'), findsOneWidget);
+      // Baris bertombol salin sejajar dengan tetangganya (nilai di kolom sama).
+      double x(String t) => tester.getTopLeft(find.text(t)).dx;
+      expect(x('CAL/ALFA/2026/0012'), x(_tgl(-300)));
+      expect(x('SN-1'), x('Mitutoyo'));
       // Alat.
       expect(find.text('Nama alat'), findsOneWidget);
       expect(find.text('Jangka Sorong Digital'), findsOneWidget);

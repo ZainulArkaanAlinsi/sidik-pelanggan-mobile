@@ -417,24 +417,27 @@ class _GalatPratinjau extends StatelessWidget {
         const SizedBox(height: Spasi.lg),
         Text(pesan, textAlign: TextAlign.center, style: t.bodyLarge),
         const SizedBox(height: Spasi.lg),
-        if (bisaUlang)
-          Center(
-            child: TombolSidik(
+        // Tindakan berurutan dengan jarak antar tombol (huruf besar membungkus
+        // label, jadi tombol tidak boleh saling menempel).
+        for (final (i, aksi) in [
+          if (bisaUlang)
+            TombolSidik(
               label: 'Coba lagi',
               ikon: Icons.refresh,
               ragam: RagamTombol.utama,
               onPressed: onUlang,
             ),
-          ),
-        if (onBukaLuar != null)
-          Center(
-            child: TombolSidik(
+          if (onBukaLuar != null)
+            TombolSidik(
               label: 'Buka di aplikasi PDF lain',
               ikon: Icons.open_in_new,
               onPressed: onBukaLuar,
             ),
-          ),
-        if (tanyaAdmin != null) Center(child: tanyaAdmin),
+          ?tanyaAdmin,
+        ].indexed) ...[
+          if (i > 0) const SizedBox(height: Spasi.sm),
+          Center(child: aksi),
+        ],
       ],
     );
   }
