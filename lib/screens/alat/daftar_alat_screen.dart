@@ -99,6 +99,10 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
   String _kata = '';
   late FilterAlat _filter = widget.filterAwal;
 
+  /// Naik tiap "Hapus pencarian": kolom cari dibangun ulang dengan isian kosong
+  /// (pola yang sama dengan daftar sertifikat).
+  int _kunciCari = 0;
+
   /// Baris saringan boleh digeser dengan mouse, stylus, dan trackpad juga
   /// (bawaan Flutter hanya sentuh): di layar lebar dan desktop tanpanya
   /// pilihan di luar layar tidak terjangkau.
@@ -116,9 +120,28 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
   String get _judulKosong =>
       _kata.isNotEmpty ? 'Tidak ada yang cocok' : _filter.judulKosong;
 
-  String get _keteranganKosong => _tanpaAlat
-      ? 'Alat yang pernah dikalibrasi di PT Sidik muncul di sini.'
-      : 'Coba kata lain atau pilih "Semua".';
+  /// Kalimat keadaan kosong. Kata cari dan saringan aktif disebut apa adanya
+  /// (REVISI-1 butir 11: pencarian kosong menampilkan filter aktif dan tombol
+  /// reset), supaya jelas apa yang membuat daftarnya kosong.
+  String get _keteranganKosong {
+    if (_tanpaAlat) {
+      return 'Alat yang pernah dikalibrasi di PT Sidik muncul di sini.';
+    }
+    final saringan = _filter == FilterAlat.semua
+        ? ''
+        : ' pada saringan "${_filter.label}"';
+    if (_kata.isNotEmpty) {
+      return 'Tidak ada alat dengan kata "$_kata"$saringan. Periksa ejaannya '
+          'atau coba kata lain.';
+    }
+    return 'Belum ada alat$saringan. Tampilkan semua alat untuk melihat '
+        'daftar lengkap.';
+  }
+
+  void _hapusPencarian() => setState(() {
+    _kata = '';
+    _kunciCari++;
+  });
 
   IconData get _ikonKosong => _tanpaAlat
       ? Icons.straighten_outlined
@@ -215,6 +238,7 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
       isi: Column(
         children: [
           KolomCariUtuh(
+            key: ValueKey<int>(_kunciCari),
             petunjuk: 'Cari nama, merk, atau nomor seri',
             onCari: (kata) => setState(() => _kata = kata),
           ),
@@ -263,14 +287,17 @@ class _DaftarAlatScreenState extends ConsumerState<DaftarAlatScreen> {
         ikon: _ikonKosong,
         judul: _judulKosong,
         keterangan: keterangan ?? _keteranganKosong,
-        // Saringan yang menyempitkan daftar (tanpa kata cari): satu ketukan
-        // kembali ke "Semua". Dengan kata cari, kata itu milik kolom cari.
-        aksi: _kata.isEmpty && _filter != FilterAlat.semua
-            ? 'Tampilkan semua alat'
-            : null,
-        onAksi: _kata.isEmpty && _filter != FilterAlat.semua
-            ? () => setState(() => _filter = FilterAlat.semua)
-            : null,
+        // Satu tindakan, sesuai penyebab kosongnya: ada kata cari -> "Hapus
+        // pencarian" (kata itu mengosongkan daftar; saringan aktif tetap dan
+        // disebut di kalimat); hanya saringan -> kembali ke "Semua".
+        aksi: _kata.isNotEmpty
+            ? 'Hapus pencarian'
+            : (_filter != FilterAlat.semua ? 'Tampilkan semua alat' : null),
+        onAksi: _kata.isNotEmpty
+            ? _hapusPencarian
+            : (_filter != FilterAlat.semua
+                  ? () => setState(() => _filter = FilterAlat.semua)
+                  : null),
       ),
     ],
   );

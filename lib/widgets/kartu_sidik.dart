@@ -16,6 +16,7 @@ class KartuSidik extends StatelessWidget {
     this.onTap,
     this.warna,
     this.labelSemantik,
+    this.terbuka,
   });
 
   final Widget child;
@@ -26,6 +27,11 @@ class KartuSidik extends StatelessWidget {
   /// Menggantikan teks anak untuk pembaca layar (kartu yang bisa diketuk).
   final String? labelSemantik;
 
+  /// Kartu yang membuka/menutup isinya di tempat: `true` terbuka, `false`
+  /// tertutup (dibaca pembaca layar "dibuka"/"ditutup"); null = bukan kartu
+  /// buka-tutup. Dipasang di simpul yang sama dengan [labelSemantik].
+  final bool? terbuka;
+
   @override
   Widget build(BuildContext context) {
     final isi = Padding(padding: padding, child: child);
@@ -35,6 +41,7 @@ class KartuSidik extends StatelessWidget {
           ? isi
           : Semantics(
               button: true,
+              expanded: terbuka,
               label: labelSemantik,
               excludeSemantics: labelSemantik != null,
               child: InkWell(onTap: onTap, child: isi),

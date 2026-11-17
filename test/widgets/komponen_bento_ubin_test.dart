@@ -572,6 +572,9 @@ void main() {
           ).labelStatus;
       expect(label(NadaStatus.gagal, -4), 'Lewat jadwal 4 hari');
       expect(label(NadaStatus.gagal, -1), 'Lewat jadwal 1 hari');
+      // Batas hari 0 (A5, tinjauan R1b): jatuh tempo HARI INI belum "lewat".
+      // Mengunci `h < 0` (bukan `h <= 0`): "Lewat jadwal 0 hari" tidak boleh ada.
+      expect(label(NadaStatus.gagal, 0), 'Lewat jadwal');
       expect(label(NadaStatus.awas, 12), 'Segera jatuh tempo 12 hari lagi');
       expect(label(NadaStatus.awas, 0), 'Segera jatuh tempo hari ini');
       expect(label(NadaStatus.lulus, 120), 'Berlaku 120 hari lagi');
@@ -614,8 +617,11 @@ void main() {
       // Nonaktif: konteks menggantikan keterangan jadwal.
       final mati = ubin(hari: 10, tanggal: '9 Nov 2026', nonaktif: true);
       expect(mati.keteranganJadwal, isNull);
-      expect(mati.konteksNonaktif, 'Alat nonaktif, jadwal tercatat 9 Nov 2026');
-      expect(ubin(nonaktif: true).konteksNonaktif, 'Alat nonaktif');
+      expect(
+        mati.konteksNonaktif,
+        'Alat tidak aktif, jadwal tercatat 9 Nov 2026',
+      );
+      expect(ubin(nonaktif: true).konteksNonaktif, 'Alat tidak aktif');
       expect(ubin(hari: 5).konteksNonaktif, isNull);
     });
 
@@ -689,7 +695,7 @@ void main() {
       const kalimat =
           'Oven Memmert. Status: Lewat jadwal 4 hari. Di lab: Sedang '
           'dikalibrasi. Memmert UF55. Nomor seri 0457-2201. Lokasi Gudang 1. '
-          'sejak 9 Nov 2026';
+          'Jadwal sejak 9 Nov 2026';
       expect(
         tester.getSemantics(find.bySemanticsLabel(kalimat)),
         matchesSemantics(label: kalimat, isButton: true, hasTapAction: true),

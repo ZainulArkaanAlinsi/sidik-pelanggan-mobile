@@ -53,7 +53,7 @@ import 'package:sidik_pelanggan/models/arsip.dart';
 import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
 import 'package:sidik_pelanggan/screens/akun/anggota_screen.dart';
-import 'package:sidik_pelanggan/screens/akun/bantuan_screen.dart';
+import 'package:sidik_pelanggan/screens/akun/hubungi_screen.dart';
 import 'package:sidik_pelanggan/screens/akun/preferensi_notifikasi_screen.dart';
 import 'package:sidik_pelanggan/screens/alat/alat_detail_screen.dart';
 import 'package:sidik_pelanggan/screens/auth/lupa_sandi_screen.dart';
@@ -708,6 +708,8 @@ final _layarKunci = <_Layar>[
     kunci: true,
   ),
   _layar('alat_detail', () => const AlatDetailScreen(id: 1), kunci: true),
+  // Alat tidak aktif (id 6, jadwal tercatat): tanpa hitung mundur (P5d-B).
+  _layar('alat_detail_nonaktif', () => const AlatDetailScreen(id: 6)),
   _layar(
     'sertifikat',
     () => const Rangka(),
@@ -743,6 +745,12 @@ final _layarKunci = <_Layar>[
     sesudah: (tester) => tester.tap(find.text('Arsip')),
   ),
   _layar('arsip', () => const ArsipScreen()),
+  // Tahun 2026 dibuka di tempat: bulan-bulannya di bawah tahunnya (P5d-B).
+  _layar(
+    'arsip_terbuka',
+    () => const ArsipScreen(),
+    sesudah: (tester) => tester.tap(find.text('2026')),
+  ),
   _layar('arsip_kosong', () => const ArsipScreen(), perusahaan: 5),
   _layar(
     'arsip_hari',
@@ -767,7 +775,7 @@ final _layarKunci = <_Layar>[
     kunci: true,
   ),
   _layar('akun', () => const Rangka(), tab: IndeksTab.akun, kunci: true),
-  _layar('bantuan', () => const BantuanScreen()),
+  _layar('hubungi', () => const HubungiScreen()),
   _layar('paket_detail', () => const PaketDetailScreen(id: 21), kunci: true),
   _layar('anggota', () => const AnggotaScreen()),
   // Pengaturan notifikasi (Akun > Pengaturan notifikasi). Perusahaan 4/5/6

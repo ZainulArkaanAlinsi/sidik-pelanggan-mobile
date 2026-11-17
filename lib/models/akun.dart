@@ -1,3 +1,5 @@
+import '../core/tautan_luar.dart';
+
 /// Akun pelanggan — bentuk `data.user` dari `/auth/masuk` & `/auth/terima-undangan`,
 /// dan `data` dari `GET /saya` (fixture `tests/Fixtures/pelanggan/*.json` di
 /// repo API).
@@ -146,6 +148,10 @@ class InfoAplikasi {
     this.whatsapp,
     this.whatsappUrl,
     this.email,
+    this.emailPemasaran,
+    this.instagramUrl,
+    this.linkedinUrl,
+    this.ruangLingkupUrl,
     this.jamLayanan,
     this.kebijakanPrivasiUrl,
     this.kebijakanPrivasiVersi,
@@ -163,6 +169,14 @@ class InfoAplikasi {
   final String? whatsapp;
   final String? whatsappUrl;
   final String? email;
+
+  /// Aditif (17 Nov 2026): server lama tidak mengirimnya (null, tombol tersembunyi).
+  final String? emailPemasaran;
+  final String? instagramUrl;
+  final String? linkedinUrl;
+
+  /// PDF ruang lingkup akreditasi (`dokumen.ruang_lingkup_url`).
+  final String? ruangLingkupUrl;
   final String? jamLayanan;
   final String? kebijakanPrivasiUrl;
   final String? kebijakanPrivasiVersi;
@@ -171,9 +185,19 @@ class InfoAplikasi {
   final String? hapusAkunUrl;
   final String? petunjukPengemasan;
 
-  /// Ada setidaknya satu jalan menghubungi lab.
+  /// Ada setidaknya satu jalan menghubungi lab yang AMAN dibuka: tautan WhatsApp
+  /// `https` berhost WhatsApp, email yang bentuknya wajar, atau nomor telepon.
+  /// Isian server yang aneh dianggap tidak ada (tombolnya tidak muncul).
   bool get adaKontak =>
-      whatsappUrl != null || email != null || teleponOrganisasi != null;
+      TautanLuar.whatsapp(whatsappUrl) != null ||
+      TautanLuar.alamatEmail(email) != null ||
+      TautanLuar.telepon(teleponOrganisasi) != null;
+
+  /// Bisa "Tanya admin" dengan pesan terisi: lewat WhatsApp `wa.me/<nomor>`
+  /// atau, bila tidak ada, lewat email.
+  bool get bisaTanyaAdmin =>
+      TautanLuar.nomorWhatsapp(whatsappUrl) != null ||
+      TautanLuar.alamatEmail(email) != null;
 
   bool get adaDokumen =>
       kebijakanPrivasiUrl != null || syaratUrl != null || hapusAkunUrl != null;
@@ -191,6 +215,10 @@ class InfoAplikasi {
       whatsapp: _teksInfo(kontak['whatsapp']),
       whatsappUrl: _teksInfo(kontak['whatsapp_url']),
       email: _teksInfo(kontak['email']),
+      emailPemasaran: _teksInfo(kontak['email_pemasaran']),
+      instagramUrl: _teksInfo(kontak['instagram_url']),
+      linkedinUrl: _teksInfo(kontak['linkedin_url']),
+      ruangLingkupUrl: _teksInfo(dok['ruang_lingkup_url']),
       jamLayanan: _teksInfo(kontak['jam_layanan']),
       kebijakanPrivasiUrl: _teksInfo(privasi['url']),
       kebijakanPrivasiVersi: _teksInfo(privasi['versi']),

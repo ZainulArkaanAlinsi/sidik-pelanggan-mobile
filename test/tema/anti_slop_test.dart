@@ -39,12 +39,9 @@ void main() {
       baseline: const {
         'lib/screens/akun/akun_screen.dart': 1,
         'lib/screens/akun/anggota_screen.dart': 2,
-        'lib/screens/akun/bantuan_screen.dart': 1,
-        'lib/screens/alat/alat_detail_screen.dart': 2,
         'lib/screens/gerbang.dart': 1,
         'lib/screens/notifikasi/notifikasi_screen.dart': 1,
         'lib/screens/paket/paket_detail_screen.dart': 3,
-        'lib/screens/sertifikat/sertifikat_detail_screen.dart': 1,
         'lib/widgets/baris_menu.dart': 1,
         'lib/widgets/garis_waktu_sertifikat.dart': 1,
         'lib/widgets/kartu_kelompok_arsip.dart': 1,
@@ -60,7 +57,6 @@ void main() {
       dikecualikan: 'lib/widgets/chip_status.dart',
       baseline: const {
         'lib/screens/akun/anggota_screen.dart': 1,
-        'lib/screens/alat/alat_detail_screen.dart': 1,
         'lib/screens/paket/paket_detail_screen.dart': 3,
         'lib/screens/sertifikat/sertifikat_detail_screen.dart': 2,
         'lib/widgets/garis_waktu_sertifikat.dart': 2,
@@ -78,12 +74,29 @@ void main() {
         'lib/screens/akun/akun_screen.dart': 1,
         'lib/screens/akun/anggota_screen.dart': 1,
         'lib/screens/paket/paket_detail_screen.dart': 1,
-        'lib/screens/sertifikat/sertifikat_detail_screen.dart': 1,
         // `Alat.merkModel`: "merk · model" dibentuk di model, bukan di layar.
         'lib/models/data_pelanggan.dart': 1,
         'lib/widgets/kartu_paket.dart': 1,
         'lib/widgets/kartu_sertifikat.dart': 2,
       },
+    ),
+    // PENGECUALIAN BERNAMA (A6, tinjauan R1b): REVISI-2 butir 2 menetapkan baris
+    // kartu alat "Mitutoyo CD-15CPX · SN 2201-0457". Kartu itu membangunnya dari
+    // DUA potongan Text yang membungkus utuh (merk + titik di ujungnya, lalu
+    // "SN seri" mono), jadi string ' · ' di atas tidak pernah muncul. Itu bukan
+    // celah yang boleh ditiru: aturan di bawah menghitung titik tengah yang
+    // menempel di tepi string literal (" ·'" atau "'· ") dan membekukannya di
+    // SATU berkas, ubin_alat.dart. Pemakai kedua = gagal, sama ketatnya dengan
+    // aturan ' · '. Penjaga lain (komponen_jejak_test, komponen_bento_ubin_test,
+    // render_komponen_test) tidak dilonggarkan.
+    _Aturan(
+      nama: "' ·' / '· ' di tepi string (pemisah dua potongan Text)",
+      alasan:
+          'satu-satunya pengecualian bernama: baris "merk · SN seri" kartu '
+          'alat (REVISI-2 butir 2); jangan dipakai untuk rangkaian lain',
+      pola: RegExp(" ·['\"]|['\"]· "),
+      dikecualikan: '',
+      baseline: const {'lib/widgets/ubin_alat.dart': 1},
     ),
     _Aturan(
       nama: 'AreaSentuh.minimum - Spasi.x (ubin ikon dekoratif)',
@@ -102,6 +115,15 @@ void main() {
       final a = aturan[2];
       expect(a.hitung("// A · B\nfinal s = 'A · B';"), 1);
       expect(a.hitung('/* A · B */ final s = "tanpa pemisah";'), 0);
+    });
+
+    test('pengecualian bernama menghitung titik di tepi string, bukan di '
+        'tengah dan bukan di komentar', () {
+      final a = aturan[3];
+      expect(a.hitung("Text('\$merk ·')"), 1);
+      expect(a.hitung('Text("· SN")'), 1);
+      expect(a.hitung("// merk ·'\nfinal s = 'tanpa';"), 0);
+      expect(a.hitung("final s = 'A · B';"), 0);
     });
   });
 

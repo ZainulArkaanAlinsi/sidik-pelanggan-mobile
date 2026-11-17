@@ -554,7 +554,8 @@ void main() {
           findsOneWidget,
         );
         // Peringatannya ada di status ALAT (dari server), bukan di sertifikat.
-        expect(find.text('Lewat jadwal'), findsOneWidget);
+        // Lencana jadwal alat sekarang berwaktu ("Lewat jadwal N hari").
+        expect(find.textContaining('Lewat jadwal'), findsOneWidget);
       },
     );
 

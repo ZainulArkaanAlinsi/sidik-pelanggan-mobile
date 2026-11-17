@@ -9,6 +9,30 @@ import 'dasar/dasar_ubin.dart';
 import 'status_tampil.dart';
 import 'stempel.dart';
 
+/// Kata lencana status jadwal alat. Tiga status jadwal (lewat jadwal, segera
+/// jatuh tempo, berlaku) membawa waktunya: "Lewat jadwal 4 hari", "Segera jatuh
+/// tempo 12 hari lagi", "Segera jatuh tempo hari ini", "Berlaku 120 hari lagi".
+/// Status lain (tidak aktif, belum pernah, sedang diproses) memakai katanya
+/// saja, juga bila [nonaktif]: alat nonaktif tidak punya hitung mundur. Satu
+/// sumber untuk kartu alat dan detail alat.
+String labelStatusJadwal(
+  StatusTampil status,
+  int? hari, {
+  bool nonaktif = false,
+}) {
+  if (nonaktif || hari == null) return status.label;
+  final nada = status.nada;
+  if (nada == NadaStatus.gagal && hari < 0) {
+    return '${status.label} ${-hari} hari';
+  }
+  if ((nada == NadaStatus.awas || nada == NadaStatus.lulus) && hari >= 0) {
+    return hari == 0
+        ? '${status.label} hari ini'
+        : '${status.label} $hari hari lagi';
+  }
+  return status.label;
+}
+
 /// Kartu alat ringkas (REVISI-2 butir 2, R1b): satu alat, satu kartu NETRAL
 /// (permukaan putih, garis halus; warna hanya pada lencana status). Dipakai
 /// daftar "Alat saya" dan Beranda (alat paling mendesak): satu bentuk di dua
@@ -29,8 +53,8 @@ import 'stempel.dart';
 ///
 /// ALAT NONAKTIF ([nonaktif]): tanpa hitung mundur sama sekali. Lencana tetap
 /// "Tidak aktif" (netral), namanya diredupkan ke teks kedua, dan tanggal
-/// jadwal, bila ada, tampil sebagai konteks "Alat nonaktif, jadwal tercatat 22
-/// Nov 2026" supaya tidak dibaca sebagai tindakan yang harus segera dilakukan.
+/// jadwal, bila ada, tampil sebagai konteks "Alat tidak aktif, jadwal tercatat
+/// 22 Nov 2026" (satu istilah dengan lencananya: "Tidak aktif") supaya tidak dibaca sebagai tindakan yang harus segera dilakukan.
 ///
 /// Tinggi [UkuranUbin.alatRingkas] adalah MINIMUM: kartu tumbuh bersama isi dan
 /// huruf. Status tidak hanya warna: lencana selalu ikon + kata. Seluruh kartu
@@ -81,7 +105,7 @@ class UbinAlat extends StatelessWidget {
   /// sendiri di samping status. Null = alat tidak sedang di lab.
   final StatusTampil? tahap;
 
-  /// Alat dinonaktifkan: tanpa hitung mundur, dengan konteks "Alat nonaktif".
+  /// Alat tidak aktif: tanpa hitung mundur, dengan konteks "Alat tidak aktif".
   final bool nonaktif;
 
   final VoidCallback? onTap;
@@ -104,31 +128,16 @@ class UbinAlat extends StatelessWidget {
     return l == null || l.isEmpty ? null : l;
   }
 
-  /// Kata lencana status. Tiga status jadwal (lewat jadwal, segera jatuh tempo,
-  /// berlaku) membawa waktunya: "Lewat jadwal 4 hari", "Segera jatuh tempo 12
-  /// hari lagi", "Segera jatuh tempo hari ini", "Berlaku 120 hari lagi". Status
-  /// lain (tidak aktif, belum pernah, sedang diproses) memakai katanya saja,
-  /// juga bila [nonaktif]: alat nonaktif tidak punya hitung mundur.
-  String get labelStatus {
-    final h = hari;
-    if (nonaktif || h == null) return status.label;
-    final nada = status.nada;
-    if (nada == NadaStatus.gagal && h < 0) return '${status.label} ${-h} hari';
-    if ((nada == NadaStatus.awas || nada == NadaStatus.lulus) && h >= 0) {
-      return h == 0
-          ? '${status.label} hari ini'
-          : '${status.label} $h hari lagi';
-    }
-    return status.label;
-  }
+  /// Kata lencana status (lihat [labelStatusJadwal]).
+  String get labelStatus => labelStatusJadwal(status, hari, nonaktif: nonaktif);
 
   /// Konteks alat nonaktif (menggantikan hitung mundur); null bila aktif.
   String? get konteksNonaktif {
     if (!nonaktif) return null;
     final t = tanggal;
     return t == null || t.isEmpty
-        ? 'Alat nonaktif'
-        : 'Alat nonaktif, jadwal tercatat $t';
+        ? 'Alat tidak aktif'
+        : 'Alat tidak aktif, jadwal tercatat $t';
   }
 
   /// Tanggal jadwal di dasar kartu: "sejak ..." bila sudah lewat, "jatuh tempo
@@ -141,6 +150,13 @@ class UbinAlat extends StatelessWidget {
     return h < 0 ? 'sejak $t' : 'jatuh tempo $t';
   }
 
+  /// Jadwal untuk pembaca layar: tanggalnya diberi kata benda ("Jadwal sejak 9
+  /// Nov 2026"), supaya tidak terdengar sebagai serpihan tanggal yatim.
+  String? get _jadwalBaca {
+    final k = keteranganJadwal;
+    return k == null ? null : 'Jadwal $k';
+  }
+
   /// Kalimat bawaan untuk pembaca layar, dari isi kartu.
   String get kalimat => [
     nama,
@@ -149,7 +165,7 @@ class UbinAlat extends StatelessWidget {
     if (merkTipe != null && merkTipe!.isNotEmpty) merkTipe!,
     if (serial != null && serial!.isNotEmpty) 'Nomor seri $serial',
     if (_lokasiTampil != null) 'Lokasi $_lokasiTampil',
-    ?(konteksNonaktif ?? keteranganJadwal),
+    ?(konteksNonaktif ?? _jadwalBaca),
   ].join('. ');
 
   @override

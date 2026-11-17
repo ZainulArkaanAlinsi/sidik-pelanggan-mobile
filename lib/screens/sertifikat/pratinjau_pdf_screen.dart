@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_pelanggan.dart';
+import '../../core/pesan_admin.dart';
 import '../../core/tema/bentuk.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/ukuran.dart';
@@ -11,6 +12,8 @@ import '../../providers/data_provider.dart';
 import '../../providers/pdf_provider.dart';
 import '../../providers/sesi_provider.dart';
 import '../../services/layanan_pelanggan.dart';
+import '../../widgets/lembar_tanya_admin.dart';
+import '../../widgets/pemetaan_status.dart';
 import '../../widgets/penampil_pdf.dart';
 import '../../widgets/tombol_sidik.dart';
 
@@ -113,12 +116,55 @@ class _PratinjauPdfScreenState extends ConsumerState<PratinjauPdfScreen> {
     }
   }
 
+  /// Dibatalkan (410): tidak ada yang bisa diunduh.
+  bool get _dibatalkan {
+    final g = _galat;
+    return g is GalatApi && g.status == 410;
+  }
+
+  /// Tanya admin tentang sertifikat ini (pesan terisi nomor, alat, seri, status).
+  Widget _tanyaAdmin() {
+    final s = widget.sertifikat;
+    return TombolTanyaAdmin(
+      label: 'Tanya admin tentang sertifikat ini',
+      ragam: RagamTombol.teks,
+      pesan: () => PembangunPesanAdmin.tanyaSertifikat(
+        perusahaan: ref
+            .read(sesiProvider)
+            .value
+            ?.keanggotaanAktif
+            ?.namaPerusahaan,
+        nomor: s.nomor,
+        namaAlat: s.namaAlat,
+        serial: s.serial,
+        status: statusDokumen(s.status).label,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = widget.sertifikat;
+    // Unduh di kepala layar, tempat yang sama di tiap keadaan (memuat: belum;
+    // tampil atau gagal: ada, kecuali dibatalkan). Kata dan ikon sama dengan
+    // "Unduh PDF" di detail sertifikat.
+    final bolehUnduh =
+        !_membukaLuar && !_dibatalkan && (_path != null || _galat != null);
     return Scaffold(
       appBar: AppBar(
-        title: Text(s.nomor, maxLines: 1, overflow: TextOverflow.ellipsis),
+        // Nomor sertifikat utuh: mengecil secukupnya, tidak dipotong.
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(s.nomor, maxLines: 1),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Unduh PDF',
+            icon: const Icon(Icons.download_outlined),
+            onPressed: bolehUnduh ? _bukaDiLuar : null,
+          ),
+        ],
       ),
       body: _isi(context),
     );
@@ -128,11 +174,16 @@ class _PratinjauPdfScreenState extends ConsumerState<PratinjauPdfScreen> {
     final t = context.teks;
     final galat = _galat;
     if (galat != null) {
+      final bisaUlang = !(galat is GalatApi && (galat.status == 410));
       return _GalatPratinjau(
         pesan: _pesan(galat),
         // Sertifikat batal / belum ada PDF: mengulang tidak ada gunanya.
-        bisaUlang: !(galat is GalatApi && (galat.status == 410)),
+        bisaUlang: bisaUlang,
         onUlang: _muat,
+        // Selain dibatalkan, aplikasi PDF lain adalah jalan keluar (unduh dan
+        // buka dari awal); admin selalu bisa ditanya.
+        onBukaLuar: bisaUlang && !_membukaLuar ? _bukaDiLuar : null,
+        tanyaAdmin: _tanyaAdmin(),
       );
     }
     final path = _path;
@@ -149,6 +200,12 @@ class _PratinjauPdfScreenState extends ConsumerState<PratinjauPdfScreen> {
                 'Menyiapkan PDF…',
                 textAlign: TextAlign.center,
                 style: t.bodyLarge,
+              ),
+              const SizedBox(height: Spasi.md),
+              TombolSidik(
+                label: 'Batal',
+                ragam: RagamTombol.teks,
+                onPressed: () => Navigator.of(context).maybePop(),
               ),
             ],
           ),
@@ -168,6 +225,7 @@ class _PratinjauPdfScreenState extends ConsumerState<PratinjauPdfScreen> {
             bisaUlang: false,
             onUlang: _muat,
             onBukaLuar: _membukaLuar ? null : _bukaDiLuar,
+            tanyaAdmin: _tanyaAdmin(),
           );
         }
         return Column(
@@ -219,51 +277,66 @@ class _BilahAlat extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                IconButton(
-                  tooltip: 'Halaman sebelumnya',
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: kontrol.adaSebelumnya ? kontrol.sebelumnya : null,
-                ),
-                Expanded(
-                  child: Semantics(
-                    liveRegion: true,
-                    child: Text(
-                      siap
-                          ? 'Halaman ${kontrol.halaman} dari $jumlah'
-                          : 'Membuka halaman…',
-                      textAlign: TextAlign.center,
-                      style: t.titleSmall,
+            Semantics(
+              container: true,
+              explicitChildNodes: true,
+              label: 'Navigasi halaman',
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Halaman sebelumnya',
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: kontrol.adaSebelumnya
+                        ? kontrol.sebelumnya
+                        : null,
+                  ),
+                  Expanded(
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        siap
+                            ? 'Halaman ${kontrol.halaman} dari $jumlah'
+                            : 'Membuka halaman…',
+                        textAlign: TextAlign.center,
+                        style: t.titleSmall,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Halaman berikutnya',
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: kontrol.adaBerikutnya ? kontrol.berikutnya : null,
-                ),
-              ],
+                  IconButton(
+                    tooltip: 'Halaman berikutnya',
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: kontrol.adaBerikutnya
+                        ? kontrol.berikutnya
+                        : null,
+                  ),
+                ],
+              ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _AlatPdf(
-                  ikon: Icons.zoom_out,
-                  label: 'Perkecil',
-                  onTap: siap ? kontrol.perkecil : null,
-                ),
-                _AlatPdf(
-                  ikon: Icons.zoom_in,
-                  label: 'Perbesar',
-                  onTap: siap ? kontrol.perbesar : null,
-                ),
-                _AlatPdf(
-                  ikon: Icons.rotate_right,
-                  label: 'Putar',
-                  onTap: siap ? onPutar : null,
-                ),
-              ],
+            const Divider(height: Spasi.sm),
+            Semantics(
+              container: true,
+              explicitChildNodes: true,
+              label: 'Tampilan dokumen',
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _AlatPdf(
+                    ikon: Icons.zoom_out,
+                    label: 'Perkecil',
+                    onTap: siap ? kontrol.perkecil : null,
+                  ),
+                  _AlatPdf(
+                    ikon: Icons.zoom_in,
+                    label: 'Perbesar',
+                    onTap: siap ? kontrol.perbesar : null,
+                  ),
+                  _AlatPdf(
+                    ikon: Icons.rotate_right,
+                    label: 'Putar',
+                    onTap: siap ? onPutar : null,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -319,12 +392,16 @@ class _GalatPratinjau extends StatelessWidget {
     required this.bisaUlang,
     required this.onUlang,
     this.onBukaLuar,
+    this.tanyaAdmin,
   });
 
   final String pesan;
   final bool bisaUlang;
   final VoidCallback onUlang;
   final VoidCallback? onBukaLuar;
+
+  /// Tombol "Tanya admin" (hanya ada bila server memberi kontak).
+  final Widget? tanyaAdmin;
 
   @override
   Widget build(BuildContext context) {
@@ -340,23 +417,27 @@ class _GalatPratinjau extends StatelessWidget {
         const SizedBox(height: Spasi.lg),
         Text(pesan, textAlign: TextAlign.center, style: t.bodyLarge),
         const SizedBox(height: Spasi.lg),
-        if (bisaUlang)
-          Center(
-            child: TombolSidik(
+        // Tindakan berurutan dengan jarak antar tombol (huruf besar membungkus
+        // label, jadi tombol tidak boleh saling menempel).
+        for (final (i, aksi) in [
+          if (bisaUlang)
+            TombolSidik(
               label: 'Coba lagi',
               ikon: Icons.refresh,
               ragam: RagamTombol.utama,
               onPressed: onUlang,
             ),
-          ),
-        if (onBukaLuar != null)
-          Center(
-            child: TombolSidik(
+          if (onBukaLuar != null)
+            TombolSidik(
               label: 'Buka di aplikasi PDF lain',
               ikon: Icons.open_in_new,
               onPressed: onBukaLuar,
             ),
-          ),
+          ?tanyaAdmin,
+        ].indexed) ...[
+          if (i > 0) const SizedBox(height: Spasi.sm),
+          Center(child: aksi),
+        ],
       ],
     );
   }

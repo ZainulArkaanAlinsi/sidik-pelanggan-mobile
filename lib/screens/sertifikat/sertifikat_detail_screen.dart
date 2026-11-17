@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api_pelanggan.dart';
 import '../../core/format.dart';
+import '../../core/pesan_admin.dart';
+import '../../core/tautan_luar.dart';
 import '../../core/tema/spasi.dart';
-import '../../core/tema/tipografi.dart';
 import '../../core/tema/warna_sidik.dart';
 import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/koneksi_provider.dart';
 import '../../providers/sesi_provider.dart';
+import '../../providers/tautan_provider.dart';
 import '../../services/layanan_pelanggan.dart';
+import '../../widgets/bagian_sidik.dart';
 import '../../widgets/baris_info.dart';
 import '../../widgets/chip_status.dart';
 import '../../widgets/halaman_sidik.dart';
-import '../../widgets/kartu_sidik.dart';
 import '../../widgets/keadaan_galat.dart';
 import '../../widgets/kerangka.dart';
+import '../../widgets/lembar_tanya_admin.dart';
 import '../../widgets/lencana_kan.dart';
 import '../../widgets/panel_pemberitahuan.dart';
+import '../../widgets/panel_sidik.dart';
 import '../../widgets/pemetaan_status.dart';
 import '../../widgets/status_tampil.dart';
 import '../../widgets/tombol_sidik.dart';
@@ -70,10 +73,13 @@ class _SertifikatDetailScreenState
     }
   }
 
+  /// Nama perusahaan aktif untuk pesan "Tanya admin" (tidak dikarang).
+  String? _namaPerusahaan() =>
+      ref.read(sesiProvider).value?.keanggotaanAktif?.namaPerusahaan;
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(detailSertifikatProvider(widget.id));
-    final t = context.teks;
     final offline = ref.watch(koneksiProvider).offline;
 
     return HalamanSidik(
@@ -85,9 +91,25 @@ class _SertifikatDetailScreenState
           cobaLagi: () => ref.invalidate(detailSertifikatProvider(widget.id)),
         ),
         data: (s) {
-          final vonis = statusKeputusan(s.keputusan);
+          final vonis = s.dibatalkan ? null : statusKeputusan(s.keputusan);
           final pengganti = s.digantikanOleh;
           final bisaBuka = s.bisaDiunduh && !s.dibatalkan && !offline;
+          final merkModel = [
+            s.merk,
+            s.model,
+          ].where((x) => x != null && x.isNotEmpty).join(' ');
+          final serial = s.serial?.trim();
+          // Penjelasan tindakan, SEBELUM tombolnya (pengguna tahu kenapa tombol
+          // mati sebelum mencoba menekannya).
+          final catatan = offline && s.bisaDiunduh && !s.dibatalkan
+              ? 'Sambungkan internet untuk mengunduh PDF.'
+              : s.dibatalkan
+              ? 'Sertifikat yang dibatalkan tidak bisa dibuka maupun diunduh.'
+              : !s.bisaDiunduh
+              ? 'PDF sedang disiapkan laboratorium. Coba lagi nanti.'
+              : s.digantikan
+              ? 'PDF lama tetap bisa dibuka dan diunduh sebagai riwayat.'
+              : null;
           return ListView(
             padding: Spasi.daftar(context),
             children: [
@@ -125,56 +147,109 @@ class _SertifikatDetailScreenState
                 ),
                 const SizedBox(height: Spasi.md),
               ],
-              KartuSidik(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Nomor sertifikat', style: t.bodySmall),
-                    const SizedBox(height: Spasi.xs),
-                    Text(s.nomor, style: t.headlineSmall?.tabular),
-                    if ((vonis != null && !s.dibatalkan) ||
-                        s.status != StatusDokumen.berlaku) ...[
-                      const SizedBox(height: Spasi.md),
-                      Wrap(
-                        spacing: Spasi.sm,
-                        runSpacing: Spasi.sm,
-                        children: [
-                          if (s.status != StatusDokumen.berlaku)
-                            ChipStatus(statusDokumen(s.status)),
-                          if (vonis != null && !s.dibatalkan) ChipStatus(vonis),
-                        ],
+
+              // 1. Identitas dokumen.
+              const BagianSidik('Identitas dokumen'),
+              PanelSidik(
+                padding: PanelSidik.paddingIsi,
+                anak: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      BarisInfoSalin(
+                        'Nomor sertifikat',
+                        s.nomor,
+                        tooltip: 'Salin nomor sertifikat',
+                        konfirmasi: 'Nomor sertifikat disalin.',
+                      ),
+                      BarisInfo('Diterbitkan', Format.tanggal(s.diterbitkan)),
+                      if (s.penandaTangan != null)
+                        BarisInfo('Disahkan oleh', s.penandaTangan),
+                      if (s.revisiDari != null)
+                        BarisInfo('Merevisi', s.revisiDari, angka: true),
+                      const SizedBox(height: Spasi.sm),
+                      const Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: LencanaKan(),
                       ),
                     ],
-                    const SizedBox(height: Spasi.md),
-                    const LencanaKan(),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: Spasi.md),
-                      child: Divider(),
+                  ),
+                ],
+              ),
+
+              // 2. Alat.
+              const BagianSidik('Alat'),
+              PanelSidik(
+                padding: PanelSidik.paddingIsi,
+                anak: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      BarisInfo(
+                        'Nama alat',
+                        (s.namaAlat ?? '').trim().isEmpty
+                            ? 'Belum tersedia'
+                            : s.namaAlat,
+                      ),
+                      BarisInfo(
+                        'Merk / model',
+                        merkModel.isEmpty ? 'Belum tersedia' : merkModel,
+                      ),
+                      if (serial == null || serial.isEmpty)
+                        const BarisInfo('Nomor seri', 'Belum tersedia')
+                      else
+                        BarisInfoSalin(
+                          'Nomor seri',
+                          serial,
+                          tooltip: 'Salin nomor seri',
+                          konfirmasi: 'Nomor seri disalin.',
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+
+              // 3. Status dokumen (berlaku, digantikan, atau dibatalkan) dan
+              // jadwal kalibrasi ulang (BUKAN "berlaku sampai": itu tertukar
+              // dengan status dokumen).
+              const BagianSidik('Status dokumen'),
+              PanelSidik(
+                padding: PanelSidik.paddingIsi,
+                anak: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: ChipStatus(statusDokumen(s.status)),
+                      ),
+                      if (!s.dibatalkan && s.berlakuSampai != null) ...[
+                        const SizedBox(height: Spasi.md),
+                        BarisInfo(
+                          'Jadwal kalibrasi ulang',
+                          Format.tanggal(s.berlakuSampai),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+
+              // 4. Hasil teknis (memenuhi atau tidak memenuhi toleransi), bila
+              // dinyatakan. REQ-SRT-04: FAIL tidak disembunyikan dan tidak
+              // dilunakkan.
+              if (vonis != null) ...[
+                const BagianSidik('Hasil teknis'),
+                PanelSidik(
+                  padding: PanelSidik.paddingIsi,
+                  anak: [
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: ChipStatus(vonis),
                     ),
-                    BarisInfo('Alat', s.namaAlat),
-                    BarisInfo(
-                      'Merk / model',
-                      [
-                        s.merk,
-                        s.model,
-                      ].where((x) => x != null && x.isNotEmpty).join(' · '),
-                    ),
-                    BarisInfo('Nomor seri', s.serial, angka: true),
-                    BarisInfo('Diterbitkan', Format.tanggal(s.diterbitkan)),
-                    BarisInfo(
-                      'Berlaku sampai',
-                      Format.tanggal(s.berlakuSampai),
-                    ),
-                    for (final e in s.rincian.entries)
-                      BarisInfo(e.key, e.value),
-                    if (s.penandaTangan != null)
-                      BarisInfo('Disahkan oleh', s.penandaTangan),
-                    if (s.revisiDari != null)
-                      BarisInfo('Merevisi', s.revisiDari, angka: true),
                   ],
                 ),
-              ),
-              // REQ-SRT-04: FAIL tidak disembunyikan dan tidak dilunakkan.
+              ],
               if (s.keputusan == 'FAIL' && !s.dibatalkan) ...[
                 const SizedBox(height: Spasi.md),
                 const PanelPemberitahuan(
@@ -187,9 +262,26 @@ class _SertifikatDetailScreenState
                       'tanyakan ke Tim PT Sidik.',
                 ),
               ],
-              const SizedBox(height: Spasi.xl),
-              // Satu aksi utama per layar: melihat PDF di dalam aplikasi.
-              // "Unduh PDF" tetap ada untuk membukanya di aplikasi PDF lain.
+              if (s.rincian.isNotEmpty) ...[
+                const BagianSidik('Rincian kalibrasi'),
+                PanelSidik(
+                  padding: PanelSidik.paddingIsi,
+                  anak: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final e in s.rincian.entries)
+                          BarisInfo(e.key, e.value),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+
+              // 5. Tindakan. Satu aksi utama: melihat PDF di dalam aplikasi;
+              // "Unduh PDF" membukanya di aplikasi PDF lain.
+              const BagianSidik('Tindakan'),
+              if (catatan != null) _Catatan(catatan),
               TombolSidik(
                 label: 'Lihat PDF',
                 ikon: Icons.picture_as_pdf_outlined,
@@ -211,14 +303,30 @@ class _SertifikatDetailScreenState
                 sibuk: _mengunduh,
                 onPressed: bisaBuka ? () => _unduh(s) : null,
               ),
-              if (offline && s.bisaDiunduh && !s.dibatalkan)
-                _Catatan('Sambungkan internet untuk mengunduh PDF.')
-              else if (s.dibatalkan)
-                _Catatan('Sertifikat yang dibatalkan tidak bisa diunduh.')
-              else if (!s.bisaDiunduh)
-                _Catatan('PDF sedang disiapkan laboratorium. Coba lagi nanti.')
-              else if (s.digantikan)
-                _Catatan('PDF lama tetap bisa diunduh sebagai riwayat.'),
+              const SizedBox(height: Spasi.sm),
+              TombolTanyaAdmin(
+                label: 'Tanya tentang sertifikat ini',
+                ragam: RagamTombol.teks,
+                pesan: () => PembangunPesanAdmin.tanyaSertifikat(
+                  perusahaan: _namaPerusahaan(),
+                  nomor: s.nomor,
+                  namaAlat: s.namaAlat,
+                  serial: s.serial,
+                  status: statusDokumen(s.status).label,
+                ),
+              ),
+              TombolTanyaAdmin(
+                label: 'Laporkan data yang keliru',
+                ikon: Icons.flag_outlined,
+                ragam: RagamTombol.teks,
+                pesan: () => PembangunPesanAdmin.laporkanDataKeliru(
+                  perusahaan: _namaPerusahaan(),
+                  nomor: s.nomor,
+                  namaAlat: s.namaAlat,
+                  serial: s.serial,
+                  status: statusDokumen(s.status).label,
+                ),
+              ),
               if (s.tautanVerifikasi != null) ...[
                 const SizedBox(height: Spasi.sm),
                 TombolSidik(
@@ -226,9 +334,12 @@ class _SertifikatDetailScreenState
                   ikon: Icons.verified_outlined,
                   ragam: RagamTombol.teks,
                   penuh: true,
-                  onPressed: () => launchUrl(
-                    Uri.parse(s.tautanVerifikasi!),
-                    mode: LaunchMode.externalApplication,
+                  // Tautan dari server: lewat pintu TautanLuar (https saja,
+                  // tidak pernah melempar); selain itu pesan galat yang sama.
+                  onPressed: () => bukaAtauBeritahu(
+                    context,
+                    ref,
+                    TautanLuar.web(s.tautanVerifikasi),
                   ),
                 ),
                 const _Catatan(

@@ -9,6 +9,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +17,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:sidik_pelanggan/core/motion/gerak_bento.dart';
 import 'package:sidik_pelanggan/core/konfigurasi.dart';
+import 'package:sidik_pelanggan/core/tema/spasi.dart';
 import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/core/tema/ukuran.dart';
 import 'package:sidik_pelanggan/core/tema/warna_sidik.dart';
@@ -25,7 +27,7 @@ import 'package:sidik_pelanggan/models/paket.dart';
 import 'package:sidik_pelanggan/models/status_berlaku.dart';
 import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
-import 'package:sidik_pelanggan/screens/akun/bantuan_screen.dart';
+import 'package:sidik_pelanggan/screens/akun/hubungi_screen.dart';
 import 'package:sidik_pelanggan/screens/alat/alat_detail_screen.dart';
 import 'package:sidik_pelanggan/screens/alat/daftar_alat_screen.dart';
 import 'package:sidik_pelanggan/screens/beranda/beranda_kapsul.dart';
@@ -147,6 +149,24 @@ Future<void> _pasang(WidgetTester tester, Widget w) async {
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pumpWidget(w);
 }
+
+/// Seperti [_app], tetapi skala huruf BENAR-BENAR diterapkan: pada [_app] bagian
+/// `MediaQuery(data: MediaQuery.of(context).copyWith(...))` memasang kembali data
+/// yang belum dijepit (dibaca dari konteks di ATAS penjepit), jadi `skala` di
+/// sana tidak berefek. Dipakai tes yang perlu huruf 1,3x sungguhan.
+Widget _appSkalaNyata(ServerFitur server, {required double skala}) =>
+    ProviderScope(
+      overrides: overrideFitur(server),
+      child: MaterialApp(
+        theme: TemaSidik.terang,
+        builder: (context, child) => MediaQuery.withClampedTextScaling(
+          minScaleFactor: skala,
+          maxScaleFactor: skala,
+          child: child!,
+        ),
+        home: const BerandaScreen(),
+      ),
+    );
 
 /// Provider data Beranda memakai percobaan ulang bawaan Riverpod (10 kali,
 /// ±38 detik) sebelum galat tampil. Kerangka memuat sekarang STATIS, jadi
@@ -874,6 +894,75 @@ void main() {
       semantik.dispose();
     });
 
+    // A7 (tinjauan R1b): di 320 dp x 1,3 sapaan, nama, dan perusahaan terpotong
+    // ("Selamat ...", "Budi Ang...", "PT A..."). Sempit: pil turun ke baris
+    // sendiri; lega: tetap di kanan sapaan dalam satu baris.
+    testWidgets('A7: sempit (320 dp x 1,3 dan 360 dp x 1,3) sapaan, nama, dan '
+        'perusahaan terbaca UTUH; pil di bawah sapaan', (tester) async {
+      for (final lebar in [320.0, 360.0]) {
+        layarHp(tester, lebar: lebar, tinggi: 2400);
+        await _pasang(
+          tester,
+          _appSkalaNyata(
+            _server(alat: [alatJson(1, 'A', hari: 100)]),
+            skala: 1.3,
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(
+          MediaQuery.textScalerOf(
+            tester.element(find.byType(Scaffold).first),
+          ).scale(10),
+          closeTo(13, 0.01),
+          reason: 'harness memang memakai huruf 1,3x',
+        );
+        expect(tester.takeException(), isNull, reason: '$lebar');
+        for (final teks in ['Selamat pagi,', 'Budi Anggota', 'PT Alfa']) {
+          final p = tester.renderObject<RenderParagraph>(
+            find
+                .descendant(
+                  of: find.text(teks),
+                  matching: find.byType(RichText),
+                )
+                .first,
+          );
+          expect(p.didExceedMaxLines, isFalse, reason: '"$teks" di $lebar dp');
+        }
+        final nama = tester.getRect(find.text('Budi Anggota'));
+        final pil = tester.getRect(
+          find.ancestor(
+            of: find.text('PT Alfa'),
+            matching: find.byType(KontrolKetuk),
+          ),
+        );
+        expect(
+          pil.top,
+          greaterThanOrEqualTo(nama.bottom - 0.5),
+          reason: 'di bawah',
+        );
+        expect(pil.height, greaterThanOrEqualTo(48));
+        expect(pil.right, lessThanOrEqualTo(lebar - Spasi.sisi + 0.5));
+      }
+    });
+
+    testWidgets('A7: lega (392 dp x 1,0) pil perusahaan tetap di kanan sapaan, '
+        'satu baris', (tester) async {
+      layarHp(tester, lebar: 392, tinggi: 2400);
+      await tester.pumpWidget(
+        _app(_server(alat: [alatJson(1, 'A', hari: 100)])),
+      );
+      await tester.pumpAndSettle();
+      final nama = tester.getRect(find.text('Budi Anggota'));
+      final pil = tester.getRect(
+        find.ancestor(
+          of: find.text('PT Alfa'),
+          matching: find.byType(KontrolKetuk),
+        ),
+      );
+      expect(pil.left, greaterThanOrEqualTo(nama.right));
+      expect((pil.center.dy - nama.center.dy).abs(), lessThan(40));
+    });
+
     testWidgets('satu perusahaan: tanpa pil dan tanpa nama PT', (tester) async {
       final semantik = tester.ensureSemantics();
       layarHp(tester, lebar: 392, tinggi: 2400);
@@ -1586,7 +1675,7 @@ void main() {
         );
         await tester.tap(find.text('Tanya jadwal, sertifikat, atau paket'));
         await tester.pumpAndSettle();
-        expect(find.byType(BantuanScreen), findsOneWidget);
+        expect(find.byType(HubungiScreen), findsOneWidget);
         semantik.dispose();
       },
     );
@@ -2105,17 +2194,23 @@ void main() {
       }
     });
 
-    testWidgets('nama PT panjang: satu baris dengan elipsis di 320 x 1,3', (
-      tester,
-    ) async {
+    testWidgets('nama PT panjang: satu baris dengan elipsis di 320 x 1,3, di '
+        'baris sendiri selebar isi', (tester) async {
       layarHp(tester, lebar: 320, tinggi: 640);
-      await tester.pumpWidget(_app(penuh, skala: 1.3));
+      await tester.pumpWidget(_appSkalaNyata(penuh, skala: 1.3));
       await tester.pumpAndSettle();
       const nama = 'PT Instrumentasi Presisi Nusantara Sejahtera Abadi';
       expect(tester.getSize(find.text(nama)).height, lessThan(26));
+      // A7: di layar sempit pil turun ke baris sendiri, jadi nama boleh selebar
+      // isi (320 dikurangi dua sisi), bukan lagi 45 %.
       expect(
         tester.getSize(find.text(nama)).width,
-        lessThanOrEqualTo(320 * 0.45),
+        lessThanOrEqualTo(320 - 2 * Spasi.sisi),
+      );
+      expect(
+        tester.getSize(find.text(nama)).width,
+        greaterThan(320 * 0.45),
+        reason: 'memakai lebar baris sendiri',
       );
     });
 

@@ -107,10 +107,80 @@ data, dan aturan baca-saja tidak berubah.
   `Text("SN 2201-0457")` mono), jadi tidak ada string " · " di kode, dan "SN seri" tidak
   pernah terbelah di layar sempit.
 
+## P5d-A: sisa temuan R1b, Hubungi PT SIDIK, "Tanya admin"
+
+Sumber: REVISI-1 butir 10 dan 11, REVISI-2 butir 12, tinjauan R1b (A1, A3, A5-A8).
+Logika, alur, API, peran, rute, data, dan aturan baca-saja tidak berubah; tidak ada
+panggilan tulis baru (`test/guard_tulis_test.dart` tidak disentuh).
+
+- **Layar Hubungi PT SIDIK** (`hubungi_screen.dart`, menggantikan Bantuan & kontak): identitas
+  dan akreditasi KAN (`LencanaKan`), jam layanan HANYA bila server mengirimnya, tombol utama
+  "Chat dengan admin" (WhatsApp), kanal ringkas (telepon, email, email pemasaran, alamat; ketuk
+  baris = buka, tombol di kanan = salin satu ketuk + konfirmasi), tautan sekunder (Instagram,
+  LinkedIn, ruang lingkup akreditasi PDF). Field `null` atau tidak aman = barisnya tidak ada;
+  server lama tanpa field baru tetap jalan. Dari Akun, Beranda, Sambutan, undangan, pemeliharaan,
+  dan "akun belum aktif". Kontak yang pernah terbaca tetap tampil bila pemuatan ulang gagal.
+- **Keamanan tautan** (`core/tautan_luar.dart`, satu-satunya pintu ke `launchUrl` lewat
+  `providers/tautan_provider.dart`): hanya skema `https`, `mailto`, `tel`; tautan server
+  dipakai hanya bila `https`, bertuan rumah, tanpa `user:sandi@`, tanpa spasi atau karakter
+  kendali/arah teks. Tautan WhatsApp berpesan, `mailto`, `tel`, dan peta DIBANGUN aplikasi
+  dari nilai yang sudah divalidasi, isi pesan di-encode per komponen (satu-satunya parameter
+  `text`; `&`, `#`, `?`, `%`, baris baru, emoji aman).
+- **"Tanya admin tentang ini"** (`core/pesan_admin.dart`, `widgets/lembar_tanya_admin.dart`):
+  detail alat "Minta kalibrasi ulang" (tidak untuk alat tidak aktif) dan detail sertifikat
+  "Tanya tentang sertifikat ini" / "Laporkan data yang keliru". Pesan Bahasa Indonesia dari data
+  layar saja (nama perusahaan aktif, alat, merk/model, nomor seri, jadwal, nomor sertifikat,
+  status); butir kosong dilewati, tiap butir satu baris dan paling panjang 120 karakter.
+  Lembar bawah menampilkan pratinjau pesan lalu WhatsApp (`wa.me/<nomor>?text=`; email bila
+  tautan server bukan `wa.me/<nomor>`) atau "Salin pesan". Tombol hanya ada bila `GET /app/info`
+  sudah terbaca dan memberi jalan.
+- **Sisa temuan R1b**: A1 tombol tampilkan sandi tetap simpul tombol sendiri (`KolomIsian`
+  dengan `ikonAkhir` tidak lagi memakai `MergeSemantics`); A3 hasil cari kosong menyebut kata dan
+  saringan aktif dan punya "Hapus pencarian"; A5 batas hari 0 dikunci tes; A8 satu istilah "Tidak
+  aktif" dan kalimat baca "Jadwal sejak ...", "Jadwal jatuh tempo ..."; A7 di layar sempit atau
+  huruf besar pil perusahaan Beranda turun ke baris sendiri (sapaan dan nama terbaca utuh); A6
+  pengecualian bernama untuk baris "merk · SN seri" di `anti_slop_test` (satu berkas, bukan celah).
+  A8(a), indent teks bantuan isian ~20 dp, tidak diubah: itu perataan standar Material 3 pada
+  `InputDecorator` dan menggantinya berarti memindahkan teks galat keluar dari isian.
+
+## P5d-B: detail alat, detail sertifikat, arsip, pratinjau PDF (kepala dan bilah)
+
+Sumber: REVISI-2 butir 3, 4, 5, 6. Logika, alur, API, peran, rute, data, dan aturan
+baca-saja tidak berubah; isi PDF beku (hanya kepala layar dan bilah aksi).
+
+- **Detail alat**: judul layar "Detail alat"; nama alat SEKALI (di kelompok identitas).
+  Empat kelompok: *Identitas alat* (merk/model dan nomor seri selalu ada, "Belum tersedia"
+  bila kosong; nomor identifikasi, rentang ukur, lokasi, catatan disembunyikan bila kosong;
+  nomor seri dan nomor identifikasi bisa disalin), *Jadwal kalibrasi* (lencana berwaktu dari
+  `labelStatusJadwal`, satu sumber dengan kartu alat), *Status layanan* (hanya bila alat di
+  lab: tahap, nomor order, "Lihat paket"), *Riwayat kalibrasi* (terbaru di atas WALAU server
+  mengirim sebaliknya; tiap simpul "Buka sertifikat"). **Alat tidak aktif**: lencana "Tidak
+  aktif", kalimat "Alat tidak aktif, jadwal tercatat ...", tanpa hitung mundur, tanpa kata
+  lewat/lagi, tanpa "Minta kalibrasi ulang" (A4 peninjau R1b).
+- **Detail sertifikat**: kelompok *Identitas dokumen* (nomor bisa disalin), *Alat*, *Status
+  dokumen* (Berlaku/Digantikan/Dibatalkan + "Jadwal kalibrasi ulang"; kata "Berlaku sampai"
+  dibuang, sama dengan daftar #31), *Hasil teknis* (hanya bila dinyatakan; FAIL tetap apa
+  adanya), *Rincian kalibrasi* (hanya bila ada), *Tindakan*. Penjelasan kenapa tombol mati
+  (dibatalkan, offline, PDF belum siap, PDF lama) di ATAS tombolnya. Yang digantikan tetap
+  menampilkan "Buka yang berlaku"; yang dibatalkan tidak membawa jadwal dan hasil.
+- **Arsip**: TAHUN buka-tutup di tempat (isi = bulan-bulannya, satu tingkat diminta hanya
+  saat dibuka; panah turun/naik; pembaca layar menerima "dibuka/ditutup"); beberapa tahun
+  bisa terbuka sekaligus dan keadaannya diingat walau baris tergulir atau kembali dari
+  layar pekan. Bulan tetap membuka layar tingkat berikutnya (rute tidak berubah; server tidak memaginasi
+  kelompok, jadi semua bulan tampil). Pencarian (nomor persis, tertulis di bawah kolom)
+  dan hasilnya bertahan saat kembali dari detail (sudah demikian; kini diuji).
+- **Pratinjau PDF**: kepala berisi nomor sertifikat utuh (mengecil, tidak dipotong) dan
+  "Unduh PDF" di tempat tetap (kata dan ikon sama dengan detail; mati saat memuat dan untuk
+  yang dibatalkan); bilah bawah dua kelompok bernama ("Navigasi halaman": panah + "Halaman x
+  dari y"; "Tampilan dokumen": perkecil, perbesar, putar). Memuat: "Batal". Gagal: "Coba
+  lagi", "Buka di aplikasi PDF lain" (bukan untuk yang dibatalkan), dan "Tanya admin tentang
+  sertifikat ini".
+
 ## Belum dikerjakan (PR berikutnya)
 
-Poles layar: detail alat, sertifikat, paket, akun (termasuk Ganti sandi: label permanen
-lewat `KolomIsian`), anggota, preferensi, notifikasi, bantuan, dan kondisi sistem. Sertifikat
-(daftar) sudah di #31. Tema gelap masih titik awal (belum ditinjau). Pembersihan token Bento
+Poles layar: paket (daftar dan detail), akun (termasuk Ganti sandi: label permanen lewat
+`KolomIsian`), anggota, preferensi, notifikasi, dan kondisi sistem selain pemeliharaan.
+Sertifikat (daftar) sudah di #31; detail alat, detail sertifikat, arsip, kepala pratinjau PDF,
+dan Hubungi PT SIDIK di P5d. Tema gelap masih titik awal (belum ditinjau). Pembersihan token Bento
 yang tak dipakai lagi (`UkuranUbin.alat/alatBeranda`, `UkuranVisual.alat*`, nama token yang
 menyesatkan) menyusul di PR bersih-bersih.

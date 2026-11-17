@@ -15,7 +15,7 @@ import 'ubin_alat.dart';
 /// `Format.tanggal`. Alat tanpa jadwal (`jatuhTempo` null) tidak membawa hari
 /// dan tanggal. Alat yang sedang di lab membawa tahapnya sebagai lencana kedua
 /// (`statusPaket`, istilah yang sama dengan layar paket). ALAT NONAKTIF tidak
-/// punya hitung mundur: kartu menyebut "Alat nonaktif" dan jadwal tercatatnya
+/// punya hitung mundur: kartu menyebut "Alat tidak aktif" dan jadwal tercatatnya
 /// ([UbinAlat.nonaktif]). Lokasi tampil bila terisi (pembeda dua alat sejenis
 /// tanpa nomor seri); nomor identifikasi tidak punya tempat di kartu dan tetap
 /// ada di detail alat.

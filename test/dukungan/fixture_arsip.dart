@@ -78,7 +78,7 @@ Map<String, dynamic> itemArsipJson(
   'dibatalkan_pada': null,
   'catatan_pelanggan': null,
   'bisa_diunduh': false,
-  'tautan_verifikasi': 'http://localhost/verify/uji$id',
+  'tautan_verifikasi': 'https://contoh.test/verify/uji$id',
   'nomor_order': nomorOrder,
 };
 
