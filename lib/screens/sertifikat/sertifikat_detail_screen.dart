@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api_pelanggan.dart';
 import '../../core/format.dart';
 import '../../core/pesan_admin.dart';
+import '../../core/tautan_luar.dart';
 import '../../core/tema/spasi.dart';
 import '../../core/tema/warna_sidik.dart';
 import '../../models/data_pelanggan.dart';
 import '../../providers/data_provider.dart';
 import '../../providers/koneksi_provider.dart';
 import '../../providers/sesi_provider.dart';
+import '../../providers/tautan_provider.dart';
 import '../../services/layanan_pelanggan.dart';
 import '../../widgets/bagian_sidik.dart';
 import '../../widgets/baris_info.dart';
@@ -333,9 +334,12 @@ class _SertifikatDetailScreenState
                   ikon: Icons.verified_outlined,
                   ragam: RagamTombol.teks,
                   penuh: true,
-                  onPressed: () => launchUrl(
-                    Uri.parse(s.tautanVerifikasi!),
-                    mode: LaunchMode.externalApplication,
+                  // Tautan dari server: lewat pintu TautanLuar (https saja,
+                  // tidak pernah melempar); selain itu pesan galat yang sama.
+                  onPressed: () => bukaAtauBeritahu(
+                    context,
+                    ref,
+                    TautanLuar.web(s.tautanVerifikasi),
                   ),
                 ),
                 const _Catatan(

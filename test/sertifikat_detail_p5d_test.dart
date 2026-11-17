@@ -12,6 +12,7 @@ import 'package:sidik_pelanggan/core/tema/tema_sidik.dart';
 import 'package:sidik_pelanggan/models/akun.dart';
 import 'package:sidik_pelanggan/models/data_pelanggan.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
+import 'package:sidik_pelanggan/providers/tautan_provider.dart';
 import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_detail_screen.dart';
 import 'package:sidik_pelanggan/widgets/bagian_sidik.dart';
 import 'package:sidik_pelanggan/widgets/pemetaan_status.dart';
@@ -43,13 +44,14 @@ Map<String, dynamic> _sert(
 };
 
 class _Uji {
-  _Uji(List<Map<String, dynamic>> sertifikat, {this.info})
+  _Uji(List<Map<String, dynamic>> sertifikat, {this.info, this.pembuka})
     : server = ServerFitur({
         3: DataPerusahaan(nama: 'PT Alfa', sertifikat: sertifikat),
       });
 
   final ServerFitur server;
   final InfoAplikasi? info;
+  final PembukaTautan? pembuka;
   final tersalin = <String>[];
 
   Future<void> buka(
@@ -82,6 +84,8 @@ class _Uji {
           tambahan: [
             if (info != null)
               infoAplikasiProvider.overrideWith((ref) async => info!),
+            if (pembuka != null)
+              pembukaTautanProvider.overrideWithValue(pembuka!),
           ],
         ),
         child: MaterialApp(
@@ -358,6 +362,59 @@ void main() {
             reason: tombol.label,
           );
         }
+      });
+    }
+  });
+
+  group('halaman verifikasi', () {
+    // Tautan datang dari server: hanya https bertuan rumah yang dibuka, dan
+    // tautan rusak tidak boleh melempar (tombol ini dulu memanggil
+    // `launchUrl(Uri.parse(...))` langsung).
+    Future<List<Uri>> ketuk(WidgetTester tester, String tautan) async {
+      final dibuka = <Uri>[];
+      final u = _Uji(
+        [
+          _sert(7, tambahan: {'tautan_verifikasi': tautan}),
+        ],
+        pembuka: (uri) async {
+          dibuka.add(uri);
+          return true;
+        },
+      );
+      await u.buka(tester, 7);
+      await tester.tap(find.text('Buka halaman verifikasi'));
+      await tester.pumpAndSettle();
+      return dibuka;
+    }
+
+    testWidgets('https yang benar dibuka lewat pembuka tautan', (tester) async {
+      final dibuka = await ketuk(tester, 'https://pt-sidik.com/verify/abc');
+      expect(dibuka, [Uri.parse('https://pt-sidik.com/verify/abc')]);
+      expect(tester.takeException(), isNull);
+      expect(find.text('Tidak ada aplikasi untuk membukanya.'), findsNothing);
+    });
+
+    for (final jelek in [
+      'javascript:alert(1)',
+      'http://pt-sidik.com/verify/abc',
+      'intent://scan#Intent;scheme=zxing;end',
+      'file:///sdcard/x.pdf',
+      'https://[::1',
+      'https://',
+      'https://user:sandi@pt-sidik.com/verify/abc',
+      'https://pt-sidik.com/verify/ab c',
+      '%zz',
+    ]) {
+      testWidgets('ditolak tanpa melempar dan tanpa membuka: $jelek', (
+        tester,
+      ) async {
+        final dibuka = await ketuk(tester, jelek);
+        expect(dibuka, isEmpty);
+        expect(tester.takeException(), isNull);
+        expect(
+          find.text('Tidak ada aplikasi untuk membukanya.'),
+          findsOneWidget,
+        );
       });
     }
   });
