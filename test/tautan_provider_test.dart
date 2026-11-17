@@ -73,8 +73,8 @@ void main() {
       // Host ber-% (spasi, lebar-nol, atau bidi yang di-encode Dart): bukan
       // nama DNS sah.
       'https://exa mple.com/',
-      'https://exa​mple.com/',
-      'https://‮pt-sidik.com/',
+      'https://exa\u200Bmple.com/',
+      'https://\u202Ept-sidik.com/',
     ]) {
       expect(await bukaTautanLuar(Uri.parse(u)), isFalse, reason: u);
     }
@@ -94,7 +94,7 @@ void main() {
       TautanLuar.whatsappDenganPesan('https://wa.me/6282260060037', 'a\nb&c'),
       // Alamat dengan baris baru dan lebar-nol hanya ada di kata cari peta;
       // gerbang tidak boleh menolaknya.
-      TautanLuar.peta('Jl. Contoh No. 1\nBandung​ 40292'),
+      TautanLuar.peta('Jl. Contoh No. 1\nBandung\u200B 40292'),
     ];
     for (final u in dibangun) {
       expect(u, isNotNull);
