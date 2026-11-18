@@ -1,158 +1,176 @@
-# SIDIK Pelanggan (Flutter)
+<p align="center">
+  <img src="docs/img/banner-pelanggan.svg" alt="SIDIK Calibration — aplikasi Pelanggan: status kalibrasi dan sertifikat alat, baca saja" width="100%">
+</p>
 
-Aplikasi pemilik alat untuk laboratorium kalibrasi PT Sidik: lihat data alat
-dan jatuh tempo, sertifikat (unduh PDF + tautan verifikasi), notifikasi,
-serta profil akun dan pilihan perusahaan. Pasangan API-nya
-`routes/api_pelanggan.php` di `sidik-calibration-api` (prefix `/api/pelanggan/v1`).
+<p align="center">
+  <a href="https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/actions/workflows/periksa.yml"><img alt="Periksa" src="https://img.shields.io/github/actions/workflow/status/ZainulArkaanAlinsi/sidik-pelanggan-mobile/periksa.yml?branch=main&style=flat-square&label=periksa&labelColor=102A43"></a>
+  <a href="https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/releases/latest"><img alt="Rilis terbaru" src="https://img.shields.io/github/v/release/ZainulArkaanAlinsi/sidik-pelanggan-mobile?style=flat-square&label=rilis&labelColor=102A43&color=1769C2"></a>
+  <img alt="Flutter 3.44.6" src="https://img.shields.io/badge/Flutter-3.44.6-1769C2?style=flat-square&labelColor=102A43">
+  <img alt="Riverpod 3" src="https://img.shields.io/badge/Riverpod-3-1769C2?style=flat-square&labelColor=102A43">
+  <img alt="Platform: Android" src="https://img.shields.io/badge/platform-Android-1769C2?style=flat-square&labelColor=102A43">
+  <img alt="Data bisnis: baca saja" src="https://img.shields.io/badge/data%20bisnis-baca%20saja-1769C2?style=flat-square&labelColor=102A43">
+  <img alt="Status: dalam pengembangan aktif" src="https://img.shields.io/badge/status-dalam%20pengembangan%20aktif-1769C2?style=flat-square&labelColor=102A43">
+</p>
 
-> **Status (23 Okt 2026): rilis Android `v0.2.1+3` sudah publik.**
-> [Rilis](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/releases/tag/v0.2.1%2B3)
-> dan [CI analyze + test](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/actions/runs/39861639145)
-> menunjuk commit `21a3b4d`. Metadata manifest cocok dengan aset APK: versi
-> `0.2.1`, build `3`, ukuran `36.845.501` byte, dan SHA-256. Target skrip rilis
-> adalah ARM32 + ARM64. Konfigurasi Firebase lokal tersedia saat pemeriksaan,
-> tetapi push, event Crashlytics, dan alur aplikasi di HP sungguhan belum
-> terverifikasi. CI tersebut menjalankan analyze + test, bukan build APK.
+> **English.** SIDIK Calibration Customer is an Android app for companies that own instruments calibrated by the PT SIDIK laboratory. It shows calibration due dates, certificates (PDF and a public verification link), packages being worked on and notifications. Business data is read-only: accounts are created by invitation and the server remains the single source of truth. A support system for a KAN-accredited laboratory (LK-285-IDN); under active development.
 
-## Menjalankan
+**Isi:** [Ringkasan](#ringkasan) · [Peran dan fitur](#peran-dan-fitur) · [Cara kerja](#cara-kerja) · [Arsitektur](#arsitektur) · [Prinsip](#prinsip) · [Teknologi](#teknologi) · [Menjalankan secara lokal](#menjalankan-secara-lokal) · [Pengujian](#pengujian) · [Rilis dan pembaruan](#rilis-dan-pembaruan) · [Dokumentasi](#dokumentasi) · [Status dan peta jalan](#status-dan-peta-jalan) · [Kontribusi dan kepemilikan](#kontribusi-dan-kepemilikan)
 
-```bash
-flutter pub get
-flutter analyze
-flutter test
+## Ringkasan
 
-# Jalankan ke server lokal (emulator Android → 10.0.2.2)
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+Aplikasi untuk perusahaan pemilik alat ukur yang dikalibrasi di laboratorium PT SIDIK. Status kalibrasi, jatuh tempo, sertifikat, dan paket yang sedang dikerjakan tersedia dalam satu aplikasi, tidak lagi tersebar di kertas dan berkas PDF. Datanya dibaca dari API [`sidik-calibration-api`](https://github.com/ZainulArkaanAlinsi/sidik-calibration-api) (prefix `/api/pelanggan/v1`); apa yang terbit di laboratorium muncul di sini tanpa input ulang.
 
-# Alur dasar di perangkat (butuh emulator/HP; CI belum menjalankannya).
-# Skenario yang sama jalan tanpa perangkat di test/alur_dasar_test.dart.
-flutter test integration_test -d <id-perangkat>
+Sistem pendukung laboratorium terakreditasi KAN LK-285-IDN.
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/img/pelanggan-beranda.png" alt="Beranda: ringkasan jatuh tempo kalibrasi, sertifikat terbaru, paket dikerjakan" width="240"></td>
+    <td align="center" width="33%"><img src="docs/img/pelanggan-alat.png" alt="Alat saya: daftar alat dengan pencarian, saringan, dan status" width="240"></td>
+    <td align="center" width="33%"><img src="docs/img/pelanggan-sertifikat.png" alt="Detail sertifikat: identitas dokumen, alat, status, hasil teknis" width="240"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Beranda</sub></td>
+    <td align="center"><sub>Alat saya</sub></td>
+    <td align="center"><sub>Detail sertifikat</sub></td>
+  </tr>
+</table>
+<p align="center"><sub>Tampilan terbitan 0.3.1, tema terang. Data pada gambar adalah data contoh sintetis.</sub></p>
+
+## Peran dan fitur
+
+| Peran | Di aplikasi ini |
+| --- | --- |
+| Anggota perusahaan | Melihat alat, sertifikat, paket, notifikasi, dan daftar anggota; mengelola akunnya sendiri. Akun lahir dari undangan. |
+| PIC utama perusahaan | Sama dengan anggota, ditambah menonaktifkan anggota. |
+| Staf laboratorium (Master Data, Super Admin, Teknisi, Viewer) | Tidak memakai aplikasi ini. Bekerja di [aplikasi Lab](https://github.com/ZainulArkaanAlinsi/sidik-calibration-mobile); undangan akun pelanggan berasal dari admin lab atau PIC utama. |
+
+| Area | Isi |
+| --- | --- |
+| Beranda | Ringkasan jatuh tempo (lewat jadwal, sampai 30 hari, 31 sampai 60 hari, 61 sampai 90 hari), alat yang mendesak, sertifikat terbaru, paket dikerjakan. |
+| Alat saya | Daftar dengan pencarian nama, merk, atau nomor seri; saringan jatuh tempo; detail dan riwayat kalibrasi; tombol minta kalibrasi ulang. |
+| Sertifikat | Daftar dan arsip (tahun, bulan, pekan, hari), pencarian, detail, pratinjau dan unduh PDF, tautan verifikasi publik. |
+| Paket | Daftar dan tahap pengerjaan paket di laboratorium. |
+| Notifikasi | Kotak masuk di aplikasi; push bersifat opsional. |
+| Akun | Ganti sandi, preferensi notifikasi, anggota, pilihan perusahaan, hubungi PT SIDIK. |
+
+Aplikasi hanya menampilkan data bisnis. Operasi tulis dibatasi daftar izin yang dijaga test (`test/guard_tulis_test.dart`): masuk dan pemulihan sandi, ganti sandi, preferensi dan tanda baca notifikasi, token perangkat push, dan penonaktifan anggota oleh PIC utama.
+
+## Cara kerja
+
+```mermaid
+flowchart LR
+  A["Laboratorium menerbitkan<br/>sertifikat dan memperbarui alat"] --> B["Server<br/>/api/pelanggan/v1"]
+  B --> C["Aplikasi Pelanggan<br/>baca saja"]
+  B --> E["Notifikasi<br/>kotak masuk dan push"]
+  E --> C
+  C --> D["Alat, jatuh tempo,<br/>sertifikat PDF, paket"]
 ```
 
-Server harus menyalakan modul pelanggan (`FITUR_PELANGGAN=true`).
+Server satu-satunya sumber data: status jatuh tempo, tahap paket, dan kepemilikan dihitung server, sehingga data sama di HP mana pun akun ini masuk. Aplikasi menarik ulang data saat kembali ke layar depan dan saat push masuk.
 
-## Push notification (opsional)
+## Arsitektur
 
-Aplikasi berjalan penuh TANPA push — kotak masuk di aplikasi tetap sumber
-kebenaran. Untuk menyalakan push:
+```mermaid
+flowchart LR
+  UI["screens dan widgets"] --> PR["providers (Riverpod)"] --> SV["services<br/>LayananPelanggan"] --> API["API pelanggan<br/>/api/pelanggan/v1"]
+  SV --> SS["flutter_secure_storage<br/>token sesi"]
+  PR --> SN["sinkron_provider<br/>tarik ulang data"]
+```
 
-1. Di Firebase project yang SAMA dengan aplikasi lab (server hanya punya satu
-   `FCM_PROJECT_ID`), tambahkan aplikasi Android `com.ptsidik.pelanggan`
-   (dan iOS bila perlu).
-2. Taruh `google-services.json` di `android/app/`. Gradle memasang plugin Google
-   Services dan Crashlytics hanya ketika berkas ini ada. Berkas konfigurasi
-   tidak masuk repo; keberadaannya belum membuktikan push berhasil diterima.
-3. Server memisahkan tujuan lewat `device_tokens.aplikasi`: token yang
-   didaftarkan lewat `POST /pelanggan/v1/perangkat` hanya menerima kabar akun
-   pelanggan (dijaga `DataPelangganTest::test_push_pelanggan_tidak_mendarat_di_token_aplikasi_internal`).
+| Lapisan | Tempat |
+| --- | --- |
+| Konfigurasi, tema, gerak | `lib/core/` (tema: [`README`](lib/core/tema/README.md)) |
+| Model data | `lib/models/` |
+| Layanan API, push, pembaruan | `lib/services/` |
+| State (Riverpod) | `lib/providers/` |
+| Layar | `lib/screens/` (beranda, alat, sertifikat, paket, notifikasi, akun, auth) |
+| Komponen | `lib/widgets/` ([`README`](lib/widgets/README.md)) |
 
-## Rilis & pembaruan di dalam aplikasi
+## Prinsip
 
-Aplikasi TIDAK ada di Play Store. APK dibagikan lewat GitHub Releases repo ini;
-aplikasi terpasang membaca `releases/latest/download/versi-pelanggan.json`
-(saat masuk, saat dibuka lagi, dan tiap jam — paling sering sekali per jam),
-menampilkan banner "Versi X tersedia" di atas navigasi bawah, mengunduh APK
-(otomatis hanya di Wi-Fi; kapan saja kalau diketuk), mencocokkan SHA-256, lalu
-membuka pemasang Android (`PackageInstaller`). Rilis `wajib` dan gerbang versi
-minimum server memakai dialog/layar yang tidak bisa ditutup.
+- **Baca saja untuk data bisnis.** Tulis hanya yang ada di daftar izin; selebihnya ditolak test.
+- **Tidak ada logika bisnis di HP.** Status dan kepemilikan dari server. Dua pengecualian tertulis, sampai server mengirimnya: kelompok alat 31 sampai 90 hari dan status masa berlaku sertifikat di riwayat alat ([`docs/kebutuhan-api-pelanggan.md`](docs/kebutuhan-api-pelanggan.md)).
+- **Perusahaan dipilih lewat header, bukan isi permintaan.** Aplikasi tidak pernah mengirim `customer_id`; server memeriksa keanggotaan.
+- **Token di penyimpanan terenkripsi** (`flutter_secure_storage`), bukan `SharedPreferences`.
+- **Istilah status.** "Lewat jadwal" dan "Masa berlaku berakhir", bukan "kedaluwarsa", sampai istilah resmi ditetapkan; semua kata status ada di `StatusBerlaku.label`.
+- **Tema sendiri, bukan salinan aplikasi Lab.** Token di `lib/core/tema/`; layar tidak menulis warna atau jarak sendiri dan gerbang desain di `test/tema/` menolaknya ([`docs/standar-kualitas-desain.md`](docs/standar-kualitas-desain.md)).
 
-1. Naikkan `version:` di `pubspec.yaml` — angka build sesudah `+` WAJIB naik.
-2. Pastikan `android/key.properties` + keystore rilis ada (kunci yang sama
-   dengan APK yang sudah terpasang di HP pelanggan).
-3. `powershell -ExecutionPolicy Bypass -File tool/rilis.ps1 -Catatan "…"`
-   (tambah `-Wajib` untuk pembaruan wajib). Skrip membangun APK, menulis
-   `versi-pelanggan.json`, dan menjalankan `gh release create`.
+## Teknologi
 
-Uji ke manifes lain: `--dart-define=URL_MANIFES_RILIS=https://…/versi-pelanggan.json`.
+| Lapisan | Teknologi |
+| --- | --- |
+| Framework | Flutter 3.44.6 (dipatok di CI), Dart `^3.11.5` |
+| State | Riverpod 3 (`flutter_riverpod ^3.3.2`) |
+| Jaringan dan sesi | `http`, `flutter_secure_storage` |
+| PDF | `pdfx` |
+| Push dan galat | `firebase_messaging`, `firebase_crashlytics` (opsional, butuh berkas konfigurasi) |
+| Navigasi | Lima tab (Beranda, Alat, Sertifikat, Notifikasi, Akun): bar bawah di HP, rel samping pada lebar 600 dp atau lebih |
+| Bahasa | Indonesia |
 
-## Verifikasi yang masih perlu HP sungguhan
+## Menjalankan secara lokal
 
-Perbaikan HP murah sudah merged melalui
-[PR #11](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/pull/11):
-hash APK dan penguraian JSON besar dipindah ke isolate, tampilan diuji pada
-320 dp, serta pelaporan galat Crashlytics tersedia. Crashlytics baru dinyalakan
-di build release setelah Firebase berhasil diinisialisasi; laporan Dart
-mengirim jenis galat dan stack tanpa pesan galat atau identitas akun.
+```bash
+git clone https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile.git
+cd sidik-pelanggan-mobile
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000   # emulator Android ke API lokal
+```
 
-Checklist berikut masih menunggu bukti dari HP ARM32 dengan RAM 2 GB:
+`10.0.2.2` adalah localhost laptop dilihat dari emulator Android; prefix `/api/pelanggan/v1` ditambahkan aplikasi. API lokal harus menyalakan modul pelanggan (`FITUR_PELANGGAN=true`); lihat [`sidik-calibration-api`](https://github.com/ZainulArkaanAlinsi/sidik-calibration-api#menjalankan-secara-lokal).
 
-- Pembaruan dari versi lama lewat aplikasi: unduh, verifikasi hash, lalu pasang.
-- Login, beranda, detail sertifikat dan unduh/buka PDF, serta layar Akun.
-- Ukuran huruf sistem maksimum tanpa teks atau tombol terpotong.
-- Nonfatal uji diterima di Firebase Crashlytics; periksa bahwa pesan galat dan
-  data pelanggan tidak ikut terkirim. Akses console harus dilakukan pemilik
-  yang berwenang.
+Push bersifat opsional; aplikasi berjalan penuh tanpanya dan kotak masuk tetap sumber kebenaran. Untuk menyalakannya, taruh `google-services.json` dari proyek Firebase yang sama dengan server di `android/app/`. Berkas itu tidak ikut repo.
 
-Catat model HP, versi Android, versi aplikasi, hasil tiap langkah dan bukti
-tanpa data pelanggan. Uji widget/CI belum menggantikan bukti ini.
+## Pengujian
 
-## Peta layar → endpoint
+```bash
+flutter analyze
+flutter test
+flutter test integration_test -d <id-perangkat>   # butuh perangkat
+```
 
-Peta ini mengikuti fitur aktif rilis `0.2.1+3` di
-`lib/services/layanan_pelanggan.dart` dan `lib/screens/`. Jalur di bawah
-relatif terhadap `/api/pelanggan/v1`.
+CI (`periksa.yml`) menjalankan analyze, test, dan build Android debug pada tiap push ke `main` dan tiap pull request, tanpa berkas kredensial. Skenario alur dasar juga berjalan tanpa perangkat di `test/alur_dasar_test.dart`. Tampilan diperiksa tanpa emulator: `SIDIK_PNG_DIR=<folder di luar repo> flutter test test/tampilan/render_layar_test.dart` me-render layar kunci pada beberapa ukuran HP dan tablet, terang dan gelap; tanpa variabel itu, test yang sama menjadi gerbang luapan dan sasaran sentuh.
 
-| Layar | Endpoint |
-|---|---|
-| Gerbang (pemeliharaan / versi wajib) | `GET /app/status` |
-| Akun / akun belum aktif / pilih perusahaan | `GET /saya` |
-| Beranda: sapaan, kartu jatuh tempo (lewat jadwal, 0–30, 31–60, 61–90 hari), alat mendesak, sertifikat terbaru, paket berjalan, Hubungi lab | `GET /beranda`, `GET /alat?per_page=100` (hitungan 31–90 hari) |
-| Tab Alat (Alat saya): semua alat dengan status, pencarian, saringan jatuh tempo | `GET /alat` |
-| Detail alat dan riwayat sertifikat (garis waktu) | `GET /alat/{id}` |
-| Sertifikat, Detail, Lihat PDF di aplikasi, Unduh PDF | `GET /sertifikat`, `GET /sertifikat/{id}`, `GET /sertifikat/{id}/unduh` |
-| Arsip sertifikat (segmen "Arsip" di tab Sertifikat): tahun → bulan → pekan → hari | `GET /sertifikat/garis-waktu` |
-| Cari di Arsip (nomor seri, nomor sertifikat, nomor order): daftar datar, bukan penelusuran | `GET /sertifikat?q=` (jalur yang sama dengan segmen Daftar) |
-| Notifikasi dan jumlah belum dibaca | `GET /notifikasi`, `GET /notifikasi/jumlah` |
-| Bantuan & kontak / privasi & ketentuan | `GET /app/info` (tautan dibuka di aplikasi luar/peramban) |
+## Rilis dan pembaruan
 
-Data bisnis di aplikasi bersifat **hanya lihat**. Pengecualian teknis untuk
-autentikasi, registrasi perangkat push, dan penandaan notifikasi dibaca dibatasi
-oleh `test/guard_tulis_test.dart`:
+Aplikasi tidak ada di Play Store. APK dibagikan lewat [GitHub Releases](https://github.com/ZainulArkaanAlinsi/sidik-pelanggan-mobile/releases). Aplikasi terpasang membaca `versi-pelanggan.json` dari rilis terbaru, menampilkan banner pembaruan, mengunduh APK (otomatis hanya di Wi-Fi), mencocokkan SHA-256, lalu membuka pemasang Android.
 
-| Alur teknis yang didukung | Endpoint tulis yang diizinkan |
-|---|---|
-| Masuk / pakai kode undangan | `POST /auth/masuk`, `POST /auth/terima-undangan` |
-| Pemulihan sandi | `POST /auth/lupa-sandi`, `POST /auth/atur-ulang-sandi` |
-| Keluar / keluar dari semua perangkat | `POST /auth/keluar`, `POST /auth/keluar-semua` |
-| Daftar / cabut token perangkat push | `POST /perangkat`, `DELETE /perangkat` |
-| Tandai notifikasi dibaca / semua dibaca | `POST /notifikasi/{id}/dibaca`, `POST /notifikasi/dibaca-semua` |
+<details>
+<summary><b>Langkah merilis</b></summary>
 
-## Aturan yang dipegang kode ini
+1. Naikkan `version:` di `pubspec.yaml`; angka build setelah `+` wajib naik.
+2. Siapkan kunci penandatangan rilis (tidak ikut repo). Skrip menolak APK bertanda tangan kunci debug.
+3. Jalankan `tool/rilis.ps1 -Catatan "..."` (tambah `-Wajib` untuk pembaruan wajib). Skrip membangun APK, menulis manifes dengan SHA-256 dan ukuran, lalu membuat rilis GitHub.
 
-- **Data sama di HP mana pun akun ini masuk.** Server satu-satunya sumber
-  data; `lib/providers/sinkron_provider.dart` menarik ulang semua layar
-  waktu aplikasi kembali ke layar depan dan waktu push masuk.
-- **Tidak ada logika bisnis di HP.** Status jatuh tempo, tahap paket, dan
-  kepemilikan dihitung server. Aplikasi hanya menampilkan. Dua pengecualian
-  tertulis, sementara sampai server mengirimnya: kelompok alat 31–90 hari dan
-  status masa berlaku sertifikat di riwayat alat (`docs/kebutuhan-api-pelanggan.md` §5);
-  "hari ini" untuk yang kedua dihitung dari payload server, bukan jam HP.
-- **Istilah status: bukan "kedaluwarsa".** Keputusan K3 (API `BR-09`, ISO/IEC
-  17025 §7.8.4.3) masih terbuka, jadi alat yang terlambat tampil "Lewat jadwal"
-  dan sertifikat yang tanggalnya lewat "Masa berlaku berakhir". Semua kata
-  status ada di satu tempat, `StatusBerlaku.label`; alasannya di
-  `docs/kebutuhan-api-pelanggan.md` §5c.
-- **`customer_id` tidak pernah dikirim.** Perusahaan aktif dipilih lewat
-  header `X-Perusahaan-Id`, dan server tetap memeriksa keanggotaannya.
-- **Token di penyimpanan terenkripsi** (`flutter_secure_storage`), bukan
-  SharedPreferences.
-- **Tema sendiri, bukan salinan aplikasi lab.** Material 3 datar, kobalt
-  `#043EA1`, netral dingin, terang dan gelap: token di `lib/core/tema/`
-  (`README.md` di sana), komponen di `lib/widgets/` (`README.md` di sana).
-  Layar tidak menulis warna/jarak sendiri; gerbang desain di `test/tema/`
-  menolaknya (standar: `docs/standar-kualitas-desain.md`). Gerak halaman (`lib/core/motion/`) masih sama dengan aplikasi lab.
-- **Tampilan diperiksa tanpa emulator**: `SIDIK_PNG_DIR=<folder di luar repo>
-  flutter test test/tampilan/render_layar_test.dart` me-render layar kunci
-  pada HP 360×800 dan 392×852, HP sempit 320×640 huruf 1,3×, dan tablet
-  840×1200, terang dan gelap, ke PNG (font Inter dari aset). Tanpa variabelnya
-  tes tetap berjalan sebagai gerbang: layar kunci di HP 392, HP sempit, dan
-  tablet, terang dan gelap, gagal bila meluap atau melanggar sasaran sentuh 48
-  dp dan label semantik. Tidak ada golden baseline; gambar dari Windows bukan
-  acuan.
-- **Navigasi lima tab** (Beranda, Alat, Sertifikat, Notifikasi, Akun): bawah di
-  HP, rel samping di lebar >= 600 dp, isi dibatasi ±720 dp.
-- **Ikon peluncur dan splash** dari logo resmi Lab: `tool/buat_aset_android.py`
-  (hasilnya di `android/app/src/main/res`, ikon adaptif + monokrom Android 13,
-  splash Android 12+).
-- Teks masih Bahasa Indonesia saja (pelanggan lab ini perusahaan Indonesia).
-  Pindah ke ARB/l10n kalau pelanggan berbahasa lain mulai ada.
+Perubahan masuk lewat pull request ke `main` dengan CI hijau.
+
+</details>
+
+## Dokumentasi
+
+| Dokumen | Isi |
+| --- | --- |
+| [`docs/kebutuhan-api-pelanggan.md`](docs/kebutuhan-api-pelanggan.md) | Kebutuhan API dan pengecualian logika di sisi HP |
+| [`docs/standar-kualitas-desain.md`](docs/standar-kualitas-desain.md) | Standar kualitas desain dan gerbang otomatisnya |
+| [`docs/pustaka-pdf.md`](docs/pustaka-pdf.md) | Pustaka PDF |
+| [`lib/core/tema/README.md`](lib/core/tema/README.md) | Token tema |
+| [`lib/widgets/README.md`](lib/widgets/README.md) | Komponen |
+| [Kontrak API pelanggan](https://github.com/ZainulArkaanAlinsi/sidik-calibration-api/blob/main/docs/kontrak-api-pelanggan.md) | Kontrak endpoint (di repo API) |
+
+## Status dan peta jalan
+
+Dalam pengembangan aktif (per 18 Nov 2026).
+
+| Status | Isi |
+| --- | --- |
+| Berjalan | Rilis Android publik lewat GitHub Releases dengan pembaruan di dalam aplikasi; semua layar pada tabel fitur di atas. |
+| Belum terdokumentasi | Uji di perangkat sungguhan (HP ARM32 dengan RAM 2 GB: pembaruan dari versi lama, huruf sistem maksimum, laporan galat). CI dan uji widget tidak menggantikannya. |
+| Belum | Teks hanya Bahasa Indonesia; pindah ke ARB/l10n bila pelanggan berbahasa lain mulai ada. |
+
+## Kontribusi dan kepemilikan
+
+Proyek ini dikembangkan untuk PT SIDIK dan dipelihara oleh Zainul Arkaan. Informasi laboratorium: <https://pt-sidik.com/calibration/>.
+
+- Perubahan lewat pull request ke `main` dengan CI hijau; jangan push langsung.
+- Commit memakai [Conventional Commits](https://www.conventionalcommits.org/). `flutter analyze` harus bersih.
+- Repo ini publik: jangan menulis kredensial, token, kunci penandatangan, atau data pelanggan asli di berkas, tangkapan layar, maupun berkas contoh.
+- Repo ini belum memuat berkas `LICENSE`; ketentuan penggunaan ulang belum ditetapkan.

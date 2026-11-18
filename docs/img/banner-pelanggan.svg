@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="300" viewBox="0 0 1280 300" role="img" aria-labelledby="t d">
+  <title id="t">SIDIK Calibration — Aplikasi Pelanggan</title>
+  <desc id="d">Banner solid navy dengan tanda kunci dial kalibrasi, judul SIDIK Calibration, dan subjudul Aplikasi Pelanggan untuk melihat status kalibrasi dan sertifikat alat.</desc>
+  <rect width="1280" height="300" fill="#102A43"/>
+  <rect y="296" width="1280" height="4" fill="#8EC2F7"/>
+  <g transform="translate(112 150)" fill="none" stroke="#8EC2F7" stroke-width="5" stroke-linecap="round">
+    <path d="M -36.77 36.77 A 52 52 0 1 1 36.77 36.77"/>
+    <path d="M -38 0 L -44 0 M -26.87 -26.87 L -31.11 -31.11 M 0 -38 L 0 -44 M 26.87 -26.87 L 31.11 -31.11 M 38 0 L 44 0" stroke-width="4"/>
+    <path d="M 0 0 L 21.2 -21.2"/>
+    <circle cx="0" cy="0" r="6" fill="#8EC2F7" stroke="none"/>
+  </g>
+  <g font-family="'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif">
+    <text x="204" y="142" font-size="66" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">SIDIK Calibration</text>
+    <text x="206" y="192" font-size="30" fill="#C9D3EA">Aplikasi Pelanggan: status kalibrasi dan sertifikat alat</text>
+    <text x="206" y="236" font-size="21" fill="#8EC2F7" letter-spacing="1">Android  ·  Baca saja  ·  PT SIDIK</text>
+  </g>
+</svg>
