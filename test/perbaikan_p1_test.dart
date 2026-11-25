@@ -204,7 +204,12 @@ void main() {
       await _kirim(tester);
 
       expect(find.text('Email ini sudah punya akun'), findsOneWidget);
-      expect(find.textContaining('tidak dipakai'), findsOneWidget);
+      // Kalimat lama "sandi yang baru Anda isi tidak dipakai" sudah tidak
+      // benar sejak server (12 Nov 2026, kontrak §11) memakai sandi isian
+      // untuk membuktikan akun lama; teks baru dijaga di
+      // `undangan_akun_lama_server_test.dart`.
+      expect(find.textContaining('Sandi Anda tidak berubah'), findsOneWidget);
+      expect(find.textContaining('tidak dipakai'), findsNothing);
       // Tidak membocorkan nama akun lama maupun perusahaan.
       expect(find.textContaining('Budi Lama'), findsNothing);
       expect(find.textContaining('PT Contoh'), findsNothing);
