@@ -23,20 +23,21 @@ class SesiBaru {
   final bool akunSudahAda;
 }
 
-/// Apakah [akun] yang dijawab `POST /auth/terima-undangan` tampak akun LAMA,
-/// bukan akun yang baru dibuat dari isian [namaDiketik].
+/// CADANGAN: apakah [akun] yang dijawab `POST /auth/terima-undangan` tampak akun
+/// LAMA, bukan akun yang baru dibuat dari isian [namaDiketik]. Dipakai hanya
+/// bila jawaban server tidak membawa `data.akun_sudah_ada`; yang berlaku
+/// adalah penanda dari server ([LayananPelanggan.terimaUndangan]).
 ///
-/// Server (kontrak §1) tidak mengirim penanda "akun sudah ada": untuk email
-/// yang sudah terdaftar ia menambahkan perusahaan ke akun itu dan membalas 201
-/// biasa, mengabaikan `nama` dan `sandi` isian. Satu-satunya petunjuk ada di
-/// jawabannya sendiri:
+/// Server lama tidak mengirim penanda "akun sudah ada": untuk email yang sudah
+/// terdaftar ia menambahkan perusahaan ke akun itu dan membalas 201 biasa.
+/// Satu-satunya petunjuk ada di jawabannya sendiri:
 /// - akun yang baru lahir punya TEPAT satu keanggotaan, jadi lebih dari satu =
 ///   akun lama;
 /// - akun yang baru lahir memakai nama isian apa adanya (server hanya
 ///   merapikan spasi di ujung), jadi nama yang berbeda = akun lama.
 /// Akun lama yang kebetulan bernama sama dan baru punya satu perusahaan tidak
-/// terdeteksi (tidak ada pesan, sama seperti sebelumnya). Penanda eksplisit
-/// dari server diminta di `docs/kebutuhan-api-pelanggan.md`.
+/// terdeteksi oleh tebakan ini; itu sebabnya penanda dari server diutamakan
+/// (`docs/kebutuhan-api-pelanggan.md` §3).
 bool tampakAkunLama(String namaDiketik, Akun akun) {
   String rapi(String s) =>
       s.trim().toLowerCase().split(RegExp(r'\s+')).join(' ');
@@ -144,10 +145,14 @@ class LayananPelanggan {
       'setuju_syarat': setujuSyarat,
     });
     final sesi = _sesi(b);
+    // Penanda dari server (kontrak §1, additive 12 Nov 2026): `true` = email
+    // ini sudah punya akun sebelum undangan ditukar. Hanya bila kuncinya tidak
+    // ada (server lama) aplikasi menebak dari jawabannya, seperti sebelumnya.
+    final bendera = (b['data'] as Map<String, dynamic>)['akun_sudah_ada'];
     return SesiBaru(
       sesi.token,
       sesi.akun,
-      akunSudahAda: tampakAkunLama(nama, sesi.akun),
+      akunSudahAda: bendera is bool ? bendera : tampakAkunLama(nama, sesi.akun),
     );
   }
 

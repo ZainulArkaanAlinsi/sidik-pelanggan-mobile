@@ -11,6 +11,23 @@ import '../../widgets/kolom_isian.dart';
 import '../../widgets/tombol_sidik.dart';
 import '../akun/hubungi_screen.dart';
 import 'kerangka_auth.dart';
+import 'lupa_sandi_screen.dart';
+
+/// Kode galat server yang tidak bisa diselesaikan pengguna sendiri: jalannya
+/// lewat PT SIDIK, bukan "minta kode baru" (kontrak §1 `terima-undangan`).
+const _kodeHubungiLab = {
+  'undangan_organisasi_berbeda',
+  'akun_nonaktif',
+  'email_belum_diverifikasi',
+};
+
+/// Sandi yang diisi bukan sandi akun lama (kontrak §1 `terima-undangan`).
+const _kodeSandiLamaSalah = 'sandi_akun_lama_salah';
+
+/// Petunjuk di bawah kolom sandi: kolom yang sama melayani dua kasus.
+const _petunjukSandiLama =
+    'Sudah punya akun SIDIK Pelanggan dengan email ini? Isi sandi akun Anda '
+    'yang sudah ada.';
 
 /// Pesan untuk email undangan yang SUDAH punya akun. Sengaja tidak menyebut
 /// nama akun lama, perusahaan lain, atau nomor apa pun — hanya apa yang
@@ -24,11 +41,9 @@ class DialogAkunSudahAda extends StatelessWidget {
     title: const Text('Email ini sudah punya akun'),
     content: const SingleChildScrollView(
       child: Text(
-        'Anda masuk ke akun SIDIK Pelanggan yang sudah ada, dan perusahaan '
-        'dari undangan ini ditambahkan ke akun itu.\n\n'
-        'Nama dan sandi yang baru Anda isi tidak dipakai: sandi Anda tetap '
-        'sandi akun yang lama. Kalau lupa, keluar lalu pilih "Lupa sandi?" '
-        'di layar Masuk.',
+        'Perusahaan dari undangan ini sudah ditambahkan ke akun SIDIK '
+        'Pelanggan Anda yang sudah ada. Sandi Anda tidak berubah.\n\n'
+        'Kalau lupa sandi, keluar lalu pilih "Lupa sandi?" di layar Masuk.',
       ),
     ),
     actions: [
@@ -64,6 +79,9 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
   Map<String, String> _galatIsian = const {};
   String? _galat;
 
+  /// `kode` galat server terakhir; cabang tampilan memakai kode, bukan kalimat.
+  String? _kodeGalat;
+
   @override
   void dispose() {
     for (final c in [_email, _kode, _nama, _telepon, _jabatan, _sandi]) {
@@ -77,6 +95,7 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
       _sibuk = true;
       _galat = null;
       _galatIsian = const {};
+      _kodeGalat = null;
     });
     final navigator = Navigator.of(context);
     try {
@@ -110,6 +129,9 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
     } on GalatApi catch (e) {
       if (mounted) {
         setState(() {
+          // Cabang tampilan memakai `kode`, bukan kalimat server. Kode undangan
+          // tetap hidup, jadi isian lain tidak disentuh.
+          _kodeGalat = e.kode;
           _galat = e.isian.isEmpty ? e.pesan : null;
           _galatIsian = e.isian;
         });
@@ -126,8 +148,9 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
     TextInputType? keyboard,
     bool rahasia = false,
     String? bantuan,
+    double jarakBawah = Spasi.lg,
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: Spasi.lg),
+    padding: EdgeInsets.only(bottom: jarakBawah),
     child: KolomIsian(
       label: label,
       pengendali: c,
@@ -148,7 +171,14 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
     // Hanya tautan https yang sah dari server yang ditawarkan.
     final privasi = TautanLuar.web(info?.kebijakanPrivasiUrl);
     final syarat = TautanLuar.web(info?.syaratUrl);
-    final galatKode = _galatIsian['kode'] != null || _galat != null;
+    // Sandi yang diisi bukan sandi akun lama: pesan server ("isi sandi akun
+    // Anda yang sudah ada, bukan sandi baru") tampil PENUH tepat di bawah kolom
+    // sandi. `errorText` kolom dibatasi tiga baris dan memotong kalimat itu.
+    final galatSandiLama = _kodeGalat == _kodeSandiLamaSalah ? _galat : null;
+    final galatKode =
+        _galatIsian['kode'] != null ||
+        (_galat != null && galatSandiLama == null);
+    final hubungiLab = _kodeHubungiLab.contains(_kodeGalat);
     return KerangkaAuth(
       ringkas: true,
       kartu: [
@@ -181,6 +211,30 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
           'sandi',
           rahasia: true,
           bantuan: 'Minimal 10 karakter',
+          jarakBawah: Spasi.sm,
+        ),
+        if (galatSandiLama != null) ...[
+          PesanGalatAuth(galatSandiLama),
+          // Jalan keluar kalau sandi lama terlupa (email ikut terbawa).
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TombolSidik(
+              label: 'Lupa sandi?',
+              ragam: RagamTombol.teks,
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => LupaSandiScreen(emailAwal: _email.text),
+                ),
+              ),
+            ),
+          ),
+        ],
+        Padding(
+          padding: const EdgeInsets.only(bottom: Spasi.lg),
+          child: Text(
+            _petunjukSandiLama,
+            style: context.teks.bodySmall?.copyWith(color: s.onSurfaceVariant),
+          ),
         ),
         CheckboxListTile(
           value: _setuju,
@@ -214,17 +268,21 @@ class _TerimaUndanganScreenState extends ConsumerState<TerimaUndanganScreen> {
                 ),
             ],
           ),
-        if (_galat != null) ...[
+        if (_galat != null && galatSandiLama == null) ...[
           const SizedBox(height: Spasi.sm),
           PesanGalatAuth(_galat!),
         ],
-        // Flow A: kode salah / kedaluwarsa → minta kode baru ke lab.
-        if (galatKode && (info?.adaKontak ?? false))
+        // Flow A: kode salah / kedaluwarsa → minta kode baru ke lab. Galat yang
+        // tidak bisa diselesaikan pengguna (akun nonaktif, laboratorium lain,
+        // email belum terverifikasi) → hubungi PT SIDIK, bukan kode baru.
+        if ((galatKode || hubungiLab) && (info?.adaKontak ?? false))
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               icon: const Icon(Icons.support_agent),
-              label: const Text('Minta kode baru ke PT Sidik'),
+              label: Text(
+                hubungiLab ? 'Hubungi PT SIDIK' : 'Minta kode baru ke PT Sidik',
+              ),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const HubungiScreen()),
               ),

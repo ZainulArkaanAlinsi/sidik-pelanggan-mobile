@@ -31,9 +31,17 @@ Tidak diminta pada tugas ini, jadi tidak dibangun dan TIDAK masuk allow-list
 - `POST /anggota/undangan` dan `DELETE /anggota/undangan/{id}` (PIC utama
   mengundang / membatalkan). Layar Anggota sudah menampilkan undangan yang menunggu.
 
-## 3. BUTUH API: penanda "akun sudah ada" pada terima-undangan
+## 3. Penanda "akun sudah ada" pada terima-undangan (SUDAH ADA di server, 24 Nov 2026)
 
-Masalah: `POST /auth/terima-undangan` untuk email yang sudah punya akun
+**Status 24 Nov 2026.** API `origin/main` `79280fc2` (kontrak §1 dan §11) sudah
+mengirim `data.akun_sudah_ada` pada 201 `terima-undangan` sejak 12 Nov 2026, dan
+sejak itu email yang sudah punya akun harus mengirim SANDI AKUN LAMA (galat
+`sandi_akun_lama_salah`, `undangan_organisasi_berbeda`, `akun_nonaktif`,
+`email_belum_diverifikasi`, `terlalu_sering`). Aplikasi membaca penanda itu;
+`tampakAkunLama` tinggal sebagai cadangan bila kuncinya tidak ada. Teks di bawah
+adalah catatan asli sebelum server menyediakannya.
+
+Masalah (catatan asli): `POST /auth/terima-undangan` untuk email yang sudah punya akun
 menambahkan perusahaan ke akun lama dan membalas 201 biasa, dengan `nama` dan
 `sandi` isian diabaikan (kontrak §1). Aplikasi tidak punya penanda dan hanya
 menebak dari jawabannya: lebih dari satu keanggotaan, atau nama di jawaban

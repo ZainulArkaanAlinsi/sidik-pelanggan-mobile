@@ -26,6 +26,9 @@ import 'package:sidik_pelanggan/core/konfigurasi.dart';
 import 'package:sidik_pelanggan/core/penyimpan_pratinjau.dart';
 import 'package:sidik_pelanggan/providers/koneksi_provider.dart';
 import 'package:sidik_pelanggan/providers/sesi_provider.dart';
+import 'package:sidik_pelanggan/screens/paket/paket_detail_screen.dart';
+import 'package:sidik_pelanggan/screens/paket/paket_screen.dart';
+import 'package:sidik_pelanggan/screens/sertifikat/sertifikat_detail_screen.dart';
 import 'package:sidik_pelanggan/services/layanan_pelanggan.dart';
 import 'package:sidik_pelanggan/widgets/kolom_isian.dart';
 import 'package:sidik_pelanggan/widgets/navigasi_utama.dart';
@@ -82,6 +85,42 @@ class ServerPalsu {
     'bisa_diunduh': true,
   };
 
+  Map<String, dynamic> _paket(int jumlahAlat, {bool denganAlat = false}) => {
+    'id': 21,
+    'nomor': 'ORD/2026/11/0001',
+    'tanggal_masuk': '2026-11-20',
+    'tanggal_janji_selesai': '2026-11-28',
+    'terlambat': false,
+    'tahap': 'dikalibrasi',
+    'tahap_label': 'Sedang dikalibrasi',
+    'jumlah_alat': jumlahAlat,
+    'jumlah_selesai': 1,
+    'alat': denganAlat
+        ? [
+            {
+              'id': 981,
+              'nama': 'Jangka Sorong 1',
+              'merk': 'Mitutoyo',
+              'serial': 'SN-981',
+              'tahap': 'selesai',
+              'tahap_label': 'Selesai',
+              'diserahkan_kepada': null,
+              'sertifikat_id': 1,
+            },
+            {
+              'id': 982,
+              'nama': 'Timbangan Analitik',
+              'merk': 'Ohaus',
+              'serial': 'SN-982',
+              'tahap': 'dikalibrasi',
+              'tahap_label': 'Sedang dikalibrasi',
+              'diserahkan_kepada': null,
+              'sertifikat_id': null,
+            },
+          ]
+        : <Object>[],
+  };
+
   http.Response _json(Object isi, [int status = 200]) => http.Response(
     jsonEncode(isi),
     status,
@@ -120,7 +159,13 @@ class ServerPalsu {
       }
       _masuk = true;
       return _json({
-        'data': {'token': token, 'kemampuan': 'pelanggan', 'user': _user},
+        'data': {
+          'token': token,
+          'kemampuan': 'pelanggan',
+          'user': _user,
+          // Penanda dari server (kontrak §1, additive 12 Nov 2026).
+          'akun_sudah_ada': akunSudahAda,
+        },
       }, 201);
     }
 
@@ -165,6 +210,44 @@ class ServerPalsu {
         200,
         headers: {'content-type': 'application/pdf'},
       );
+    }
+    // Pelacakan paket: satu paket berjalan (dua alat: satu sudah bersertifikat);
+    // riwayat (`selesai=1`) kosong.
+    if (m == 'GET' && jalur == '/paket') {
+      final selesai = r.url.queryParameters['selesai'] == '1';
+      return _json({
+        'data': selesai ? <Object>[] : [_paket(2)],
+        'meta': {'current_page': 1, 'last_page': 1, 'total': selesai ? 0 : 1},
+      });
+    }
+    final paketDetail = RegExp(r'^/paket/(\d+)$').firstMatch(jalur);
+    if (m == 'GET' && paketDetail != null) {
+      if (paketDetail.group(1) != '21') {
+        return _json({'kode': 'tidak_ada', 'message': 'Tidak ditemukan.'}, 404);
+      }
+      return _json({
+        'data': _paket(2, denganAlat: true),
+        'garis_waktu': [
+          {
+            'kode': 'diterima',
+            'label': 'Alat diterima lab',
+            'lewat': true,
+            'sekarang': false,
+          },
+          {
+            'kode': 'dikalibrasi',
+            'label': 'Sedang dikalibrasi',
+            'lewat': false,
+            'sekarang': true,
+          },
+          {
+            'kode': 'selesai',
+            'label': 'Selesai',
+            'lewat': false,
+            'sekarang': false,
+          },
+        ],
+      });
     }
     if (m == 'GET' && jalur == '/notifikasi') {
       return _json({
@@ -409,4 +492,114 @@ void periksaHasilAlur(HasilAlur hasil) {
 
   // Keluar mencabut token di server.
   expect(rute, contains('POST ${Konfigurasi.prefix}/auth/keluar'));
+}
+
+/// Alur pelacakan paket (P-4): masuk lewat undangan → tab Akun → Pelacakan
+/// paket → detail paket → Lihat sertifikat → kembali → riwayat "Selesai".
+/// Batas luarnya sama dengan [jalankanAlurDasar]; hanya membaca.
+Future<HasilAlur> jalankanAlurPaket(WidgetTester tester) async {
+  final folder = Directory.systemTemp.createTempSync('alur_paket_');
+  addTearDown(() {
+    if (folder.existsSync()) folder.deleteSync(recursive: true);
+  });
+  final server = ServerPalsu();
+  final hasil = HasilAlur(server);
+
+  layarHp(tester);
+  await tester.pumpWidget(aplikasiUji(server, hasil, folder));
+  await tester.pumpAndSettle();
+
+  // 1. Masuk lewat kode undangan (akun baru, satu perusahaan).
+  final pakaiKode = find.text('Pakai kode undangan');
+  await _gulirKe(tester, pakaiKode);
+  await tester.tap(pakaiKode);
+  await tester.pumpAndSettle();
+  await _isi(tester, 'Email', 'budi@contoh.test');
+  await _isi(tester, 'Kode undangan', 'K7M2QP4R');
+  await _isi(tester, 'Nama lengkap', 'Budi Diundang');
+  await _isi(tester, 'Nomor HP', '081234567890');
+  await _isi(tester, 'Buat sandi', 'Kalibrasi#2026Sidik');
+  final setuju = find.byType(CheckboxListTile);
+  await _gulirKe(tester, setuju);
+  await tester.tap(setuju);
+  await tester.pump();
+  final kirim = find.text('Buat akun & masuk');
+  await _gulirKe(tester, kirim);
+  await tester.tap(kirim);
+  await tester.pumpAndSettle();
+  expect(find.byType(BilahNavigasi), findsOneWidget);
+
+  // 2. Tab Akun → Pelacakan paket.
+  await tester.tap(
+    find.descendant(
+      of: find.byType(BilahNavigasi),
+      matching: find.byTooltip('Akun'),
+    ),
+  );
+  await tester.pumpAndSettle();
+  final menu = find.text('Pelacakan paket');
+  await _gulirKe(tester, menu);
+  await tester.tap(menu);
+  await tester.pumpAndSettle();
+  expect(find.byType(PaketScreen), findsOneWidget);
+  expect(find.text('ORD/2026/11/0001'), findsOneWidget);
+  expect(find.text('Sedang dikalibrasi'), findsOneWidget);
+
+  // 3. Detail paket: garis waktu dari server dan alatnya.
+  await tester.tap(find.text('ORD/2026/11/0001'));
+  await tester.pumpAndSettle();
+  expect(find.byType(PaketDetailScreen), findsOneWidget);
+  expect(find.text('Perkembangan'), findsOneWidget);
+  expect(find.text('Alat diterima lab'), findsOneWidget);
+  expect(find.text('Sekarang'), findsOneWidget);
+  final lihat = find.text('Lihat sertifikat');
+  await _gulirKe(tester, lihat);
+  expect(find.text('Jangka Sorong 1'), findsOneWidget);
+  expect(find.text('Timbangan Analitik'), findsOneWidget);
+  // Hanya alat yang sertifikatnya terbit punya tautan.
+  expect(lihat, findsOneWidget);
+
+  // 4. Lihat sertifikat dari paket.
+  await tester.tap(lihat);
+  await tester.pumpAndSettle();
+  expect(find.byType(SertifikatDetailScreen), findsOneWidget);
+
+  // 5. Kembali ke daftar paket; riwayat "Selesai" kosong.
+  await tester.binding.handlePopRoute();
+  await tester.pumpAndSettle();
+  await tester.binding.handlePopRoute();
+  await tester.pumpAndSettle();
+  expect(find.byType(PaketScreen), findsOneWidget);
+  await tester.tap(find.widgetWithText(ChoiceChip, 'Selesai'));
+  await tester.pumpAndSettle();
+  expect(find.text('Belum ada paket yang selesai'), findsOneWidget);
+
+  await tester.pumpWidget(const SizedBox());
+  return hasil;
+}
+
+/// Pemeriksaan sesudah [jalankanAlurPaket]: apa yang dilihat server.
+void periksaHasilAlurPaket(HasilAlur hasil) {
+  const awal = Konfigurasi.prefix;
+  final rute = hasil.server.permintaan.map((r) => '${r.method} ${r.url.path}');
+  expect(rute, contains('GET $awal/paket'));
+  expect(rute, contains('GET $awal/paket/21'));
+  expect(rute, contains('GET $awal/sertifikat/1'));
+
+  final paket = hasil.server.permintaan.where(
+    (r) => r.url.path.replaceFirst(awal, '').startsWith('/paket'),
+  );
+  for (final r in paket) {
+    // Layar paket hanya membaca, dan selalu membawa token.
+    expect(r.method, 'GET', reason: '${r.url}');
+    expect(
+      r.headers['Authorization'],
+      'Bearer ${ServerPalsu.token}',
+      reason: '${r.url}',
+    );
+  }
+  // Daftar awal = yang masih berjalan; riwayat diminta lewat `selesai=1`.
+  final daftar = paket.where((r) => r.url.path.endsWith('/paket')).toList();
+  expect(daftar.first.url.queryParameters['selesai'], isNull);
+  expect(daftar.last.url.queryParameters['selesai'], '1');
 }

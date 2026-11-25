@@ -783,6 +783,10 @@ void main() {
               if (nama == 'Terima undangan') {
                 await tester.tap(find.byType(CheckboxListTile));
                 await tester.pump();
+                // Pada huruf 2,0 formulir lebih tinggi dari jendela uji 2400
+                // dp: gulirkan tombol ke dalam jendela (seperti pengguna).
+                await tester.ensureVisible(find.byType(FilledButton));
+                await tester.pump();
                 await tester.tap(find.byType(FilledButton));
                 await tester.pumpAndSettle();
                 expect(find.byType(PesanGalatAuth), findsOneWidget);
